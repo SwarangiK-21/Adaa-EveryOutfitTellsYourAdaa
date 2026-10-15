@@ -94,9 +94,11 @@ python -m pytest
 
 Responsive UI navigation, demo wardrobe cards with search, a demo stylist chat, session-only preferences, and a FastAPI health endpoint.
 
-## Not implemented yet
+## My Wardrobe page (Phase 2, frontend)
 
-- Wardrobe page connected to the API (Phase 2, frontend)
+Add pieces with a photo and details, browse them as a photo grid, search, filter by category, edit and delete. The page talks to the backend through Vite's `/api` proxy (see `frontend/vite.config.js`), so **both servers must be running**.
+
+## Not implemented yet
 - Rule-based outfit recommendations from your real wardrobe (Phase 3)
 - Stylist chat connected to the engine (Phase 4)
 - Saved looks, swaps and outfit history (Phase 5)
