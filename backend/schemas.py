@@ -1,4 +1,6 @@
 """Shapes of the data going in and out of the API, with validation."""
+from datetime import date
+
 from pydantic import BaseModel, Field, field_validator
 
 from wardrobe_options import CATEGORIES, COLOUR_MOODS, COMFORT_LEVELS, OCCASIONS, STYLES
@@ -61,16 +63,14 @@ def item_out(item: dict) -> ItemOut:
 
 # ---------- Outfit recommendations ----------
 
-class RecommendationRequest(BaseModel):
-    """What the user wants to be styled for. Only occasion is required."""
+class StylePrefs(BaseModel):
+    """The occasion and preferences an outfit is styled for. Only occasion is required."""
 
     occasion: str
     style: str | None = None
     colour: str | None = Field(default=None, max_length=40)
     colour_mood: str | None = None
     comfort: str | None = None
-    anchor_item_id: int | None = None
-    count: int = Field(default=4, ge=1, le=4)
 
     @field_validator("style", "colour", "colour_mood", "comfort", mode="before")
     @classmethod
@@ -108,6 +108,13 @@ class RecommendationRequest(BaseModel):
         if value is not None and value not in COMFORT_LEVELS:
             raise ValueError(f"comfort must be one of: {', '.join(COMFORT_LEVELS)}")
         return value
+
+
+class RecommendationRequest(StylePrefs):
+    """A styling request: preferences plus an optional piece to build around."""
+
+    anchor_item_id: int | None = None
+    count: int = Field(default=4, ge=1, le=4)
 
 
 class OutfitPiece(BaseModel):
@@ -153,3 +160,72 @@ class ParsedRequest(BaseModel):
     missing: list[str]         # e.g. ["occasion"]
     ambiguous: list[ItemRef]   # several pieces matched equally, e.g. two black tops
     not_found: list[str]       # pieces they named that aren't in the wardrobe, e.g. "green kurta"
+
+
+
+# ---------- Saved looks, swaps and history (Phase 5) ----------
+
+ItemIds = list[int]
+
+
+class OutfitCheck(BaseModel):
+    """An outfit to score/explain, e.g. after swapping a piece."""
+
+    prefs: StylePrefs
+    item_ids: ItemIds = Field(min_length=1, max_length=12)
+
+
+class SwapRequest(OutfitCheck):
+    replace_item_id: int
+
+
+class SwapOption(BaseModel):
+    item: ItemOut
+    role: str
+    tagged: bool      # tagged for the occasion?
+    reason: str
+
+
+class OutfitEvaluation(BaseModel):
+    pieces: list[OutfitPiece]
+    reasons: list[str]
+    cautions: list[str]
+
+
+class LookCreate(OutfitCheck):
+    name: str | None = Field(default=None, max_length=80)
+
+
+class LookUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=80)
+    item_ids: ItemIds | None = Field(default=None, min_length=1, max_length=12)
+
+
+class LookOut(OutfitEvaluation):
+    id: int
+    name: str
+    prefs: StylePrefs
+    missing_pieces: int       # pieces deleted from the wardrobe since saving
+    wear_count: int
+    last_worn_on: str | None
+    created_at: str
+
+
+class WearIn(BaseModel):
+    worn_on: date | None = None   # defaults to today
+
+    @field_validator("worn_on")
+    @classmethod
+    def not_in_future(cls, value):
+        if value is not None and value > date.today():
+            raise ValueError("worn_on can't be in the future")
+        return value
+
+
+class HistoryEntry(BaseModel):
+    id: int
+    look_id: int | None       # None if the saved look was deleted later
+    look_name: str
+    occasion: str
+    worn_on: str
+    pieces: list[OutfitPiece]  # the look's current pieces (empty if the look was deleted)

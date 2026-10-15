@@ -375,3 +375,89 @@ def _missing_slot_notes(wardrobe: list[Piece], chosen: list[Outfit], occasion: s
     if jewellery and not any(p.item["category"] == "Jewellery" for o in chosen for p in o.pieces):
         notes.append(f"None of your jewellery is tagged for {occasion}, so outfits don't include any.")
     return notes
+
+
+# ---------- checking a given outfit, and suggesting swaps (Phase 5) ----------
+
+_CORE_ROLES = (g.ONE_PIECE, g.TOP, g.BOTTOM, g.BLOUSE)
+
+
+def evaluate(items: list[dict], item_ids: list[int], req) -> dict:
+    """Score and explain an outfit made of these wardrobe items (e.g. after a swap)."""
+    by_id = {i["id"]: i for i in items}
+    pieces = [_prepare(by_id[i], req.occasion) for i in item_ids if i in by_id]
+    core = [p for p in pieces if p.item["category"] == "Clothing" and p.role in _CORE_ROLES]
+    others = [p for p in pieces if p not in core]
+
+    fit = None
+    tops = [p for p in core if p.role in (g.TOP, g.BLOUSE)]
+    bottoms = [p for p in core if p.role == g.BOTTOM]
+    clash = None
+    if len(tops) == 1 and len(bottoms) == 1:
+        fit = g.top_bottom_fit(tops[0].type_key, bottoms[0].type_key)
+        if fit is None:
+            clash = f"{tops[0].name} and {bottoms[0].name} don't usually go together"
+
+    outfit = _score_base(core, req, fit) if core else Outfit([])
+    for p in others:
+        outfit.score += _addition_points(p, outfit, req, Counter()) * 0.5
+        outfit.pieces.append(p)
+
+    cautions = list(outfit.cautions)
+    if clash:
+        cautions.insert(0, clash)
+    roles = {p.role for p in core}
+    if not core:
+        cautions.insert(0, "This look has no clothing in it")
+    elif g.ONE_PIECE not in roles and not ({g.TOP, g.BLOUSE} & roles and g.BOTTOM in roles):
+        cautions.insert(0, "This look needs a top and a bottom, or a one-piece")
+    untagged = [p.name for p in pieces if not p.tagged]
+    if untagged:
+        cautions.append(f"Not tagged for {req.occasion}: {_join(untagged)}")
+
+    return {
+        "score": round(outfit.score, 1),
+        "pieces": [{"role": p.role or "Piece", "item": p.item} for p in outfit.pieces],
+        "reasons": [r for _, r in sorted(outfit.reasons, key=lambda r: -r[0])][:4],
+        "cautions": list(dict.fromkeys(cautions)),
+    }
+
+
+def alternatives(items: list[dict], item_ids: list[int], replace_id: int, req, limit: int = 6) -> list[dict]:
+    """Other wardrobe pieces that could replace one piece of an outfit, best first."""
+    by_id = {i["id"]: i for i in items}
+    if replace_id not in item_ids or replace_id not in by_id:
+        raise RecommendationError("That piece isn't part of this outfit any more.")
+    current = [_prepare(by_id[i], req.occasion) for i in item_ids if i in by_id]
+    target = next(p for p in current if p.id == replace_id)
+    if target.role is None:
+        raise RecommendationError(f"Adaa doesn't know what kind of piece '{target.name}' is, "
+                                  "so it can't suggest swaps. Try editing its type.")
+    rest = [p for p in current if p.id != replace_id]
+    bottom = next((p for p in rest if p.role == g.BOTTOM), None)
+    top = next((p for p in rest if p.role == g.TOP), None)
+    main_colour = next((p.colour for p in rest if p.item["category"] == "Clothing"), None)
+
+    options = []
+    for item in items:
+        if item["id"] in item_ids:
+            continue
+        cand = _prepare(item, req.occasion)
+        if cand.role != target.role:
+            continue
+        # Keep the outfit wearable: a new top must still go with the bottom, and vice versa.
+        if cand.role == g.TOP and bottom and g.top_bottom_fit(cand.type_key, bottom.type_key) is None:
+            continue
+        if cand.role == g.BOTTOM and top and g.top_bottom_fit(top.type_key, cand.type_key) is None:
+            continue
+        swapped = [cand.id if i == replace_id else i for i in item_ids]
+        score = evaluate(items, swapped, req)["score"]
+        reason = f"Tagged for {req.occasion}" if cand.tagged else f"Not tagged for {req.occasion}"
+        colour_points, colour_reason = colours.harmony(cand.colour, main_colour)
+        if colour_reason and colour_points > 0:
+            reason += f" · {colour_reason}"
+        options.append({"item": item, "role": cand.role, "tagged": cand.tagged,
+                        "reason": reason, "score": score})
+
+    options.sort(key=lambda o: (not o["tagged"], -o["score"], o["item"]["id"]))
+    return options[:limit]

@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Sparkles, RefreshCw, Plus, Info } from 'lucide-react';
+import { Sparkles, RefreshCw, Plus, Info, Heart, Check } from 'lucide-react';
 import { api } from '../api.js';
 import Heading from '../components/Heading.jsx';
 import OutfitCard from '../components/OutfitCard.jsx';
 import AskBox from '../components/AskBox.jsx';
+import SwapPanel from '../components/SwapPanel.jsx';
 
 // Chips for picking one value. '' means "Any".
 function ChoiceChips({ label, value, choices, onChange, allowAny = true }) {
@@ -21,7 +22,10 @@ function ChoiceChips({ label, value, choices, onChange, allowAny = true }) {
   );
 }
 
-export default function Stylist({ anchorId, goToWardrobe }) {
+const prefsOf = ({ occasion, style, colour, colour_mood, comfort }) => ({ occasion, style, colour, colour_mood, comfort });
+const idsOf = (outfit) => outfit.pieces.map((p) => p.item.id);
+
+export default function Stylist({ anchorId, goToWardrobe, notify, onLookSaved }) {
   const [options, setOptions] = useState(null);
   const [items, setItems] = useState([]);
   const [loadError, setLoadError] = useState('');
@@ -30,6 +34,9 @@ export default function Stylist({ anchorId, goToWardrobe }) {
   });
   const [status, setStatus] = useState('idle'); // 'idle' | 'loading' | 'done' | 'error'
   const [result, setResult] = useState(null);
+  const [resultPrefs, setResultPrefs] = useState(null); // the preferences these results were made for
+  const [saved, setSaved] = useState({});               // outfit rank -> saved look id
+  const [swapping, setSwapping] = useState(null);       // { rank, piece } while the swap panel is open
   const [error, setError] = useState('');
   const [chat, setChat] = useState(null); // the last typed request and what Adaa understood
   const [asking, setAsking] = useState(false);
@@ -56,6 +63,8 @@ export default function Stylist({ anchorId, goToWardrobe }) {
         anchor_item_id: values.anchor_item_id === '' ? null : Number(values.anchor_item_id),
       });
       setResult(data);
+      setResultPrefs(prefsOf(values));
+      setSaved({});
       setStatus('done');
       // On narrow screens the results are below the form, so bring them into view.
       if (window.innerWidth < 1050) resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -102,6 +111,33 @@ export default function Stylist({ anchorId, goToWardrobe }) {
     setForm(next);
     setChat((c) => ({ ...c, parsed: { ...c.parsed, ambiguous: [] }, picked: items.find((i) => i.id === id)?.name }));
     runStyle(next);
+  };
+
+  const saveLook = async (outfit) => {
+    try {
+      const look = await api.saveLook(resultPrefs, idsOf(outfit));
+      setSaved((s) => ({ ...s, [outfit.rank]: look.id }));
+      onLookSaved?.();
+      notify(`Saved "${look.name}" to your looks.`);
+    } catch (err) {
+      notify(err.message);
+    }
+  };
+
+  // Replace one piece, then ask the engine to re-explain the outfit.
+  const swapPiece = async (option) => {
+    const { rank, piece } = swapping;
+    setSwapping(null);
+    const outfit = result.outfits.find((o) => o.rank === rank);
+    const ids = idsOf(outfit).map((id) => (id === piece.item.id ? option.item.id : id));
+    try {
+      const updated = await api.evaluateOutfit(resultPrefs, ids);
+      setResult((r) => ({ ...r, outfits: r.outfits.map((o) => (o.rank === rank ? { ...o, ...updated } : o)) }));
+      setSaved((s) => ({ ...s, [rank]: undefined }));
+      notify(`Swapped in ${option.item.name}.`);
+    } catch (err) {
+      notify(err.message);
+    }
   };
 
   const heading = (
@@ -195,13 +231,32 @@ export default function Stylist({ anchorId, goToWardrobe }) {
                 </div>
               ) : (
                 <div className="outfits">
-                  {result.outfits.map((o) => <OutfitCard key={o.rank} outfit={o} />)}
+                  {result.outfits.map((o) => (
+                    <OutfitCard
+                      key={o.rank}
+                      outfit={o}
+                      onSwap={(piece) => setSwapping({ rank: o.rank, piece })}
+                      actions={saved[o.rank]
+                        ? <button className="secondary" disabled><Check size={14} /> Saved to your looks</button>
+                        : <button className="secondary" onClick={() => saveLook(o)}><Heart size={14} /> Save look</button>}
+                    />
+                  ))}
                 </div>
               )}
             </>
           )}
         </section>
       </div>
+
+      {swapping && (
+        <SwapPanel
+          prefs={resultPrefs}
+          itemIds={idsOf(result.outfits.find((o) => o.rank === swapping.rank))}
+          piece={swapping.piece}
+          onPick={swapPiece}
+          onClose={() => setSwapping(null)}
+        />
+      )}
     </>
   );
 }

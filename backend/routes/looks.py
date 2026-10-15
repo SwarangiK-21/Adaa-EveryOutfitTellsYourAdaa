@@ -1,0 +1,145 @@
+"""API routes for swapping pieces, saved looks and outfit history."""
+import sqlite3
+from datetime import date
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException
+
+import database
+import looks_db
+from recommender.engine import RecommendationError, alternatives, evaluate
+from schemas import (
+    HistoryEntry, LookCreate, LookOut, LookUpdate, OutfitCheck, OutfitEvaluation,
+    StylePrefs, SwapOption, SwapRequest, WearIn, item_out,
+)
+
+router = APIRouter(prefix="/api", tags=["looks"])
+Db = Annotated[sqlite3.Connection, Depends(database.get_db)]
+
+
+def _with_items(evaluation: dict) -> dict:
+    for piece in evaluation["pieces"]:
+        piece["item"] = item_out(piece["item"])
+    return evaluation
+
+
+def _check_items(db, item_ids: list[int]) -> list[dict]:
+    """All wardrobe items, after making sure every requested id really exists."""
+    items = database.list_items(db)
+    known = {i["id"] for i in items}
+    missing = [i for i in item_ids if i not in known]
+    if missing:
+        raise HTTPException(status_code=400, detail="Some of those pieces are no longer in your wardrobe.")
+    if len(set(item_ids)) != len(item_ids):
+        raise HTTPException(status_code=400, detail="A look can't contain the same piece twice.")
+    return items
+
+
+def _look_out(db, look: dict, items: list[dict] | None = None) -> dict:
+    items = items if items is not None else database.list_items(db)
+    prefs = StylePrefs(**look["prefs"])
+    return {**look, **_with_items(evaluate(items, look["item_ids"], prefs))}
+
+
+def _get_look_or_404(db, look_id: int) -> dict:
+    look = looks_db.get_look(db, look_id)
+    if look is None:
+        raise HTTPException(status_code=404, detail="Saved look not found.")
+    return look
+
+
+# ---------- swaps ----------
+
+@router.post("/outfits/evaluate", response_model=OutfitEvaluation)
+def evaluate_outfit(body: OutfitCheck, db: Db):
+    """Reasons and cautions for an outfit, e.g. after swapping a piece."""
+    items = _check_items(db, body.item_ids)
+    return _with_items(evaluate(items, body.item_ids, body.prefs))
+
+
+@router.post("/outfits/alternatives", response_model=list[SwapOption])
+def swap_options(body: SwapRequest, db: Db):
+    """Other pieces from the wardrobe that could replace one piece, best first."""
+    items = _check_items(db, body.item_ids)
+    try:
+        options = alternatives(items, body.item_ids, body.replace_item_id, body.prefs)
+    except RecommendationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from None
+    for o in options:
+        o["item"] = item_out(o["item"])
+    return options
+
+
+# ---------- saved looks ----------
+
+@router.get("/looks", response_model=list[LookOut])
+def list_looks(db: Db):
+    items = database.list_items(db)
+    return [_look_out(db, look, items) for look in looks_db.list_looks(db)]
+
+
+@router.post("/looks", response_model=LookOut, status_code=201)
+def save_look(body: LookCreate, db: Db):
+    items = _check_items(db, body.item_ids)
+    prefs = body.prefs.model_dump()
+    if looks_db.find_same_look(db, body.item_ids, prefs["occasion"]):
+        raise HTTPException(status_code=409, detail="You've already saved this look.")
+    by_id = {i["id"]: i for i in items}
+    name = (body.name or "").strip() or " + ".join(
+        by_id[i]["name"] for i in body.item_ids if by_id[i]["category"] == "Clothing"
+    ) or "My look"
+    # Two looks with the same name are confusing: number the new one ("Crop top + Skirt 2").
+    taken = {l["name"].lower() for l in looks_db.list_looks(db)}
+    base, n = name[:76], 2
+    while name.lower() in taken:
+        name, n = f"{base} {n}", n + 1
+    look = looks_db.create_look(db, name[:80], prefs, body.item_ids)
+    return _look_out(db, look, items)
+
+
+@router.put("/looks/{look_id}", response_model=LookOut)
+def update_look(look_id: int, body: LookUpdate, db: Db):
+    """Rename a look and/or change its pieces (e.g. after a swap)."""
+    _get_look_or_404(db, look_id)
+    if body.item_ids is not None:
+        _check_items(db, body.item_ids)
+    name = body.name.strip() if body.name else None
+    return _look_out(db, looks_db.update_look(db, look_id, name, body.item_ids))
+
+
+@router.delete("/looks/{look_id}", status_code=204)
+def delete_look(look_id: int, db: Db):
+    _get_look_or_404(db, look_id)
+    looks_db.delete_look(db, look_id)
+
+
+# ---------- outfit history ----------
+
+@router.post("/looks/{look_id}/wear", response_model=HistoryEntry, status_code=201)
+def wear_look(look_id: int, db: Db, body: WearIn | None = None):
+    """Record that a saved look was worn (today, unless a date is given)."""
+    look = _get_look_or_404(db, look_id)
+    if not look["item_ids"]:
+        raise HTTPException(status_code=400, detail="This look has no pieces left to wear.")
+    worn_on = (body.worn_on if body else None) or date.today()
+    entry = looks_db.log_wear(db, look, worn_on)
+    return _history_out(db, entry, database.list_items(db))
+
+
+def _history_out(db, entry: dict, items: list[dict]) -> dict:
+    look = looks_db.get_look(db, entry["look_id"]) if entry["look_id"] else None
+    pieces = _look_out(db, look, items)["pieces"] if look else []
+    return {**entry, "pieces": pieces}
+
+
+@router.get("/history", response_model=list[HistoryEntry])
+def outfit_history(db: Db):
+    items = database.list_items(db)
+    return [_history_out(db, entry, items) for entry in looks_db.list_history(db)]
+
+
+@router.delete("/history/{wear_id}", status_code=204)
+def delete_history_entry(wear_id: int, db: Db):
+    if looks_db.get_wear(db, wear_id) is None:
+        raise HTTPException(status_code=404, detail="History entry not found.")
+    looks_db.delete_wear(db, wear_id)

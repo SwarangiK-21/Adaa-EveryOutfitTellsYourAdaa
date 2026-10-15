@@ -118,6 +118,25 @@ Type a request in the box at the top of **AI Stylist**, e.g. *"Style my black cr
 
 How it works: `backend/recommender/parser.py` (`POST /api/stylist/parse`) is rule-based and runs locally, with no AI service and no internet. It recognises occasion words (wedding, sangeet, diwali, interview, college...), styles, comfort and colour words, and matches "my ..." against **your** wardrobe items (with small typo tolerance). If you mention a piece you don't own, it says so instead of pretending; if two pieces match equally, it asks which one.
 
+## Saved looks, swaps and history (Phase 5)
+
+- **Save look** on any outfit stores it in the database (`looks`, `look_items` tables). Duplicate looks are refused; duplicate names are numbered.
+- **Swap** (⇄ on any piece) lists other pieces from your wardrobe that keep the outfit wearable (a new top must still go with the bottom), tagged-for-the-occasion pieces first. The outfit's reasons are recalculated after a swap. Works on stylist results and on saved looks.
+- **Wore it today** on a saved look adds it to **Outfit history** (`wear_log` table). History keeps the look's name even if the saved look is deleted later.
+- **Data integrity:** deleting a wardrobe item removes it from saved looks, and the look shows "1 piece was deleted from your wardrobe". Foreign keys are enforced, so a look can never point at a missing item.
+
+| Method | URL | What it does |
+|---|---|---|
+| POST | `/api/outfits/evaluate` | Reasons/cautions for a set of pieces |
+| POST | `/api/outfits/alternatives` | Swap options for one piece |
+| GET / POST | `/api/looks` | List / save looks |
+| PUT / DELETE | `/api/looks/{id}` | Rename or change pieces / delete |
+| POST | `/api/looks/{id}/wear` | Record that you wore it (today by default) |
+| GET | `/api/history` | Outfit history, newest first |
+| DELETE | `/api/history/{id}` | Remove a history entry |
+
+Existing databases are upgraded automatically on startup (new tables are added; wardrobe data is untouched).
+
 ## Phase 1 scope
 
 Responsive UI navigation, demo wardrobe cards with search, a demo stylist chat, session-only preferences, and a FastAPI health endpoint.
@@ -127,7 +146,6 @@ Responsive UI navigation, demo wardrobe cards with search, a demo stylist chat, 
 Add pieces with a photo and details, browse them as a photo grid, search, filter by category, edit and delete. The page talks to the backend through Vite's `/api` proxy (see `frontend/vite.config.js`), so **both servers must be running**.
 
 ## Not implemented yet
-- Rule-based outfit recommendations from your real wardrobe (Phase 3)
-- Stylist chat connected to the engine (Phase 4)
-- Saved looks, swaps and outfit history (Phase 5)
+- Phase 6: end-to-end testing pass, documentation and a mentor-demo workflow
+- Later ideas: makeup suggestions, body-type-aware styling, optional local language model
 - Out of scope for now: accounts, cloud hosting, virtual try-on

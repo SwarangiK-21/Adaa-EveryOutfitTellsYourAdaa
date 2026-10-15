@@ -36,6 +36,9 @@ function toFormData(fields, photo) {
   return data;
 }
 
+const postJson = (path, body, method = 'POST') =>
+  request(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
 export const api = {
   getOptions: () => request('/api/options'),
 
@@ -70,4 +73,19 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(preferences),
     }),
+
+  // ---- Phase 5: swaps, saved looks, history ----
+  // prefs: { occasion, style, colour, colour_mood, comfort }
+  swapOptions: (prefs, itemIds, replaceId) =>
+    postJson('/api/outfits/alternatives', { prefs, item_ids: itemIds, replace_item_id: replaceId }),
+  evaluateOutfit: (prefs, itemIds) => postJson('/api/outfits/evaluate', { prefs, item_ids: itemIds }),
+
+  getLooks: () => request('/api/looks'),
+  saveLook: (prefs, itemIds, name) => postJson('/api/looks', { prefs, item_ids: itemIds, name }),
+  updateLook: (id, changes) => postJson(`/api/looks/${id}`, changes, 'PUT'),
+  deleteLook: (id) => request(`/api/looks/${id}`, { method: 'DELETE' }),
+  wearLook: (id) => postJson(`/api/looks/${id}/wear`, {}),
+
+  getHistory: () => request('/api/history'),
+  deleteHistoryEntry: (id) => request(`/api/history/${id}`, { method: 'DELETE' }),
 };
