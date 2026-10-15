@@ -112,6 +112,12 @@ Only `occasion` is required. The engine (`backend/recommender/`) is rule-based a
 
 On **AI Stylist**, pick an occasion (plus optional style, colour, colour mood, comfort, or a piece to build around) and press **Style me**. Each look shows your real photos, why it works, and any cautions. On **My Wardrobe**, the ✦ button on a piece opens the stylist with that piece pre-selected.
 
+### Ask in your own words (Phase 4)
+
+Type a request in the box at the top of **AI Stylist**, e.g. *"Style my black crop top for a party"*, *"something comfy for college"* or *"what should I wear to my cousin's sangeet?"*. Adaa shows what it understood, fills in the form and styles you. Follow-ups like *"make it more comfortable"* keep the occasion and change only what you mention.
+
+How it works: `backend/recommender/parser.py` (`POST /api/stylist/parse`) is rule-based and runs locally, with no AI service and no internet. It recognises occasion words (wedding, sangeet, diwali, interview, college...), styles, comfort and colour words, and matches "my ..." against **your** wardrobe items (with small typo tolerance). If you mention a piece you don't own, it says so instead of pretending; if two pieces match equally, it asks which one.
+
 ## Phase 1 scope
 
 Responsive UI navigation, demo wardrobe cards with search, a demo stylist chat, session-only preferences, and a FastAPI health endpoint.

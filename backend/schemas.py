@@ -127,3 +127,29 @@ class RecommendationResponse(BaseModel):
     outfits: list[OutfitOut]
     notes: list[str]   # limitations, e.g. "You haven't added any bags yet."
     relaxed: bool      # True if occasion tags had to be ignored to find any outfit
+
+
+# ---------- Typed requests ("Style my black crop top for a party") ----------
+
+class StylistMessage(BaseModel):
+    text: str = Field(min_length=1, max_length=300)
+
+
+class ItemRef(BaseModel):
+    id: int
+    name: str
+
+
+class ParsedRequest(BaseModel):
+    """Filters read from a typed request, plus what was understood or is missing."""
+
+    occasion: str | None
+    style: str | None
+    colour: str | None
+    colour_mood: str | None
+    comfort: str | None
+    anchor_item_id: int | None
+    understood: list[str]      # e.g. ["Occasion: Party", "Building around your crop top"]
+    missing: list[str]         # e.g. ["occasion"]
+    ambiguous: list[ItemRef]   # several pieces matched equally, e.g. two black tops
+    not_found: list[str]       # pieces they named that aren't in the wardrobe, e.g. "green kurta"

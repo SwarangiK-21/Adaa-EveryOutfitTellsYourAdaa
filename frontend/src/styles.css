@@ -78,3 +78,17 @@
 .cautions li svg{flex:none;margin-top:2px}
 @media(max-width:1050px){.stylist-layout{grid-template-columns:1fr}.style-form{position:static}}
 @media(max-width:540px){.outfits{grid-template-columns:1fr}}
+
+/* ---- Phase 4: ask in your own words ---- */
+.ask{background:#fffdfa;border:1px solid var(--line);border-radius:13px;padding:14px;margin-bottom:18px;display:grid;gap:12px}
+.ask .compose{margin:0}
+.ask .compose input{font-size:12px}
+.ask .compose button:disabled{opacity:.55}
+.ask-thread{display:grid;gap:4px}
+.ask-thread .user-bubble{margin:0 0 6px auto}
+.ask-thread .bubble{max-width:none;margin:0}
+.ask-thread .bubble p{margin:6px 0}
+.tag{display:inline-block;background:#f0e7de;color:#6f5140;border-radius:20px;padding:3px 9px;margin:2px 4px 2px 0;font-size:10px;font-weight:700}
+.bubble .warn{background:#f8eedd;border-radius:8px;padding:8px 10px;color:#7d5a3c}
+.which{display:flex;flex-wrap:wrap;align-items:center;gap:7px}
+.which p{width:100%;margin:4px 0 0}

@@ -30,7 +30,7 @@ export default function App(){
     {page==='AI Stylist'&&<Stylist key={anchorId??'none'} anchorId={anchorId} goToWardrobe={()=>change('My Wardrobe')}/>}
     {page==='Saved Looks'&&<><Heading eyebrow="YOUR PERSONAL LOOKBOOK" title={<>Looks to <em>love again.</em></>} sub="Keep the combinations you love close at hand."/><div className="empty"><div>♡</div><h3>{saved.length?'Your saved looks':'Your lookbook starts here'}</h3><p>{saved.length?'Your saved outfit ideas will appear here.':'When recommendations are connected, you can save favourite combinations here.'}</p><button className="primary" onClick={()=>change('AI Stylist')}>Explore styling <Sparkles size={15}/></button></div></>}
     {page==='Preferences'&&<><Heading eyebrow="MADE TO FEEL LIKE YOU" title={<>Your style, <em>your choices.</em></>} sub="These optional preferences help personalise future recommendations."/><Preferences notify={notify}/></>}
-   </div><footer><span>Made for your wardrobe, not your shopping cart.</span><span>PHASE 2 · LOCAL PROTOTYPE</span></footer>
+   </div><footer><span>Made for your wardrobe, not your shopping cart.</span><span>PHASE 4 · LOCAL PROTOTYPE</span></footer>
   </main>{toast&&<div className="toast"><Check size={16}/>{toast}</div>}
  </div>
 }

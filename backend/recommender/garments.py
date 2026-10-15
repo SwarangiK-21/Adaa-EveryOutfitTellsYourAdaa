@@ -117,3 +117,13 @@ def top_bottom_fit(top: str, bottom: str) -> tuple[float, str] | None:
     if ethnic_top:
         return 0.25, f"An easy Indo-Western mix: {top} with {bottom}"
     return 0.5, f"A {top} and {bottom} make a neat pair"
+
+
+# Every single word we recognise as a kind of piece ("kurta", "jhumkas", "heels"...).
+KNOWN_TYPE_WORDS = {
+    word
+    for key in [*_CLOTHING, *_JEWELLERY, *_FOOTWEAR_TYPES, *DRESSY_BAGS, *EVERYDAY_BAGS,
+                "watch", "belt", "scarf", "sunglasses", "bag", "jewellery"]
+    for word in key.split()
+    if word not in {"top", "set", "co", "ord", "piece", "one", "t", "tank", "block", "sling", "shoulder"}
+} | {"top", "bag"}

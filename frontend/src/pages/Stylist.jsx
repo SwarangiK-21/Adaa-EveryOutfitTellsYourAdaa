@@ -3,6 +3,7 @@ import { Sparkles, RefreshCw, Plus, Info } from 'lucide-react';
 import { api } from '../api.js';
 import Heading from '../components/Heading.jsx';
 import OutfitCard from '../components/OutfitCard.jsx';
+import AskBox from '../components/AskBox.jsx';
 
 // Chips for picking one value. '' means "Any".
 function ChoiceChips({ label, value, choices, onChange, allowAny = true }) {
@@ -30,6 +31,8 @@ export default function Stylist({ anchorId, goToWardrobe }) {
   const [status, setStatus] = useState('idle'); // 'idle' | 'loading' | 'done' | 'error'
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  const [chat, setChat] = useState(null); // the last typed request and what Adaa understood
+  const [asking, setAsking] = useState(false);
   const resultsRef = useRef(null);
 
   const loadWardrobe = () => {
@@ -43,15 +46,14 @@ export default function Stylist({ anchorId, goToWardrobe }) {
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
   const anchor = items.find((i) => i.id === Number(form.anchor_item_id));
 
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!form.occasion) return;
+  const runStyle = async (values) => {
+    if (!values.occasion) return;
     setStatus('loading');
     setError('');
     try {
       const data = await api.recommend({
-        ...form,
-        anchor_item_id: form.anchor_item_id === '' ? null : Number(form.anchor_item_id),
+        ...values,
+        anchor_item_id: values.anchor_item_id === '' ? null : Number(values.anchor_item_id),
       });
       setResult(data);
       setStatus('done');
@@ -63,11 +65,50 @@ export default function Stylist({ anchorId, goToWardrobe }) {
     }
   };
 
+  const submit = (e) => {
+    e.preventDefault();
+    runStyle(form);
+  };
+
+  // A typed request: read it into the form, then style straight away if we know the occasion.
+  const ask = async (text) => {
+    setAsking(true);
+    try {
+      const parsed = await api.parseRequest(text);
+      const fromText = {
+        occasion: parsed.occasion ?? '', style: parsed.style ?? '', colour: parsed.colour ?? '',
+        colour_mood: parsed.colour_mood ?? '', comfort: parsed.comfort ?? '',
+        anchor_item_id: parsed.anchor_item_id != null ? String(parsed.anchor_item_id) : '',
+      };
+      // No occasion in the message but one already chosen? Treat it as a follow-up
+      // ("make it more comfortable") and only change what the message mentions.
+      const refining = !parsed.occasion && Boolean(form.occasion);
+      const next = refining
+        ? { ...form, ...Object.fromEntries(Object.entries(fromText).filter(([, v]) => v !== '')) }
+        : fromText;
+      setForm(next);
+      setChat({ text, parsed, refining, keptOccasion: refining ? form.occasion : '' });
+      if (next.occasion) runStyle(next);
+      else setStatus('idle');
+    } catch (err) {
+      setChat({ text, error: err.message });
+    } finally {
+      setAsking(false);
+    }
+  };
+
+  const pickAmbiguous = (id) => {
+    const next = { ...form, anchor_item_id: String(id) };
+    setForm(next);
+    setChat((c) => ({ ...c, parsed: { ...c.parsed, ambiguous: [] }, picked: items.find((i) => i.id === id)?.name }));
+    runStyle(next);
+  };
+
   const heading = (
     <Heading
       eyebrow="YOUR PERSONAL STYLE COMPANION"
       title={<>Let's find your <em>kind of lovely.</em></>}
-      sub="Pick an occasion and Adaa will put together looks using only pieces from your wardrobe."
+      sub="Tell Adaa what you need, or pick the details yourself. Every look uses only pieces from your wardrobe."
     />
   );
 
@@ -87,6 +128,7 @@ export default function Stylist({ anchorId, goToWardrobe }) {
   return (
     <>
       {heading}
+      <AskBox items={items} chat={chat} asking={asking} onAsk={ask} onPick={pickAmbiguous} />
       <div className="stylist-layout">
         <form className="style-form" onSubmit={submit}>
           <ChoiceChips label="Where are you going?" value={form.occasion} choices={options.occasions} allowAny={false} onChange={(v) => set('occasion', v)} />

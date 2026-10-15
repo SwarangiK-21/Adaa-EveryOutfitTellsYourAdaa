@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Adaa API",
     description="Local-first backend for Adaa, the personal wardrobe stylist.",
-    version="0.3.0",
+    version="0.4.0",
     lifespan=lifespan,
 )
 app.add_middleware(
@@ -39,7 +39,7 @@ def health_check():
     return {
         "status": "ok",
         "project": "Adaa",
-        "phase": 3,
+        "phase": 4,
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
     }
 

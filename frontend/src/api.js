@@ -55,6 +55,14 @@ export const api = {
 
   deleteItem: (id) => request(`/api/items/${id}`, { method: 'DELETE' }),
 
+  // Read a typed request ("Style my black crop top for a party") into filters.
+  parseRequest: (text) =>
+    request('/api/stylist/parse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    }),
+
   // preferences: { occasion, style, colour, colour_mood, comfort, anchor_item_id }
   recommend: (preferences) =>
     request('/api/recommendations', {

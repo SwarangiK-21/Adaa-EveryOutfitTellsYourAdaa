@@ -60,8 +60,12 @@ _DARK_NEUTRALS = {"black", "charcoal", "navy", "brown"}
 _SOFT_NEUTRALS = {"white", "off white", "ivory", "cream", "beige", "nude"}
 
 
-def parse(text: str) -> Colour | None:
-    """Turn free text like 'Sage green' into a Colour, or None if unknown."""
+def parse(text: str, fuzzy: bool = True) -> Colour | None:
+    """Turn free text like 'Sage green' into a Colour, or None if unknown.
+
+    fuzzy=True also accepts near-misses ("daimond"); turn it off for
+    sentences, where ordinary words like "tank" could look like "tan".
+    """
     words = re.sub(r"[^a-z ]", " ", (text or "").lower()).split()
     if not words:
         return None
@@ -79,7 +83,7 @@ def parse(text: str) -> Colour | None:
         return _make(min(found)[2])
 
     # Typo tolerance: "daimond" -> "diamond", "blak" -> "black".
-    for word in words:
+    for word in words if fuzzy else []:
         close = difflib.get_close_matches(word, list(_COLOURS) + list(_ALIASES), n=1, cutoff=0.8)
         if close:
             return _make(_ALIASES.get(close[0], close[0]))

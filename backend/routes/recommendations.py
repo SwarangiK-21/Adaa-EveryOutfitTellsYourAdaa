@@ -6,7 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException
 
 import database
 from recommender.engine import RecommendationError, recommend
-from schemas import RecommendationRequest, RecommendationResponse, item_out
+from recommender.parser import parse_request
+from schemas import (
+    ParsedRequest, RecommendationRequest, RecommendationResponse, StylistMessage, item_out,
+)
 
 router = APIRouter(prefix="/api", tags=["stylist"])
 
@@ -27,3 +30,12 @@ def get_recommendations(
         for piece in outfit["pieces"]:
             piece["item"] = item_out(piece["item"])
     return result
+
+
+@router.post("/stylist/parse", response_model=ParsedRequest)
+def parse_stylist_message(
+    message: StylistMessage,
+    db: Annotated[sqlite3.Connection, Depends(database.get_db)],
+):
+    """Read a typed request like 'Style my black crop top for a party' into filters."""
+    return parse_request(message.text, database.list_items(db))
