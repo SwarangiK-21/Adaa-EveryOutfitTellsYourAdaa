@@ -65,13 +65,38 @@ Open the URL Vite prints, usually http://localhost:5173.
 
 Stop either server with `Ctrl + C`.
 
+## Wardrobe API (Phase 2, backend)
+
+Your data is stored in `backend/data/`: `adaa.db` (SQLite) and `uploads/` (photos). Git ignores this folder.
+
+| Method | URL | What it does |
+|---|---|---|
+| GET | `/api/options` | Allowed categories, styles, occasions, type suggestions |
+| GET | `/api/items?search=&category=` | List or search items |
+| GET | `/api/items/{id}` | One item |
+| GET | `/api/items/{id}/photo` | The item's photo |
+| POST | `/api/items` | Add an item (form fields + `photo`) |
+| PUT | `/api/items/{id}` | Edit an item (photo optional) |
+| DELETE | `/api/items/{id}` | Delete the item and its photo |
+
+Photos: JPEG, PNG or WebP, up to 5 MB. The real file type is checked, not just the name.
+
+### Run the backend tests
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements-dev.txt
+python -m pytest
+```
+
 ## Phase 1 scope
 
-Responsive UI navigation, demo wardrobe cards with search, a demo stylist chat, session-only preferences, and a FastAPI health endpoint. The frontend does not call the backend yet.
+Responsive UI navigation, demo wardrobe cards with search, a demo stylist chat, session-only preferences, and a FastAPI health endpoint.
 
 ## Not implemented yet
 
-- Photo uploads, item management, SQLite persistence (Phase 2)
+- Wardrobe page connected to the API (Phase 2, frontend)
 - Rule-based outfit recommendations from your real wardrobe (Phase 3)
 - Stylist chat connected to the engine (Phase 4)
 - Saved looks, swaps and outfit history (Phase 5)
