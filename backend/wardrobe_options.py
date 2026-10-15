@@ -37,3 +37,7 @@ ITEM_TYPE_SUGGESTIONS = {
     "Bags": ["Clutch", "Potli", "Handbag", "Tote", "Sling bag", "Backpack"],
     "Accessories": ["Watch", "Belt", "Scarf", "Sunglasses", "Hair accessory"],
 }
+
+# Styling preferences (the same choices as the Preferences page).
+COLOUR_MOODS = ["Neutrals & earth tones", "Bright & playful", "Pastels", "Dark & dramatic"]
+COMFORT_LEVELS = ["Comfort first", "A polished look", "A balance of both"]

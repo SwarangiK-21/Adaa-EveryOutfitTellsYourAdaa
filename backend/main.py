@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import database
 import storage
-from routes import items
+from routes import items, recommendations
 
 
 @asynccontextmanager
@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Adaa API",
     description="Local-first backend for Adaa, the personal wardrobe stylist.",
-    version="0.2.0",
+    version="0.3.0",
     lifespan=lifespan,
 )
 app.add_middleware(
@@ -31,6 +31,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(items.router)
+app.include_router(recommendations.router)
 
 
 @app.get("/api/health")
@@ -38,7 +39,7 @@ def health_check():
     return {
         "status": "ok",
         "project": "Adaa",
-        "phase": 2,
+        "phase": 3,
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
     }
 

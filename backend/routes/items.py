@@ -8,18 +8,14 @@ from pydantic import ValidationError
 
 import database
 import storage
-from schemas import ItemFields, ItemOut
-from wardrobe_options import CATEGORIES, ITEM_TYPE_SUGGESTIONS, OCCASIONS, STYLES
+from schemas import ItemFields, ItemOut, item_out
+from wardrobe_options import (
+    CATEGORIES, COLOUR_MOODS, COMFORT_LEVELS, ITEM_TYPE_SUGGESTIONS, OCCASIONS, STYLES,
+)
 
 router = APIRouter(prefix="/api", tags=["wardrobe"])
 
 Db = Annotated[sqlite3.Connection, Depends(database.get_db)]
-
-
-def _to_out(item: dict) -> ItemOut:
-    # ?v= changes when the photo changes, so the browser never shows an old cached photo.
-    version = item["image_filename"][:8]
-    return ItemOut(**item, image_url=f"/api/items/{item['id']}/photo?v={version}")
 
 
 def _parse_fields(**values) -> ItemFields:
@@ -48,17 +44,19 @@ def get_options():
         "styles": STYLES,
         "occasions": OCCASIONS,
         "item_type_suggestions": ITEM_TYPE_SUGGESTIONS,
+        "colour_moods": COLOUR_MOODS,
+        "comfort_levels": COMFORT_LEVELS,
     }
 
 
 @router.get("/items", response_model=list[ItemOut])
 def list_items(db: Db, search: str = "", category: str | None = None):
-    return [_to_out(item) for item in database.list_items(db, search, category)]
+    return [item_out(item) for item in database.list_items(db, search, category)]
 
 
 @router.get("/items/{item_id}", response_model=ItemOut)
 def get_item(item_id: int, db: Db):
-    return _to_out(_get_or_404(db, item_id))
+    return item_out(_get_or_404(db, item_id))
 
 
 @router.get("/items/{item_id}/photo")
@@ -96,7 +94,7 @@ def create_item(
     except Exception:
         storage.delete_image(filename)  # don't leave an orphan photo behind
         raise
-    return _to_out(item)
+    return item_out(item)
 
 
 @router.put("/items/{item_id}", response_model=ItemOut)
@@ -135,7 +133,7 @@ def update_item(
         raise
     if new_photo:
         storage.delete_image(existing["image_filename"])
-    return _to_out(item)
+    return item_out(item)
 
 
 @router.delete("/items/{item_id}", status_code=204)

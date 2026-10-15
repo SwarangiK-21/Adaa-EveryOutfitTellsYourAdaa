@@ -78,6 +78,7 @@ Your data is stored in `backend/data/`: `adaa.db` (SQLite) and `uploads/` (photo
 | POST | `/api/items` | Add an item (form fields + `photo`) |
 | PUT | `/api/items/{id}` | Edit an item (photo optional) |
 | DELETE | `/api/items/{id}` | Delete the item and its photo |
+| POST | `/api/recommendations` | Suggest up to 4 outfits (Phase 3, see below) |
 
 Photos: JPEG, PNG or WebP, up to 5 MB. The real file type is checked, not just the name.
 
@@ -89,6 +90,23 @@ cd backend
 python -m pip install -r requirements-dev.txt
 python -m pytest
 ```
+
+## Outfit recommendations (Phase 3, backend)
+
+`POST /api/recommendations` with JSON, for example:
+
+```json
+{ "occasion": "Festive", "style": "Traditional", "colour": "green",
+  "colour_mood": "Pastels", "comfort": "Comfort first", "anchor_item_id": 3 }
+```
+
+Only `occasion` is required. The engine (`backend/recommender/`) is rule-based and uses **only items in your wardrobe**:
+
+1. Classifies each item by its type (top, bottom, saree, earrings, footwear...).
+2. Builds outfit bases: one-pieces, or tops + bottoms that suit each other (kurta + salwar, top + jeans...).
+3. Scores them on occasion tags, style, colour harmony and your preferences.
+4. Adds footwear, jewellery, a bag and an accessory that are **tagged for the occasion** and match.
+5. Returns up to 4 distinct outfits with reasons, plus notes on anything missing.
 
 ## Phase 1 scope
 
