@@ -24,7 +24,9 @@ CREATE TABLE IF NOT EXISTS wardrobe_items (
 
 
 def connect() -> sqlite3.Connection:
-    conn = sqlite3.connect(config.DB_PATH)
+    # FastAPI may open the connection on one worker thread and use it on another.
+    # Each request gets its own connection and uses it one step at a time, so this is safe.
+    conn = sqlite3.connect(config.DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
 

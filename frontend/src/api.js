@@ -54,4 +54,12 @@ export const api = {
     request(`/api/items/${id}`, { method: 'PUT', body: toFormData(fields, photo) }),
 
   deleteItem: (id) => request(`/api/items/${id}`, { method: 'DELETE' }),
+
+  // preferences: { occasion, style, colour, colour_mood, comfort, anchor_item_id }
+  recommend: (preferences) =>
+    request('/api/recommendations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(preferences),
+    }),
 };

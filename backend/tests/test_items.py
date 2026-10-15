@@ -110,3 +110,13 @@ def test_options_endpoint(client):
     assert "Jewellery" in options["categories"]
     assert "Indo-Western" in options["styles"]
     assert "Kurta" in options["item_type_suggestions"]["Clothing"]
+
+
+def test_many_photos_at_once(client):
+    """The outfit screen loads many photos together; none of them may fail."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    item = add_item(client).json()
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        statuses = list(pool.map(lambda _: client.get(item["image_url"]).status_code, range(64)))
+    assert set(statuses) == {200}

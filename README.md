@@ -108,6 +108,10 @@ Only `occasion` is required. The engine (`backend/recommender/`) is rule-based a
 4. Adds footwear, jewellery, a bag and an accessory that are **tagged for the occasion** and match.
 5. Returns up to 4 distinct outfits with reasons, plus notes on anything missing.
 
+### Style me screen (Phase 3, frontend)
+
+On **AI Stylist**, pick an occasion (plus optional style, colour, colour mood, comfort, or a piece to build around) and press **Style me**. Each look shows your real photos, why it works, and any cautions. On **My Wardrobe**, the ✦ button on a piece opens the stylist with that piece pre-selected.
+
 ## Phase 1 scope
 
 Responsive UI navigation, demo wardrobe cards with search, a demo stylist chat, session-only preferences, and a FastAPI health endpoint.

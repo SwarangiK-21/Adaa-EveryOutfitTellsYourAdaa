@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, Pencil, Trash2, Shirt, RefreshCw } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, Shirt, RefreshCw, Sparkles } from 'lucide-react';
 import { api } from '../api.js';
 import Heading from '../components/Heading.jsx';
 import ItemForm from '../components/ItemForm.jsx';
 
-export default function Wardrobe({ notify }) {
+export default function Wardrobe({ notify, onStyle }) {
   const [options, setOptions] = useState(null);
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState('');
@@ -117,6 +117,7 @@ export default function Wardrobe({ notify }) {
                   <img src={i.image_url} alt={i.name} loading="lazy" />
                   <small>{i.item_type}</small>
                   <div className="item-actions">
+                    <button className="icon-btn" onClick={() => onStyle(i)} aria-label={`Style ${i.name}`} title="Style this piece"><Sparkles size={15} /></button>
                     <button className="icon-btn" onClick={() => setEditing(i)} aria-label={`Edit ${i.name}`} title="Edit"><Pencil size={15} /></button>
                     <button className="icon-btn danger" onClick={() => handleDelete(i)} aria-label={`Delete ${i.name}`} title="Delete"><Trash2 size={15} /></button>
                   </div>
