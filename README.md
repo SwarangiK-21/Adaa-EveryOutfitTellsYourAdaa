@@ -2,150 +2,163 @@
 
 **Your wardrobe. Your world. Your Adaa.**
 
-Adaa is a personal AI wardrobe stylist. It recommends outfits using only the clothes and accessories you have registered in your own wardrobe.
+Adaa is a personal wardrobe stylist. You photograph and register your own clothes, jewellery, footwear and bags; Adaa then suggests complete, coordinated outfits for an occasion, using **only pieces you actually own**. It supports Indian traditional, Western and Indo-Western styling.
 
-Status: **Phase 1, the local starter prototype.** The UI uses illustrative demo items. Nothing is uploaded or saved yet.
+It runs entirely on your own computer with free, open-source tools: no paid APIs, no cloud, no account.
+
+## What it does
+
+| Feature | Where |
+|---|---|
+| Add pieces with a photo and details (category, type, colour, style, occasions), then search, filter, edit and delete them | **My Wardrobe** |
+| Ask in plain words, e.g. *"Style my green kurta for a traditional family function"*, or pick occasion, style, colour, colour mood and comfort | **AI Stylist** |
+| Get up to 4 distinct outfits made from your real photos, each with reasons and honest cautions | **AI Stylist** |
+| Swap any piece for another one from your wardrobe that still works | Outfit cards |
+| Save looks, rename them, mark "Wore it today", and see your outfit history | **Saved Looks** |
+| Save your usual style, comfort and colour preferences | **Preferences** |
+
+**The core rule:** Adaa never invents a piece. If something is missing (no bag, nothing tagged for a wedding, "my green kurta" when you don't have one), it says so and shows the best real combination instead.
+
+## Project status
+
+| Phase | What | Status |
+|---|---|---|
+| 1 | Starter project runs; renamed to Adaa | Done |
+| 2 | Wardrobe: photo upload, details, search, edit, delete, SQLite storage | Done |
+| 3 | Rule-based outfit engine and **Style me** screen | Done |
+| 4 | Plain-language requests (local, rule-based) | Done |
+| 5 | Saved looks, piece swaps, outfit history | Done |
+| 6 | End-to-end testing, documentation, mentor demo | Done |
+
+61 automated backend tests pass. A full manual browser pass is recorded in [docs/TESTING.md](docs/TESTING.md).
+
+## Tech
+
+- **Frontend:** React 18 + Vite, plain CSS, Lucide icons
+- **Backend:** Python + FastAPI
+- **Database:** SQLite (one file)
+- **Photos:** stored on the local disk
+- **Recommendations and request parsing:** rule-based Python; no AI service
+
+How it fits together: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Requirements
 
 - Node.js LTS (tested with Node 24, npm 11)
 - Python 3.11 or newer (tested with Python 3.15)
 
-## Project layout
-
-```
-Adaa/
-├─ backend/            FastAPI app (Python)
-│  ├─ main.py          API entry point: /, /api/health, /docs
-│  └─ requirements.txt
-└─ frontend/           React + Vite app
-   ├─ index.html       HTML shell and page title
-   ├─ vite.config.js
-   └─ src/
-      ├─ main.jsx      React entry point
-      ├─ App.jsx       Pages: Overview, My Wardrobe, AI Stylist, Saved Looks, Preferences
-      └─ styles.css
-```
-
 ## Run on Windows (VS Code terminal, PowerShell)
 
-Open the `Adaa` folder in VS Code. Use two terminals (Terminal → New Terminal, then the split button).
+Open the `Adaa` folder in VS Code and use two terminals.
 
 ### Terminal 1: backend
 
 ```powershell
 cd backend
-python -m venv .venv
+python -m venv .venv                         # first time only
 .\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
+python -m pip install -r requirements.txt    # first time, or after requirements change
 uvicorn main:app --reload
 ```
 
-You only need `python -m venv` and `pip install` the first time. After that, just activate and run `uvicorn`.
-
-If PowerShell says *"running scripts is disabled on this system"*, run this once and then activate again:
-
-```powershell
-Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
-```
-
-Check these URLs in a browser:
-- http://127.0.0.1:8000/api/health returns `{"status":"ok","project":"Adaa",...}`
-- http://127.0.0.1:8000/docs shows the interactive API docs
+Success looks like `Application startup complete.` Check http://127.0.0.1:8000/api/health; it should show `"status":"ok"`.
 
 ### Terminal 2: frontend
 
 ```powershell
 cd frontend
-npm install
+npm install      # first time only
 npm run dev
 ```
 
-Open the URL Vite prints, usually http://localhost:5173.
+Open http://localhost:5173. **Both servers must be running.**
 
-Stop either server with `Ctrl + C`.
+Stop either one with `Ctrl + C`.
 
-## Wardrobe API (Phase 2, backend)
+### Troubleshooting
 
-Your data is stored in `backend/data/`: `adaa.db` (SQLite) and `uploads/` (photos). Git ignores this folder.
+| Problem | Fix |
+|---|---|
+| *"running scripts is disabled on this system"* | Run `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` once, then activate again |
+| App says *"Can't reach the Adaa server"* | The backend isn't running; start Terminal 1 |
+| Backend says *port 8000 is already in use* (e.g. another FastAPI project is running) | Run the backend on another port: `uvicorn main:app --reload --port 8001`, and start the frontend with `$env:ADAA_API_URL="http://127.0.0.1:8001"; npm run dev` |
+| iPhone photo refused | HEIC isn't supported; export or share the photo as JPEG |
 
-| Method | URL | What it does |
-|---|---|---|
-| GET | `/api/options` | Allowed categories, styles, occasions, type suggestions |
-| GET | `/api/items?search=&category=` | List or search items |
-| GET | `/api/items/{id}` | One item |
-| GET | `/api/items/{id}/photo` | The item's photo |
-| POST | `/api/items` | Add an item (form fields + `photo`) |
-| PUT | `/api/items/{id}` | Edit an item (photo optional) |
-| DELETE | `/api/items/{id}` | Delete the item and its photo |
-| POST | `/api/recommendations` | Suggest up to 4 outfits (Phase 3, see below) |
+## Your data
 
-Photos: JPEG, PNG or WebP, up to 5 MB. The real file type is checked, not just the name.
+Everything lives in `backend/data/`:
+- `adaa.db`: the SQLite database (wardrobe, saved looks, history)
+- `uploads/`: your photos
 
-### Run the backend tests
+Git ignores this folder, so your photos are never pushed to GitHub. To **back up**, copy the whole `backend/data` folder somewhere safe while the backend is stopped. Preferences are saved in your browser.
+
+## Tests
 
 ```powershell
 cd backend
 .\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements-dev.txt
+python -m pip install -r requirements-dev.txt   # first time only
 python -m pytest
 ```
 
-## Outfit recommendations (Phase 3, backend)
+Expected: `61 passed`. Tests use a temporary folder, so they never touch your real wardrobe.
 
-`POST /api/recommendations` with JSON, for example:
+## API
 
-```json
-{ "occasion": "Festive", "style": "Traditional", "colour": "green",
-  "colour_mood": "Pastels", "comfort": "Comfort first", "anchor_item_id": 3 }
-```
-
-Only `occasion` is required. The engine (`backend/recommender/`) is rule-based and uses **only items in your wardrobe**:
-
-1. Classifies each item by its type (top, bottom, saree, earrings, footwear...).
-2. Builds outfit bases: one-pieces, or tops + bottoms that suit each other (kurta + salwar, top + jeans...).
-3. Scores them on occasion tags, style, colour harmony and your preferences.
-4. Adds footwear, jewellery, a bag and an accessory that are **tagged for the occasion** and match.
-5. Returns up to 4 distinct outfits with reasons, plus notes on anything missing.
-
-### Style me screen (Phase 3, frontend)
-
-On **AI Stylist**, pick an occasion (plus optional style, colour, colour mood, comfort, or a piece to build around) and press **Style me**. Each look shows your real photos, why it works, and any cautions. On **My Wardrobe**, the ✦ button on a piece opens the stylist with that piece pre-selected.
-
-### Ask in your own words (Phase 4)
-
-Type a request in the box at the top of **AI Stylist**, e.g. *"Style my black crop top for a party"*, *"something comfy for college"* or *"what should I wear to my cousin's sangeet?"*. Adaa shows what it understood, fills in the form and styles you. Follow-ups like *"make it more comfortable"* keep the occasion and change only what you mention.
-
-How it works: `backend/recommender/parser.py` (`POST /api/stylist/parse`) is rule-based and runs locally, with no AI service and no internet. It recognises occasion words (wedding, sangeet, diwali, interview, college...), styles, comfort and colour words, and matches "my ..." against **your** wardrobe items (with small typo tolerance). If you mention a piece you don't own, it says so instead of pretending; if two pieces match equally, it asks which one.
-
-## Saved looks, swaps and history (Phase 5)
-
-- **Save look** on any outfit stores it in the database (`looks`, `look_items` tables). Duplicate looks are refused; duplicate names are numbered.
-- **Swap** (⇄ on any piece) lists other pieces from your wardrobe that keep the outfit wearable (a new top must still go with the bottom), tagged-for-the-occasion pieces first. The outfit's reasons are recalculated after a swap. Works on stylist results and on saved looks.
-- **Wore it today** on a saved look adds it to **Outfit history** (`wear_log` table). History keeps the look's name even if the saved look is deleted later.
-- **Data integrity:** deleting a wardrobe item removes it from saved looks, and the look shows "1 piece was deleted from your wardrobe". Foreign keys are enforced, so a look can never point at a missing item.
+Interactive docs: http://127.0.0.1:8000/docs (while the backend is running).
 
 | Method | URL | What it does |
 |---|---|---|
-| POST | `/api/outfits/evaluate` | Reasons/cautions for a set of pieces |
+| GET | `/api/health` | Server status |
+| GET | `/api/options` | Allowed categories, styles, occasions, moods, comfort levels |
+| GET / POST | `/api/items` | List or search (`?search=&category=`) / add (form fields + `photo`) |
+| GET / PUT / DELETE | `/api/items/{id}` | One item / edit (photo optional) / delete |
+| GET | `/api/items/{id}/photo` | The item's photo |
+| POST | `/api/stylist/parse` | Read a typed request into filters |
+| POST | `/api/recommendations` | Up to 4 outfits for an occasion and preferences |
+| POST | `/api/outfits/evaluate` | Reasons and cautions for a given set of pieces |
 | POST | `/api/outfits/alternatives` | Swap options for one piece |
 | GET / POST | `/api/looks` | List / save looks |
 | PUT / DELETE | `/api/looks/{id}` | Rename or change pieces / delete |
 | POST | `/api/looks/{id}/wear` | Record that you wore it (today by default) |
-| GET | `/api/history` | Outfit history, newest first |
-| DELETE | `/api/history/{id}` | Remove a history entry |
+| GET | `/api/history`, DELETE `/api/history/{id}` | Outfit history / remove an entry |
 
-Existing databases are upgraded automatically on startup (new tables are added; wardrobe data is untouched).
+## Project layout
 
-## Phase 1 scope
+```
+Adaa/
+├─ backend/
+│  ├─ main.py               App setup: CORS, routers, startup (creates tables and folders)
+│  ├─ config.py             Data folder, database path, 5 MB photo limit
+│  ├─ wardrobe_options.py   Categories, styles, occasions, moods, comfort levels
+│  ├─ schemas.py            Request/response shapes and validation (Pydantic)
+│  ├─ database.py           SQLite connection, tables, wardrobe item queries
+│  ├─ looks_db.py           Saved looks and outfit history queries
+│  ├─ storage.py            Photo checks (real file type, size) and saving/deleting
+│  ├─ routes/               API routes: items, recommendations (+ parse), looks
+│  ├─ recommender/          colours.py, garments.py, engine.py, parser.py
+│  └─ tests/                61 pytest tests
+├─ frontend/
+│  ├─ vite.config.js        Dev server; forwards /api to the backend
+│  └─ src/
+│     ├─ App.jsx            Layout, navigation, Overview, Preferences
+│     ├─ api.js             All calls to the backend
+│     ├─ preferences.js     Saved preferences (browser storage)
+│     ├─ pages/             Wardrobe, Stylist, SavedLooks
+│     ├─ components/        ItemForm, OutfitCard, SwapPanel, AskBox, Heading
+│     └─ styles.css
+└─ docs/                    ARCHITECTURE.md, TESTING.md, DEMO.md
+```
 
-Responsive UI navigation, demo wardrobe cards with search, a demo stylist chat, session-only preferences, and a FastAPI health endpoint.
+## Limitations and future ideas
 
-## My Wardrobe page (Phase 2, frontend)
+- Single user, on one computer; no accounts or cloud sync (by design for now).
+- Recommendations follow hand-written rules. They're explainable and predictable, but not "learning".
+- Requests are understood by keyword rules: clear sentences work best; unusual phrasing may only be partly understood (Adaa shows what it understood).
+- Item details are entered by hand; there's no automatic garment recognition from photos.
+- Later ideas: makeup suggestions, body-type-aware styling, an optional free local language model for richer chat, using wear history to suggest less-worn pieces.
+- Out of scope: virtual try-on, cloud hosting, accounts.
 
-Add pieces with a photo and details, browse them as a photo grid, search, filter by category, edit and delete. The page talks to the backend through Vite's `/api` proxy (see `frontend/vite.config.js`), so **both servers must be running**.
+## Mentor demo
 
-## Not implemented yet
-- Phase 6: end-to-end testing pass, documentation and a mentor-demo workflow
-- Later ideas: makeup suggestions, body-type-aware styling, optional local language model
-- Out of scope for now: accounts, cloud hosting, virtual try-on
+A step-by-step demo script with talking points: [docs/DEMO.md](docs/DEMO.md).

@@ -59,12 +59,14 @@ export default function ItemForm({ options, item, onClose, onSaved }) {
   useEffect(() => () => preview.startsWith('blob:') && URL.revokeObjectURL(preview), [preview]);
 
   const set = (key, value) => setFields((f) => ({ ...f, [key]: value }));
+  // Read the latest occasions inside the update, so quick taps never undo each other.
   const toggleOccasion = (o) =>
-    set('occasions', fields.occasions.includes(o)
-      ? fields.occasions.filter((x) => x !== o)
-      : [...fields.occasions, o]);
+    setFields((f) => ({
+      ...f,
+      occasions: f.occasions.includes(o) ? f.occasions.filter((x) => x !== o) : [...f.occasions, o],
+    }));
 
-  const choosePhoto = (e) => {
+  const choosePhoto = async (e) => {
     const file = e.target.files[0];
     e.target.value = '';
     if (!file) return;
@@ -76,9 +78,20 @@ export default function ItemForm({ options, item, onClose, onSaved }) {
       setError(`That photo is larger than ${MAX_PHOTO_MB} MB. Please choose a smaller one.`);
       return;
     }
+    // Make sure the browser can actually show it (a renamed text file can't be decoded).
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image();
+      img.src = url;
+      await img.decode();
+    } catch {
+      URL.revokeObjectURL(url);
+      setError("That file doesn't look like a real photo. Please choose another one.");
+      return;
+    }
     setError('');
     setPhoto(file);
-    setPreview(URL.createObjectURL(file));
+    setPreview(url);
   };
 
   const submit = async (e) => {

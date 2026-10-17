@@ -5,6 +5,7 @@ import Heading from '../components/Heading.jsx';
 import OutfitCard from '../components/OutfitCard.jsx';
 import AskBox from '../components/AskBox.jsx';
 import SwapPanel from '../components/SwapPanel.jsx';
+import { loadPreferences, toStylistDefaults } from '../preferences.js';
 
 // Chips for picking one value. '' means "Any".
 function ChoiceChips({ label, value, choices, onChange, allowAny = true }) {
@@ -29,8 +30,10 @@ export default function Stylist({ anchorId, goToWardrobe, notify, onLookSaved })
   const [options, setOptions] = useState(null);
   const [items, setItems] = useState([]);
   const [loadError, setLoadError] = useState('');
+  // Start from the preferences saved on the Preferences page (if any).
+  const [savedPrefs] = useState(() => toStylistDefaults(loadPreferences()));
   const [form, setForm] = useState({
-    occasion: '', style: '', colour: '', colour_mood: '', comfort: '', anchor_item_id: anchorId ?? '',
+    occasion: '', style: '', colour: '', colour_mood: '', comfort: '', ...savedPrefs, anchor_item_id: anchorId ?? '',
   });
   const [status, setStatus] = useState('idle'); // 'idle' | 'loading' | 'done' | 'error'
   const [result, setResult] = useState(null);
@@ -92,9 +95,10 @@ export default function Stylist({ anchorId, goToWardrobe, notify, onLookSaved })
       // No occasion in the message but one already chosen? Treat it as a follow-up
       // ("make it more comfortable") and only change what the message mentions.
       const refining = !parsed.occasion && Boolean(form.occasion);
+      const typed = Object.fromEntries(Object.entries(fromText).filter(([, v]) => v !== ''));
       const next = refining
-        ? { ...form, ...Object.fromEntries(Object.entries(fromText).filter(([, v]) => v !== '')) }
-        : fromText;
+        ? { ...form, ...typed }
+        : { ...fromText, ...savedPrefs, ...typed }; // what you typed beats saved preferences
       setForm(next);
       setChat({ text, parsed, refining, keptOccasion: refining ? form.occasion : '' });
       if (next.occasion) runStyle(next);
