@@ -12,7 +12,12 @@ About **10 minutes**, plus questions. Suggested words to say are in *italics*.
    - **Traditional:** add at least one **kurta**, a **churidar/salwar/palazzo**, a **dupatta**, **jhumkas**, and **juttis or kolhapuris**. Without traditional bottoms, Adaa will honestly say it can't build a full traditional look.
    - **Tag occasions carefully.** The engine relies on them (e.g. kurta → Festive, Traditional function, Wedding).
 3. **Rehearse your three requests** (below) and check the results look good with *your* pieces. Adjust occasion tags if a result surprises you.
-4. Run the tests once: `python -m pytest` → **61 passed**.
+4. Run the tests once: `python -m pytest` → **68 passed**.
+5. Optional: on one saved look, press the camera button and add a photo of yourself wearing it, to show a **Verified** preview.
+
+## 30 minutes before: try-on (optional but impressive)
+
+Start the try-on notebook on Colab and connect it (see [TRYON_SETUP.md](TRYON_SETUP.md)). Then ask for your demo outfits once, so the try-on images are **cached** and appear instantly during the demo. If Colab misbehaves, Adaa shows the drawn model, so the demo still works.
 
 ## 10 minutes before
 
@@ -49,6 +54,8 @@ Point at: the piece count and saved looks on the Overview. These are live number
 Type your first rehearsed request, e.g. **"Style my black crop top for a party"**.
 - Point at **"Here's what I understood"**: occasion, and the piece it's building around.
   *"This is a rule-based parser that runs locally. It matches 'my crop top' against my actual items."*
+- Point at the **full-body preview**.
+  *"This is an outfit board made from my own garment photos. Adaa removed the backgrounds and arranged them as if worn, so it shows exactly my pieces, with no AI guessing."*
 - Scroll through the looks. Point at the **reasons** on one card.
   *"Every look explains itself: the occasion tags, the colour harmony, the pairing."*
 - Point at any **note**, e.g. "Only 1 distinct outfit…".
@@ -69,14 +76,14 @@ Point at: kurta + bottom + dupatta + jhumkas + juttis, and *"A classic kurta and
 ### 7. Swap and save (1 min)
 On a look, press **⇄** on the footwear or earrings.
 *"The alternatives come from my wardrobe and keep the outfit wearable. Pieces not tagged for this occasion are clearly labelled."*
-Pick one: the reasons update. Then press **Save look**.
+Pick one: the preview and the reasons update. Then press **Save look**.
 
 ### 8. Lookbook and history (1 min): Saved Looks
 Press **Wore it today**, then open **Outfit history**.
 *"Saved looks and history are stored in the database. If I delete a piece from my wardrobe, the look keeps the rest and says a piece was removed, so the data never breaks."*
 
 ### 9. Under the hood (1 min)
-Show the terminal: `python -m pytest` → **61 passed**.
+Show the terminal: `python -m pytest` → **68 passed**.
 *"The engine is plain Python rules, so it's predictable and fully tested: pairing rules, honesty, parsing, saved looks and a full end-to-end journey."*
 Optionally open `docs/ARCHITECTURE.md` and show the diagram.
 
@@ -88,6 +95,8 @@ Optionally open `docs/ARCHITECTURE.md` and show the diagram.
 |---|---|
 | *Why not use ChatGPT or another AI?* | Cost, privacy and honesty. An AI model can invent clothes; this engine can only pick from real records, explains its reasons, runs free and offline, and is fully testable. A free local model could later polish the chat, but the rules would still choose the clothes. |
 | *How does it decide what goes together?* | Garment pairing rules (kurta + salwar, top + jeans…), occasion tags, style compatibility (Indo-Western bridges Traditional and Western), colour harmony (neutrals, tonal, complementary, clashes), comfort, then it picks 4 *different* looks. |
+| *How does the 'on me' picture work?* | My full-length photo plus the garment photo go to an open-source try-on model (CatVTON) running on a free GPU in my own Google Colab. It's labelled 'AI try-on · approximation' because AI can get details wrong, and shoes and jewellery aren't drawn on me. Results are cached, so swapping back is instant. |
+| *Can it show the outfit on a real body (virtual try-on)?* | Not with free tools on this laptop: open-source try-on models need an NVIDIA GPU with 8 GB or more, and free online demos would upload my photos to someone else's server. So Adaa shows an honest drawn model in my pieces' real colours, and a **verified** preview when I add my own photo of a saved look. If I later get a suitable GPU, a try-on model could plug into the same preview slot. |
 | *What if my wardrobe is small?* | It returns fewer looks and says why, e.g. "you haven't added any bags yet". |
 | *Does it recognise clothes from photos?* | Not yet: details are entered by hand. Automatic recognition was deliberately left out of the first version to keep it free and reliable. |
 | *Where is my data?* | In `backend/data` on this computer: the SQLite file plus photos. Git ignores it, so it's never pushed to GitHub. |

@@ -14,6 +14,7 @@ def _look_row(conn, row) -> dict:
         "SELECT COUNT(*) AS n, MAX(worn_on) AS last FROM wear_log WHERE look_id = ?", (look["id"],)
     ).fetchone()
     look["wear_count"], look["last_worn_on"] = wear["n"], wear["last"]
+    look["photo"] = get_photo(conn, look["id"])
     return look
 
 
@@ -65,9 +66,42 @@ def update_look(conn, look_id: int, name: str | None, item_ids: list[int] | None
     return get_look(conn, look_id)
 
 
-def delete_look(conn, look_id: int) -> None:
+def delete_look(conn, look_id: int) -> str | None:
+    """Delete a look. Returns its photo file name (if any) so the caller can remove the file."""
+    photo = get_photo(conn, look_id)
     with conn:
         conn.execute("DELETE FROM looks WHERE id = ?", (look_id,))
+    return photo["image_filename"] if photo else None
+
+
+# ---------- verified photos ----------
+
+def get_photo(conn, look_id: int) -> dict | None:
+    row = conn.execute("SELECT * FROM look_photos WHERE look_id = ?", (look_id,)).fetchone()
+    if not row:
+        return None
+    photo = dict(row)
+    photo["item_ids"] = json.loads(photo["item_ids"])
+    return photo
+
+
+def set_photo(conn, look_id: int, image_filename: str, item_ids: list[int]) -> str | None:
+    """Attach a photo to a look, replacing any earlier one. Returns the old file name, if any."""
+    old = get_photo(conn, look_id)
+    with conn:
+        conn.execute("DELETE FROM look_photos WHERE look_id = ?", (look_id,))
+        conn.execute(
+            "INSERT INTO look_photos (look_id, image_filename, item_ids, created_at) VALUES (?, ?, ?, ?)",
+            (look_id, image_filename, json.dumps(item_ids), _now()),
+        )
+    return old["image_filename"] if old else None
+
+
+def delete_photo(conn, look_id: int) -> str | None:
+    old = get_photo(conn, look_id)
+    with conn:
+        conn.execute("DELETE FROM look_photos WHERE look_id = ?", (look_id,))
+    return old["image_filename"] if old else None
 
 
 def log_wear(conn, look: dict, worn_on: date) -> dict:

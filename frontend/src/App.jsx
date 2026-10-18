@@ -1,24 +1,37 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { LayoutDashboard, Shirt, MessageCircle, Heart, SlidersHorizontal, Sparkles, ArrowUpRight, ChevronRight, Menu, X, Check } from 'lucide-react';
 import { api } from './api.js';
 import Heading from './components/Heading.jsx';
 import Wardrobe from './pages/Wardrobe.jsx';
 import Stylist from './pages/Stylist.jsx';
 import SavedLooks from './pages/SavedLooks.jsx';
+import { TryOnContext } from './tryon.js';
+import { queueMissingCutouts } from './cutoutQueue.js';
+import { WelcomeSetup, YourPhotoSettings } from './components/YourPhoto.jsx';
 import { PREFERENCE_CHOICES, DEFAULT_PREFERENCES, loadPreferences, savePreferences } from './preferences.js';
 
 const nav = [{name:'Overview',Icon:LayoutDashboard},{name:'My Wardrobe',Icon:Shirt},{name:'AI Stylist',Icon:MessageCircle},{name:'Saved Looks',Icon:Heart},{name:'Preferences',Icon:SlidersHorizontal}];
 
 export default function App(){
  const [page,setPage]=useState('Overview'),[itemCount,setItemCount]=useState(null),[anchorId,setAnchorId]=useState(null),[mobile,setMobile]=useState(false),[toast,setToast]=useState(''),[lookCount,setLookCount]=useState(0);
- const notify=(s)=>{setToast(s);window.setTimeout(()=>setToast(''),2300)};
+ // Show a message briefly. A new message restarts the timer, so it isn't cut short by an older one.
+ const toastTimer=useRef(null);
+ // Your photo + try-on server (shared with every outfit preview), and the first-run welcome step.
+ const [profile,setProfile]=useState(null),[welcome,setWelcome]=useState(false);
+ const refreshProfile=async()=>{try{const p=await api.getProfile();setProfile(p);return p}catch{return null}};
+ const welcomeSeen=()=>{try{return localStorage.getItem('adaa.welcomeDone')==='1'}catch{return true}};
+ const finishWelcome=()=>{try{localStorage.setItem('adaa.welcomeDone','1')}catch{}setWelcome(false)};
+ useEffect(()=>{refreshProfile().then(p=>{if(p&&!p.photo_url&&!welcomeSeen())setWelcome(true)})},[]); // eslint-disable-line react-hooks/exhaustive-deps
+ // Garments without a clean cut-out yet get one in the background (once each).
+ useEffect(()=>{api.listItems().then(queueMissingCutouts).catch(()=>{})},[page]);
+ const notify=(s)=>{setToast(s);window.clearTimeout(toastTimer.current);toastTimer.current=window.setTimeout(()=>setToast(''),3000)};
  // Show the real number of wardrobe pieces on the Overview page.
  useEffect(()=>{if(page!=='Overview')return;api.listItems().then(list=>setItemCount(list.length)).catch(()=>setItemCount(null))},[page]);
  // Keep the Saved Looks count (sidebar badge, Overview) in step with the database.
  useEffect(()=>{api.getLooks().then(l=>setLookCount(l.length)).catch(()=>setLookCount(null))},[page]);
  // anchor: a wardrobe item to build the outfit around (from "Style this" on a wardrobe card).
  const change=(p,anchor=null)=>{setPage(p);setAnchorId(anchor);setMobile(false)};
- return <div className="shell">
+ return <TryOnContext.Provider value={{profile,refreshProfile}}><div className="shell">
   <aside className={'sidebar '+(mobile?'open':'')}><div className="brand"><div className="brand-icon"><Sparkles/></div><div><b>Adaa</b><small>YOUR PERSONAL STYLIST</small></div><button className="close mobile" onClick={()=>setMobile(false)}><X/></button></div>
    <p className="nav-label">WORKSPACE</p>{nav.map(({name,Icon})=><button key={name} className={'nav '+(page===name?'active':'')} onClick={()=>change(name)}><Icon size={18}/>{name}{name==='Saved Looks'&&lookCount>0?<span className="count">{lookCount}</span>:null}</button>)}
    <div className="side-bottom"><div className="note"><Sparkles size={17}/><h3>A little style goes a long way.</h3><p>Build new looks from pieces you already love.</p><button onClick={()=>change('AI Stylist')}>Meet your stylist ↗</button></div><div className="profile"><span>S</span><div><b>Your wardrobe</b><small>Local prototype</small></div></div></div>
@@ -36,7 +49,8 @@ export default function App(){
     {page==='Preferences'&&<><Heading eyebrow="MADE TO FEEL LIKE YOU" title={<>Your style, <em>your choices.</em></>} sub="These optional preferences help personalise future recommendations."/><Preferences notify={notify}/></>}
    </div><footer><span>Made for your wardrobe, not your shopping cart.</span><span>ADAA 1.0 · LOCAL PROTOTYPE</span></footer>
   </main>{toast&&<div className="toast"><Check size={16}/>{toast}</div>}
- </div>
+  {welcome&&<WelcomeSetup notify={notify} onDone={finishWelcome}/>}
+ </div></TryOnContext.Provider>
 }
 function greeting(){const h=new Date().getHours();return h<12?'Good morning':h<17?'Good afternoon':'Good evening'}
 function SectionTitle({title,eyebrow,action}){return <div className="section-title"><div><small>{eyebrow}</small><h2>{title}</h2></div>{action}</div>}
@@ -45,4 +59,4 @@ function Preferences({notify}){
  const [prefs,setPrefs]=useState(()=>loadPreferences()??DEFAULT_PREFERENCES);
  const set=(k,v)=>setPrefs(p=>({...p,[k]:v}));
  const save=()=>notify(savePreferences(prefs)?'Preferences saved. Your stylist will start with these.':'Could not save preferences in this browser.');
- return <div className="prefs">{[['Personal style','style'],['What matters most?','comfort'],['Colours you gravitate toward','colour']].map(([title,key])=><section key={key}><h3>{title}</h3><div>{PREFERENCE_CHOICES[key].map(o=><button className={prefs[key]===o?'chosen':''} aria-pressed={prefs[key]===o} key={o} onClick={()=>set(key,o)}>{o}{prefs[key]===o?' ✓':''}</button>)}</div></section>)}<button className="primary" onClick={save}>Save preferences <Check size={15}/></button><p className="muted">Saved in this browser. The AI Stylist form starts with these choices, and you can still change them for any request.</p></div>}
+ return <div className="prefs"><YourPhotoSettings notify={notify}/>{[['Personal style','style'],['What matters most?','comfort'],['Colours you gravitate toward','colour']].map(([title,key])=><section key={key}><h3>{title}</h3><div>{PREFERENCE_CHOICES[key].map(o=><button className={prefs[key]===o?'chosen':''} aria-pressed={prefs[key]===o} key={o} onClick={()=>set(key,o)}>{o}{prefs[key]===o?' ✓':''}</button>)}</div></section>)}<button className="primary" onClick={save}>Save preferences <Check size={15}/></button><p className="muted">Saved in this browser. The AI Stylist form starts with these choices, and you can still change them for any request.</p></div>}

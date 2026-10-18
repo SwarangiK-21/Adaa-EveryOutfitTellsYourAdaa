@@ -48,6 +48,24 @@ CREATE TABLE IF NOT EXISTS wear_log (
     worn_on    TEXT NOT NULL,              -- date, e.g. 2026-10-15
     created_at TEXT NOT NULL
 );
+
+-- Verified previews: the user's own photo wearing a saved look (one per look).
+-- item_ids remembers the look's pieces when the photo was taken, so we can tell
+-- when the look has changed since and the photo no longer matches.
+CREATE TABLE IF NOT EXISTS look_photos (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    look_id        INTEGER NOT NULL UNIQUE REFERENCES looks(id) ON DELETE CASCADE,
+    image_filename TEXT NOT NULL,
+    item_ids       TEXT NOT NULL,          -- JSON list of item ids
+    created_at     TEXT NOT NULL
+);
+
+-- The user's own full-body photo, used for virtual try-on (one row, id = 1).
+CREATE TABLE IF NOT EXISTS user_profile (
+    id             INTEGER PRIMARY KEY CHECK (id = 1),
+    photo_filename TEXT,
+    updated_at     TEXT NOT NULL
+);
 """
 
 
@@ -65,6 +83,14 @@ def init_db() -> None:
     conn = connect()
     try:
         conn.executescript(SCHEMA)
+        # Added after the first release: older databases get the column on startup.
+        columns = {r["name"] for r in conn.execute("PRAGMA table_info(wardrobe_items)")}
+        if "cutout_filename" not in columns:
+            conn.execute("ALTER TABLE wardrobe_items ADD COLUMN cutout_filename TEXT")
+        if "cutout_version" not in columns:
+            # Which cut-out method made it ("2" = automatic v2, "2m" = framed by the user...)
+            conn.execute("ALTER TABLE wardrobe_items ADD COLUMN cutout_version TEXT")
+        conn.commit()
     finally:
         conn.close()
 
@@ -151,3 +177,34 @@ def delete_item(conn, item_id: int) -> None:
         )
         conn.execute("DELETE FROM look_items WHERE item_id = ?", (item_id,))
         conn.execute("DELETE FROM wardrobe_items WHERE id = ?", (item_id,))
+
+
+# ---------- the user's own photo (for virtual try-on) ----------
+
+def get_profile_photo(conn) -> dict | None:
+    row = conn.execute("SELECT photo_filename, updated_at FROM user_profile WHERE id = 1").fetchone()
+    return dict(row) if row and row["photo_filename"] else None
+
+
+def set_profile_photo(conn, filename: str | None) -> str | None:
+    """Store (or clear, with None) the user's photo. Returns the previous file name, if any."""
+    old = get_profile_photo(conn)
+    with conn:
+        conn.execute(
+            "INSERT INTO user_profile (id, photo_filename, updated_at) VALUES (1, ?, ?)"
+            " ON CONFLICT(id) DO UPDATE SET photo_filename = excluded.photo_filename, updated_at = excluded.updated_at",
+            (filename, _now()),
+        )
+    return old["photo_filename"] if old else None
+
+
+# ---------- garment cut-outs (the garment with its background removed) ----------
+
+def set_cutout(conn, item_id: int, filename: str | None, version: str | None = None) -> str | None:
+    """Store (or clear, with None) an item's cut-out. Returns the previous file name, if any."""
+    row = conn.execute("SELECT cutout_filename FROM wardrobe_items WHERE id = ?", (item_id,)).fetchone()
+    old = row["cutout_filename"] if row else None
+    with conn:
+        conn.execute("UPDATE wardrobe_items SET cutout_filename = ?, cutout_version = ? WHERE id = ?",
+                     (filename, version if filename else None, item_id))
+    return old

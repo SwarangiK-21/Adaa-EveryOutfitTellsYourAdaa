@@ -133,6 +133,10 @@ def update_item(
         raise
     if new_photo:
         storage.delete_image(existing["image_filename"])
+        old_cutout = database.set_cutout(db, item_id, None)  # it showed the old photo
+        if old_cutout:
+            storage.delete_image(old_cutout)
+        item = database.get_item(db, item_id)
     return item_out(item)
 
 
@@ -141,3 +145,60 @@ def delete_item(item_id: int, db: Db):
     item = _get_or_404(db, item_id)
     database.delete_item(db, item_id)
     storage.delete_image(item["image_filename"])
+    if item.get("cutout_filename"):
+        storage.delete_image(item["cutout_filename"])
+
+
+# ---------- background-removal model, used by the browser to make garment cut-outs ----------
+
+@router.get("/cutout-model")
+@router.get("/models/{name}")
+def cutout_model(name: str = "isnet"):
+    """AI models for garment cut-outs, downloaded once: 'isnet' (background) and 'clothes' (garment parser)."""
+    import cutout_model as cm
+    if name not in cm.MODELS:
+        raise HTTPException(status_code=404, detail="Unknown model.")
+    try:
+        path = cm.ensure_model(name)
+    except cm.ModelUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from None
+    return FileResponse(path, media_type="application/octet-stream",
+                        headers={"Cache-Control": "public, max-age=31536000, immutable"})
+
+
+
+# ---------- garment cut-outs (made in the browser, stored here) ----------
+
+@router.put("/items/{item_id}/cutout", response_model=ItemOut)
+def save_item_cutout(
+    item_id: int,
+    db: Db,
+    cutout: Annotated[UploadFile, File(description="PNG with a transparent background")],
+    version: Annotated[str, Form(max_length=8)] = "1",
+):
+    _get_or_404(db, item_id)
+    try:
+        filename = storage.save_cutout(cutout)
+    except storage.InvalidImage as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from None
+    old = database.set_cutout(db, item_id, filename, version)
+    if old:
+        storage.delete_image(old)
+    return item_out(database.get_item(db, item_id))
+
+
+@router.get("/items/{item_id}/cutout")
+def get_item_cutout(item_id: int, db: Db):
+    item = _get_or_404(db, item_id)
+    path = storage.image_path(item["cutout_filename"]) if item.get("cutout_filename") else None
+    if path is None:
+        raise HTTPException(status_code=404, detail="No cut-out yet.")
+    return FileResponse(path, media_type="image/png")
+
+
+@router.delete("/items/{item_id}/cutout", status_code=204)
+def delete_item_cutout(item_id: int, db: Db):
+    _get_or_404(db, item_id)
+    old = database.set_cutout(db, item_id, None)
+    if old:
+        storage.delete_image(old)

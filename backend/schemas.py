@@ -51,6 +51,8 @@ class ItemOut(ItemFields):
 
     id: int
     image_url: str
+    cutout_url: str | None = None   # the garment with its background removed (for outfit boards)
+    cutout_version: str | None = None  # which cut-out method made it (newer methods redo older ones)
     created_at: str
     updated_at: str
 
@@ -58,7 +60,13 @@ class ItemOut(ItemFields):
 def item_out(item: dict) -> ItemOut:
     """Database row -> API item, with a photo URL that changes when the photo changes."""
     version = item["image_filename"][:8]
-    return ItemOut(**item, image_url=f"/api/items/{item['id']}/photo?v={version}")
+    cutout = item.get("cutout_filename")
+    fields = {k: v for k, v in item.items() if k not in ("cutout_filename",)}
+    return ItemOut(
+        **fields,
+        image_url=f"/api/items/{item['id']}/photo?v={version}",
+        cutout_url=f"/api/items/{item['id']}/cutout?v={cutout[:8]}" if cutout else None,
+    )
 
 
 # ---------- Outfit recommendations ----------
@@ -201,6 +209,15 @@ class LookUpdate(BaseModel):
     item_ids: ItemIds | None = Field(default=None, min_length=1, max_length=12)
 
 
+class LookPhoto(BaseModel):
+    """The user's own photo wearing a saved look (a verified preview)."""
+
+    url: str
+    taken_at: str
+    matches_current: bool          # False once pieces were swapped/deleted after the photo
+    changed_pieces: list[str]      # current pieces that weren't in the photo
+
+
 class LookOut(OutfitEvaluation):
     id: int
     name: str
@@ -209,6 +226,7 @@ class LookOut(OutfitEvaluation):
     wear_count: int
     last_worn_on: str | None
     created_at: str
+    photo: LookPhoto | None = None
 
 
 class WearIn(BaseModel):
@@ -229,3 +247,49 @@ class HistoryEntry(BaseModel):
     occasion: str
     worn_on: str
     pieces: list[OutfitPiece]  # the look's current pieces (empty if the look was deleted)
+
+
+
+# ---------- Virtual try-on ----------
+
+class ProfileOut(BaseModel):
+    photo_url: str | None          # the user's own full-body photo
+    photo_updated_at: str | None
+    tryon_configured: bool         # a try-on server link + token are saved
+    tryon_url: str | None
+    tryon_quality: str = "standard"  # "standard" (30 steps, faster) or "high" (50 steps)
+    tryon_shoes: bool = False        # also try footwear on (experimental; usually rough)
+
+
+class TryOnSettings(BaseModel):
+    url: str = Field(default="", max_length=300)
+    token: str = Field(default="", max_length=200)
+    quality: str = Field(default="standard", pattern="^(high|standard)$")
+    try_shoes: bool = False
+
+    @field_validator("url")
+    @classmethod
+    def check_url(cls, value):
+        value = value.strip()
+        if value and not value.startswith(("https://", "http://")):
+            raise ValueError("The link should start with https://")
+        return value
+
+
+class TryOnStatus(BaseModel):
+    configured: bool
+    online: bool
+    message: str
+
+
+class TryOnRequest(BaseModel):
+    item_ids: ItemIds = Field(min_length=1, max_length=12)
+    cached_only: bool = False   # only return an image made earlier; never start a new one
+
+
+class TryOnOut(BaseModel):
+    url: str               # image of the user wearing the outfit
+    garments: list[str]    # pieces shown on the user
+    skipped: list[str]     # pieces the model can't put on a photo (jewellery, bags...)
+    notes: list[str] = []  # e.g. "Your black heels couldn't be added this time..."
+    cached: bool

@@ -103,7 +103,7 @@ If nothing is tagged for the occasion, it relaxes that rule, says so clearly, an
 - **Honest by construction:** it can only ever pick from your items, so it can't "hallucinate" a piece you don't own.
 - **Explainable:** every suggestion comes with the actual reasons it was chosen.
 - **Free and local:** no API keys, no internet, no costs, works on any laptop.
-- **Testable:** the same input always gives the same output, so behaviour is pinned down by 61 automated tests.
+- **Testable:** the same input always gives the same output, so behaviour is pinned down by 79 automated tests.
 
 An optional free local language model could later make the chat friendlier, but it would only *read* requests and *write* explanations. The rules would still choose the clothes.
 
@@ -115,6 +115,84 @@ An optional free local language model could later make the chat friendlier, but 
 - **Unknown pieces:** if you name a kind of piece you don't own (*"my green kurta"*), it reports it as not found.
 - **Ties:** if two pieces match equally (*"my bracelet"*), it asks which one you meant.
 - **Follow-ups:** a message without an occasion (*"make it more comfortable"*) keeps the current occasion and changes only what you mention.
+
+## Outfit previews
+
+`frontend/src/components/OutfitPreview.jsx` shows a large full-body preview at the top of every outfit card. It uses the best kind available:
+
+| Priority | Kind | Status in Adaa |
+|---|---|---|
+| 1 | **Verified:** the user's own photo wearing a saved look | Shown only while the look's pieces still match the photo (stored in `look_photos`). |
+| 2 | **Outfit board** ("Your pieces"): the user's own garment cut-outs, arranged as if worn | **The default.** Instant, offline, exact pieces (see *Outfit board* below). |
+| 3 | **AI try-on** on the user's own photo | Optional: only when the Colab server is connected and the user presses **Try on me (AI)** (see *Virtual try-on*). |
+
+*Earlier versions, dropped after testing with the real wardrobe:*
+- *Photos cut into garment shapes on a mannequin:* photo backgrounds and models' legs showed through.
+- *A drawn female model in colours read from the photos:* it looked generic, not like the actual pieces.
+- *Automatic AI try-on for every look:* too slow on a free GPU, and inaccurate (wrong shapes, smudged shoes).
+
+**Verified photos and staleness:**
+- `POST /api/looks/{id}/photo` saves the photo (with the same file checks as item photos) together with the look's `item_ids`.
+- `GET /api/looks` reports `photo.matches_current`, which turns false once a piece is swapped or deleted, plus `changed_pieces`. The UI then shows the outfit board with *"Your photo of this look is outdated (now includes …)"* and a **View old photo** option labelled *Outdated photo*.
+
+**Swaps that can't be re-checked:** if the evaluate request fails after a swap on the Stylist page, the chosen piece is kept (preview, product cards and Save look all use it), and the card says the reasons may be outdated.
+
+## Outfit board (default preview)
+
+The default preview is a "ghost mannequin" board built from the user's own photos, without AI image generation.
+
+```
+add/edit item ──► cutoutQueue.js (one at a time) ──► cutout.worker.js (Web Worker)
+                                                        │ fetch photo → IS-Net 1024×1024 (background)
+                                                        │            → clothes parser 512×512 (which pixels are the garment)
+                                                        │ background × garment mask → drop stray bits → trim
+                                                        │ (onnxruntime-web, CPU, 1 thread)
+                                                        ▼
+                                PUT /api/items/{id}/cutout  (PNG, stored next to the photo)
+OutfitBoard.jsx: sizes the pieces to each other using each cut-out's real proportions
+  (top a little wider than the bottom's waist, top hem over the waistband, shoes under the hem,
+   earrings/bangles/watch in a left column, necklace/bag/extra jewellery on the right)
+```
+
+- **Models:** downloaded once by `backend/cutout_model.py` into `backend/data/models/` and served at `/api/models/{name}` with long-lived caching:
+  - `isnet`: IS-Net "isnet-general-use" (Apache 2.0) for the background.
+  - `clothes`: SegFormer-B2 clothes parser (Xenova/segformer_b2_clothes, quantised ONNX, 18 ATR labels). **NVIDIA licence: non-commercial / research use only.** `partsFor()` in `cutoutQueue.js` picks the labels for each item (jeans → pants, crop top → upper clothes, sandals → shoes, bag → bag; jewellery and watches skip the parser).
+- **Combining (subtractive):** the parser is used only when it finds a person (hair/face/arms/legs over 1 % of the picture) and the garment (over 2 %). Adaa keeps what IS-Net sees and only **cuts away what the parser clearly labels as something else**: the person (face, hair, arms, legs), hat/sunglasses, shoes, and the other garment (a top's jeans, a skirt's top). Look-alike labels are never cut (the parser often reads a skirt as "dress"), so uncertain parts of the garment stay instead of leaving holes. The parser's garment area (grown by 3 cells) then only decides **which pieces to keep**: a piece must lie mostly on it, which drops chairs and curtains. Product photos, flat lays and hangers use IS-Net alone. If the parser fails, the cut-out fails and is retried later. The worker runs one job at a time. Pieces smaller than 15 % of the biggest are dropped, so pairs like two shoes or earrings stay; faint pixels survive only next to the kept garment.
+- **Versions:** each cut-out stores `cutout_version` (`6` automatic, `6m` framed by the user). Bumping `CUTOUT_VERSION` redoes older automatic cut-outs in the background.
+- **Why in the browser:** onnxruntime has no Python 3.15 build, so it can't run in the backend. WebGPU hung on Intel Iris Xe, and multi-threaded WASM hung too (nested threads), so it runs single-threaded in a **Web Worker**. That way it isn't throttled in background tabs and doesn't freeze the page.
+- **Framing:** `CutoutEditor.jsx` lets the user drag a box around just the garment (for photos worn by a model). Only that part is processed.
+- **Lifecycle:** replacing an item's photo clears its cut-out (a new one is queued), and deleting an item deletes its cut-out file. Older databases get the `cutout_filename` column automatically on startup.
+- **Fallback:** until a cut-out exists, the board shows the original photo in that position, and the caption says "Cleaning up photo backgrounds… (n of m)".
+
+## Virtual try-on (optional)
+
+```
+Adaa frontend ──POST /api/tryon {item_ids}──► Adaa backend (tryon.py)
+                                               │  1. plan: dress → "overall"; else bottom → "lower", then top → "upper"
+                                               │  2. cache hit? → return saved image instantly
+                                               │  3. else, one garment at a time (lock: one job on the GPU):
+                                               ▼
+                         https://xxxx.trycloudflare.com  (X-Adaa-Token header)
+                                               │
+                     Colab notebook: FastAPI → CatVTON (fp16, 768×1024, 30 steps) on a free T4 GPU
+```
+
+- **Your photo:** stored once in `user_profile` (single row). Replacing or removing it clears cached try-ons.
+- **Server settings:** the link and token live in `backend/data/tryon_settings.json`. It's local and git-ignored, and an empty link switches try-on off.
+- **Cache:** `backend/data/tryon/<sha1>.png`. The key is made from the exact photo files and cloth types, so a swap makes a new image, and swapping back reuses the old one.
+- **Accuracy steps in the notebook:**
+  - Garment photos are cleaned before try-on: if someone is wearing the garment, CatVTON's SCHP human parser keeps only that garment; otherwise `rembg` (isnet) removes the background. The garment is then centred on white.
+  - After generation, everything outside the mask is copied back from the user's photo (`Image.composite`), so face, hair and background stay identical.
+  - Quality is 50 steps ("high", default) or 30 steps ("standard").
+- **Shoes (experimental):** a final `shoes` pass masks the feet using the parser's shoe labels (LIP 18/19, ATR 9/10), dilated. If the feet aren't found, the clothes result is kept and a note is returned (stored next to the cached image).
+- **What can't be shown on you:** jewellery, watches, bags, dupattas and layers can't be rendered by the model. They're returned as `skipped`, and the caption names them.
+- **Frontend (`tryon.js`):** a queue sends one request at a time. Results are remembered per piece combination. If the server is found offline, other cards stop waiting for 30 s, but **Try again** always retries.
+- **Previews (`OutfitPreview.jsx`):** Stylist looks request try-on automatically; saved looks have a **Show it on me** button, to save GPU time.
+  - While generating: the drawing is shown with *"Putting this look on you…"*.
+  - After a swap: the previous try-on is shown faded with *"Updating for your swap…"*.
+  - On failure: the drawing is shown with the reason and **Try again**.
+- **Errors are actionable:** unreachable (Colab stopped or a new link), wrong token, person not detected in the photo, nothing to try on, or not set up yet. Each one tells the user what to do.
+- **Licence:** CatVTON is CC BY-NC-SA 4.0, non-commercial. The original `runwayml/stable-diffusion-inpainting` base was removed from Hugging Face, so the notebook uses the mirror `booksforcharlie/stable-diffusion-inpainting`.
 
 ## Frontend notes
 

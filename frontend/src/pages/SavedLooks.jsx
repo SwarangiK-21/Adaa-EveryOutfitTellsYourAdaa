@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Sparkles, RefreshCw, Check, Pencil, Trash2, X } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Sparkles, RefreshCw, Check, Pencil, Trash2, X, Camera } from 'lucide-react';
 import { api } from '../api.js';
 import Heading from '../components/Heading.jsx';
 import OutfitCard from '../components/OutfitCard.jsx';
@@ -14,6 +14,8 @@ export default function SavedLooks({ notify, goToStylist, onCountChange }) {
   const [history, setHistory] = useState(null);
   const [error, setError] = useState('');
   const [swapping, setSwapping] = useState(null); // { look, piece }
+  const photoInput = useRef(null);
+  const photoFor = useRef(null); // which look the file picker is for
 
   const load = () => {
     setError('');
@@ -55,6 +57,27 @@ export default function SavedLooks({ notify, goToStylist, onCountChange }) {
     setSwapping(null);
     const ids = look.pieces.map((p) => (p.item.id === piece.item.id ? option.item.id : p.item.id));
     act(async () => replaceLook(await api.updateLook(look.id, { item_ids: ids })), `Swapped in ${option.item.name}.`);
+  };
+
+  // Your own photo wearing a saved look = a verified preview.
+  const pickPhoto = (look) => {
+    photoFor.current = look;
+    photoInput.current.value = '';
+    photoInput.current.click();
+  };
+  const uploadPhoto = (e) => {
+    const file = e.target.files[0];
+    const look = photoFor.current;
+    if (!file || !look) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      notify('Please choose a JPEG, PNG or WebP photo up to 5 MB.');
+      return;
+    }
+    act(async () => replaceLook(await api.uploadLookPhoto(look.id, file)), 'Photo added. It now shows as a verified preview.');
+  };
+  const removePhoto = (look) => {
+    if (!window.confirm('Remove your photo from this look?')) return;
+    act(async () => { await api.deleteLookPhoto(look.id); replaceLook({ ...look, photo: null }); }, 'Photo removed.');
   };
 
   const removeHistory = (entry) =>
@@ -109,9 +132,12 @@ export default function SavedLooks({ notify, goToStylist, onCountChange }) {
               notice={look.missing_pieces > 0
                 ? `${look.missing_pieces} piece${look.missing_pieces > 1 ? 's were' : ' was'} deleted from your wardrobe since you saved this look.`
                 : null}
+              photo={look.photo}
               onSwap={(piece) => setSwapping({ look, piece })}
               actions={<>
                 <button className="secondary" onClick={() => wear(look)} disabled={look.pieces.length === 0}><Check size={14} /> Wore it today</button>
+                <button className="icon-btn" onClick={() => pickPhoto(look)} aria-label={`${look.photo ? 'Replace' : 'Add'} your photo of ${look.name}`} title={look.photo ? 'Replace your photo' : 'Add your photo wearing this look'}><Camera size={14} /></button>
+                {look.photo && <button className="icon-btn" onClick={() => removePhoto(look)} aria-label={`Remove your photo of ${look.name}`} title="Remove your photo"><X size={14} /></button>}
                 <button className="icon-btn" onClick={() => rename(look)} aria-label={`Rename ${look.name}`} title="Rename"><Pencil size={14} /></button>
                 <button className="icon-btn danger" onClick={() => remove(look)} aria-label={`Delete ${look.name}`} title="Delete"><Trash2 size={14} /></button>
               </>}
@@ -148,6 +174,8 @@ export default function SavedLooks({ notify, goToStylist, onCountChange }) {
           ))}
         </div>
       )}
+
+      <input ref={photoInput} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={uploadPhoto} />
 
       {swapping && (
         <SwapPanel

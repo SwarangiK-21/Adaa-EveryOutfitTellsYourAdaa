@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import database
 import storage
-from routes import items, looks, recommendations
+from routes import items, looks, recommendations, tryon
 
 
 @asynccontextmanager
@@ -33,6 +33,7 @@ app.add_middleware(
 app.include_router(items.router)
 app.include_router(recommendations.router)
 app.include_router(looks.router)
+app.include_router(tryon.router)
 
 
 @app.get("/api/health")

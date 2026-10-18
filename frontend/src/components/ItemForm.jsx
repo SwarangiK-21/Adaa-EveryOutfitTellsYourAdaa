@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ImagePlus, X, Check } from 'lucide-react';
 import { api } from '../api.js';
+import CutoutEditor from './CutoutEditor.jsx';
+import { forgetCutout, queueMissingCutouts } from '../cutoutQueue.js';
 
 const MAX_PHOTO_MB = 5;
 const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -21,7 +23,7 @@ const emptyFields = (options) => ({
 });
 
 // Add a new wardrobe item (item = null) or edit an existing one.
-export default function ItemForm({ options, item, onClose, onSaved }) {
+export default function ItemForm({ options, item, onClose, onSaved, notify }) {
   const isEdit = Boolean(item);
   const [initialFields] = useState(() =>
     isEdit
@@ -108,6 +110,7 @@ export default function ItemForm({ options, item, onClose, onSaved }) {
       const saved = isEdit
         ? await api.updateItem(item.id, fields, photo)
         : await api.createItem(fields, photo);
+      if (photo) { forgetCutout(saved.id); queueMissingCutouts([saved]); }
       onSaved(saved, !isEdit);
     } catch (err) {
       setError(err.message);
@@ -188,6 +191,8 @@ export default function ItemForm({ options, item, onClose, onSaved }) {
             </label>
           </div>
         </div>
+
+        {isEdit && !photo && <CutoutEditor item={item} notify={notify} />}
 
         {error && <p className="form-error" role="alert">{error}</p>}
 

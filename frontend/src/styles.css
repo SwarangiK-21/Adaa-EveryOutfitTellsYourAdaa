@@ -126,3 +126,97 @@
 @media(max-width:540px){.history-entry{grid-template-columns:1fr auto}.history-photos{grid-column:1/-1}}
 /* The page's top bar is styled with `header{...}`; outfit cards use <header> too, so reset it here. */
 .outfit header{height:auto;display:block;padding:0;border:0;background:none}
+
+/* ---- Full-body outfit preview ---- */
+.outfits{grid-template-columns:minmax(0,1fr)}
+.outfit{container-type:inline-size}
+.outfit-layout{display:grid;gap:16px}
+@container (min-width:600px){.outfit-layout{grid-template-columns:minmax(230px,320px) minmax(0,1fr);align-items:start}}
+.outfit-details{display:grid;gap:12px;align-content:start;min-width:0}
+.outfit-pieces{display:grid;gap:8px}
+.pieces-label{font-size:8px;letter-spacing:1.2px;color:#a08d7e;font-weight:700}
+.outfit-main{grid-template-columns:repeat(auto-fill,minmax(92px,1fr))}
+.outfit-main img{aspect-ratio:1}
+.img-fallback{display:grid;place-items:center;width:100%;aspect-ratio:1;border-radius:9px;color:#ffffffb3}
+
+.preview{margin:0;display:grid;gap:8px;justify-items:center}
+.preview-frame{position:relative;width:100%;max-width:330px;aspect-ratio:3/5;border-radius:14px;overflow:hidden;background:linear-gradient(180deg,#f5eee6,#eadfd3)}
+.preview-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.preview-photo.old{filter:grayscale(.35) opacity(.85)}
+.preview figcaption{font-size:10px;line-height:1.6;color:#8a837b;text-align:center;max-width:330px;white-space:normal;overflow:visible}
+.preview-note{color:#93613c}
+.preview figcaption .text-btn{padding:0;font-size:10px;text-decoration:underline}
+.preview-badge{position:absolute;top:10px;left:10px;z-index:20;display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:20px;background:#fffdfae8;color:#6f5140;font-size:10px;font-weight:700;box-shadow:0 1px 4px #0000000f}
+.preview-badge.verified{background:#eef3e9;color:#4f6b45}
+.preview-badge.outdated{background:#f8eedd;color:#93613c}
+
+
+/* Drawn model preview */
+.preview-frame{background:radial-gradient(120% 70% at 50% 35%,#fbf7f2 0%,#f1e8de 55%,#e6d9cb 100%)}
+.model-wrap{position:absolute;inset:4% 4% 2%}
+.model{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+
+/* ---- Virtual try-on ---- */
+.preview-photo.updating{filter:saturate(.6) opacity(.65)}
+.preview-badge.tryon{background:#f3e9f5;color:#7a4b86}
+.preview-progress{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:20;display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border-radius:20px;background:#3a2f2ae6;color:#fff;font-size:11px;white-space:nowrap}
+.preview-action{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:20;display:inline-flex;align-items:center;gap:7px;padding:10px 14px;border:0;border-radius:22px;background:#745746;color:#fff;font-size:12px;font-weight:600;box-shadow:0 4px 14px #0003}
+.preview-action:hover{background:#5f4437}
+.spin{animation:adaa-spin 1s linear infinite}
+@keyframes adaa-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.welcome{width:min(520px,100%)}
+.welcome-body{padding:6px 22px 4px;font-size:12px;line-height:1.7;color:#5f554d}
+.welcome-body ul{list-style:none;padding:0;margin:10px 0;display:grid;gap:6px}
+.welcome-body li{display:flex;gap:8px;align-items:center}
+.welcome-body li svg{color:#728263}
+.your-photo{display:flex;gap:14px;align-items:center}
+.your-photo-frame{flex:none;width:84px;aspect-ratio:3/4;border-radius:10px;overflow:hidden;background:#f1e9e1;display:grid;place-items:center;color:#a08d7e}
+.your-photo-frame img{width:100%;height:100%;object-fit:cover}
+.your-photo .muted{margin:0 0 9px}
+.row-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row-actions .secondary{display:inline-flex;align-items:center;gap:6px;padding:9px 12px;font-size:11px}
+.tryon-form{display:grid;gap:11px;max-width:520px}
+.tryon-status{font-size:11px;margin:10px 0 0;padding:8px 10px;border-radius:8px;display:flex;gap:6px;align-items:center}
+.tryon-status.ok{background:#eef3e9;color:#4f6b45}
+.tryon-status.bad{background:#f8e7e5;color:#93413c}
+.prefs h3 small{font:400 11px 'DM Sans',sans-serif}
+/* Keep preview badges/progress layered inside the card, never above the mobile menu. */
+.preview-frame{isolation:isolate}
+.preview-hint{display:block;margin-top:4px;color:#7a4b86}
+
+.check{display:flex;gap:8px;align-items:flex-start;font-size:11px;color:#5f554d;line-height:1.5}
+.check input{margin-top:2px;accent-color:#745746}
+.check i{color:#9b9186;font-style:normal}
+
+/* ---- Outfit board ("ghost mannequin": your real pieces, background removed) ---- */
+.board-frame{background:radial-gradient(110% 80% at 50% 30%,#fffdf9 0%,#f6efe7 60%,#ece2d6 100%)}
+.board{position:absolute;inset:0}
+.board-floor{position:absolute;left:28%;right:28%;bottom:0;height:3%;border-radius:50%;background:#0000000f;filter:blur(3px)}
+.board-slot{position:absolute;display:flex;justify-content:center;align-items:center}
+.board-cutout{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 6px 10px #0000001f)}
+.board-photo{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;box-shadow:0 4px 12px #0000001a;opacity:.92}
+.preview-action.subtle{top:10px;right:10px;bottom:auto;left:auto;transform:none;background:#fffdfaee;color:#6f5140;border:1px solid #e2d4c6;box-shadow:0 2px 8px #0000001a;font-size:11px;padding:8px 12px}
+.preview-action.subtle:hover{background:#fff}
+
+/* Outfit picture (cut-out) editor in the item form */
+.cutout-editor{margin:0 22px 6px;border-top:1px solid var(--line);padding-top:14px;display:grid;gap:10px}
+.cutout-head span{display:block;font-size:10px;font-weight:700;letter-spacing:.4px;color:#6f6258}
+.cutout-head i{font-size:10px;color:#9b9186;font-style:normal}
+.cutout-row{display:flex;gap:14px;align-items:center}
+.cutout-preview{flex:none;width:110px;aspect-ratio:3/4;border-radius:10px;display:grid;place-items:center;overflow:hidden;color:#a08d7e}
+.cutout-preview img{max-width:100%;max-height:100%;object-fit:contain}
+.cutout-preview small{font-size:9px}
+.checker{background-color:#f4efe9;background-image:linear-gradient(45deg,#e9e1d8 25%,transparent 25%,transparent 75%,#e9e1d8 75%),linear-gradient(45deg,#e9e1d8 25%,transparent 25%,transparent 75%,#e9e1d8 75%);background-size:14px 14px;background-position:0 0,7px 7px}
+.cutout-actions{display:grid;gap:7px;justify-items:start}
+.cutout-actions .muted{margin:0}
+.cutout-actions .secondary,.cutout-frame .secondary,.cutout-frame .primary{display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:8px 11px}
+.cutout-frame{display:grid;gap:9px}
+.cutout-frame .muted{margin:0}
+.crop-area{position:relative;max-width:320px;cursor:crosshair;user-select:none;touch-action:none;border-radius:10px;overflow:hidden}
+.crop-area img{display:block;width:100%;pointer-events:none}
+.crop-box{position:absolute;border:2px solid #745746;box-shadow:0 0 0 9999px #00000059;border-radius:3px}
+@media(max-width:640px){.cutout-editor{margin:0 14px 6px}.cutout-row{flex-direction:column;align-items:flex-start}}
+/* The product-card rule `.outfit img` (beige box, cover, rounded) must not apply to board pictures. */
+.outfit .board img{width:auto;height:auto;max-width:100%;max-height:100%;background:none;border-radius:0;object-fit:contain;aspect-ratio:auto}
+.outfit .board img.board-photo{border-radius:10px}

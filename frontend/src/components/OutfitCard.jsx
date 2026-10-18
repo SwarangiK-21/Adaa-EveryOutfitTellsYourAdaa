@@ -1,10 +1,11 @@
 import React from 'react';
 import { Check, AlertTriangle, Repeat } from 'lucide-react';
+import OutfitPreview, { PieceImage } from './OutfitPreview.jsx';
 
-// One outfit: clothes as big photos, accessories as small ones,
-// then why it works and anything to watch out for.
-// Optional: label/title override, onSwap(piece) to show swap buttons, and action buttons.
-export default function OutfitCard({ outfit, label, title, onSwap, actions, notice }) {
+// One outfit: a large full-body preview first, then the individual pieces
+// (with swap buttons), why it works, anything to watch out for, and actions.
+// Optional: label/title override, photo (verified preview), onSwap(piece), actions, notice.
+export default function OutfitCard({ outfit, label, title, onSwap, actions, notice, photo }) {
   const clothing = outfit.pieces.filter((p) => p.item.category === 'Clothing');
   const extras = outfit.pieces.filter((p) => p.item.category !== 'Clothing');
   const heading = title || clothing.map((p) => p.item.name).join(' + ') || 'Your look';
@@ -12,7 +13,7 @@ export default function OutfitCard({ outfit, label, title, onSwap, actions, noti
   const piece = (p) => (
     <figure key={p.item.id}>
       <div className="piece-photo">
-        <img src={p.item.image_url} alt={p.item.name} loading="lazy" />
+        <PieceImage item={p.item} />
         {onSwap && (
           <button type="button" className="icon-btn swap-btn" onClick={() => onSwap(p)}
             aria-label={`Swap ${p.item.name}`} title="Swap this piece">
@@ -31,21 +32,32 @@ export default function OutfitCard({ outfit, label, title, onSwap, actions, noti
         <h3>{heading}</h3>
       </header>
 
-      {notice && <p className="outfit-notice"><AlertTriangle size={13} />{notice}</p>}
+      <div className="outfit-layout">
+        <OutfitPreview pieces={outfit.pieces} photo={photo} />
 
-      {clothing.length > 0 && <div className="outfit-main">{clothing.map(piece)}</div>}
-      {extras.length > 0 && <div className="outfit-extras">{extras.map(piece)}</div>}
+        <div className="outfit-details">
+          {notice && <p className="outfit-notice"><AlertTriangle size={13} />{notice}</p>}
 
-      <ul className="reasons">
-        {outfit.reasons.map((r) => <li key={r}><Check size={14} />{r}</li>)}
-      </ul>
-      {outfit.cautions.length > 0 && (
-        <ul className="cautions">
-          {outfit.cautions.map((c) => <li key={c}><AlertTriangle size={14} />{c}</li>)}
-        </ul>
-      )}
+          {outfit.pieces.length > 0 && (
+            <div className="outfit-pieces">
+              <small className="pieces-label">THE PIECES{onSwap ? ' · TAP ⇄ TO SWAP' : ''}</small>
+              {clothing.length > 0 && <div className="outfit-main">{clothing.map(piece)}</div>}
+              {extras.length > 0 && <div className="outfit-extras">{extras.map(piece)}</div>}
+            </div>
+          )}
 
-      {actions && <div className="outfit-actions">{actions}</div>}
+          <ul className="reasons">
+            {outfit.reasons.map((r) => <li key={r}><Check size={14} />{r}</li>)}
+          </ul>
+          {outfit.cautions.length > 0 && (
+            <ul className="cautions">
+              {outfit.cautions.map((c) => <li key={c}><AlertTriangle size={14} />{c}</li>)}
+            </ul>
+          )}
+
+          {actions && <div className="outfit-actions">{actions}</div>}
+        </div>
+      </div>
     </article>
   );
 }

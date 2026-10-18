@@ -1,6 +1,11 @@
 // Small helpers for talking to the Adaa backend (proxied by Vite to port 8000).
 
-export class ApiError extends Error {}
+export class ApiError extends Error {
+  constructor(message, status = 0) {
+    super(message);
+    this.status = status; // HTTP status, 0 if the server couldn't be reached
+  }
+}
 
 async function request(path, options = {}) {
   let res;
@@ -20,7 +25,7 @@ async function request(path, options = {}) {
     const message = Array.isArray(detail)
       ? detail.map((d) => (typeof d === 'string' ? d : d.msg)).join(' · ')
       : detail || `Something went wrong (error ${res.status}).`;
-    throw new ApiError(message);
+    throw new ApiError(message, res.status);
   }
   return body;
 }
@@ -58,6 +63,14 @@ export const api = {
 
   deleteItem: (id) => request(`/api/items/${id}`, { method: 'DELETE' }),
 
+  // The garment with its background removed (made in the browser by cutout.js).
+  saveCutout: (id, pngBlob, version = '1') => {
+    const data = new FormData();
+    data.append('cutout', pngBlob, 'cutout.png');
+    data.append('version', version);
+    return request(`/api/items/${id}/cutout`, { method: 'PUT', body: data });
+  },
+
   // Read a typed request ("Style my black crop top for a party") into filters.
   parseRequest: (text) =>
     request('/api/stylist/parse', {
@@ -85,6 +98,27 @@ export const api = {
   updateLook: (id, changes) => postJson(`/api/looks/${id}`, changes, 'PUT'),
   deleteLook: (id) => request(`/api/looks/${id}`, { method: 'DELETE' }),
   wearLook: (id) => postJson(`/api/looks/${id}/wear`, {}),
+
+  uploadLookPhoto: (id, photo) => {
+    const data = new FormData();
+    data.append('photo', photo);
+    return request(`/api/looks/${id}/photo`, { method: 'POST', body: data });
+  },
+  deleteLookPhoto: (id) => request(`/api/looks/${id}/photo`, { method: 'DELETE' }),
+
+  // ---- Your photo and virtual try-on ----
+  getProfile: () => request('/api/profile'),
+  uploadProfilePhoto: (photo) => {
+    const data = new FormData();
+    data.append('photo', photo);
+    return request('/api/profile/photo', { method: 'POST', body: data });
+  },
+  deleteProfilePhoto: () => request('/api/profile/photo', { method: 'DELETE' }),
+  // quality: 'high' | 'standard'; tryShoes: also try footwear on (experimental)
+  saveTryOnSettings: (url, token, quality, tryShoes) =>
+    postJson('/api/tryon/settings', { url, token, quality, try_shoes: tryShoes }, 'PUT'),
+  tryOnStatus: () => request('/api/tryon/status'),
+  tryOn: (itemIds, cachedOnly = false) => postJson('/api/tryon', { item_ids: itemIds, cached_only: cachedOnly }),
 
   getHistory: () => request('/api/history'),
   deleteHistoryEntry: (id) => request(`/api/history/${id}`, { method: 'DELETE' }),

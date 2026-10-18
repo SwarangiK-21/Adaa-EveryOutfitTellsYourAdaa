@@ -30,6 +30,19 @@ def _detect_extension(data: bytes) -> str | None:
     return None
 
 
+def save_cutout(upload: UploadFile) -> str:
+    """Store a garment cut-out: must be a real PNG (it needs a transparent background)."""
+    data = upload.file.read(config.MAX_UPLOAD_BYTES + 1)
+    if len(data) > config.MAX_UPLOAD_BYTES:
+        raise InvalidImage("The cut-out is larger than 5 MB.")
+    if not data.startswith(b"\x89PNG\r\n\x1a\n"):
+        raise InvalidImage("A cut-out must be a PNG image.")
+    filename = f"{uuid.uuid4().hex}.png"
+    ensure_upload_dir()
+    (config.UPLOAD_DIR / filename).write_bytes(data)
+    return filename
+
+
 def save_image(upload: UploadFile) -> str:
     """Validate and store an uploaded photo. Returns the new file name."""
     # Read one byte past the limit so we can tell if the file is too big.

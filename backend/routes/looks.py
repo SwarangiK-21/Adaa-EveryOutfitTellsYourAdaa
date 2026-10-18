@@ -3,10 +3,12 @@ import sqlite3
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 
 import database
 import looks_db
+import storage
 from recommender.engine import RecommendationError, alternatives, evaluate
 from schemas import (
     HistoryEntry, LookCreate, LookOut, LookUpdate, OutfitCheck, OutfitEvaluation,
@@ -38,7 +40,24 @@ def _check_items(db, item_ids: list[int]) -> list[dict]:
 def _look_out(db, look: dict, items: list[dict] | None = None) -> dict:
     items = items if items is not None else database.list_items(db)
     prefs = StylePrefs(**look["prefs"])
-    return {**look, **_with_items(evaluate(items, look["item_ids"], prefs))}
+    out = {**look, **_with_items(evaluate(items, look["item_ids"], prefs))}
+    out["photo"] = _photo_out(look, items)
+    return out
+
+
+def _photo_out(look: dict, items: list[dict]) -> dict | None:
+    """The look's verified photo, and whether it still shows the look's current pieces."""
+    photo = look.get("photo")
+    if not photo:
+        return None
+    names = {i["id"]: i["name"] for i in items}
+    changed = [names[i] for i in look["item_ids"] if i not in photo["item_ids"] and i in names]
+    return {
+        "url": f"/api/looks/{look['id']}/photo?v={photo['image_filename'][:8]}",
+        "taken_at": photo["created_at"],
+        "matches_current": sorted(photo["item_ids"]) == sorted(look["item_ids"]),
+        "changed_pieces": changed,
+    }
 
 
 def _get_look_or_404(db, look_id: int) -> dict:
@@ -110,7 +129,9 @@ def update_look(look_id: int, body: LookUpdate, db: Db):
 @router.delete("/looks/{look_id}", status_code=204)
 def delete_look(look_id: int, db: Db):
     _get_look_or_404(db, look_id)
-    looks_db.delete_look(db, look_id)
+    old_photo = looks_db.delete_look(db, look_id)
+    if old_photo:
+        storage.delete_image(old_photo)
 
 
 # ---------- outfit history ----------
@@ -143,3 +164,48 @@ def delete_history_entry(wear_id: int, db: Db):
     if looks_db.get_wear(db, wear_id) is None:
         raise HTTPException(status_code=404, detail="History entry not found.")
     looks_db.delete_wear(db, wear_id)
+
+
+# ---------- verified photos (you wearing a saved look) ----------
+
+@router.post("/looks/{look_id}/photo", response_model=LookOut, status_code=201)
+def upload_look_photo(
+    look_id: int,
+    db: Db,
+    photo: Annotated[UploadFile, File(description="Your photo wearing this look: JPEG, PNG or WebP, up to 5 MB")],
+):
+    """Attach your own photo of this look. It's shown as a verified preview while the look is unchanged."""
+    look = _get_look_or_404(db, look_id)
+    if not look["item_ids"]:
+        raise HTTPException(status_code=400, detail="This look has no pieces left.")
+    try:
+        filename = storage.save_image(photo)
+    except storage.InvalidImage as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from None
+    try:
+        old = looks_db.set_photo(db, look_id, filename, look["item_ids"])
+    except Exception:
+        storage.delete_image(filename)
+        raise
+    if old:
+        storage.delete_image(old)
+    return _look_out(db, looks_db.get_look(db, look_id))
+
+
+@router.get("/looks/{look_id}/photo")
+def get_look_photo(look_id: int, db: Db):
+    _get_look_or_404(db, look_id)
+    photo = looks_db.get_photo(db, look_id)
+    path = storage.image_path(photo["image_filename"]) if photo else None
+    if path is None:
+        raise HTTPException(status_code=404, detail="This look has no photo.")
+    return FileResponse(path)
+
+
+@router.delete("/looks/{look_id}/photo", status_code=204)
+def delete_look_photo(look_id: int, db: Db):
+    _get_look_or_404(db, look_id)
+    old = looks_db.delete_photo(db, look_id)
+    if old is None:
+        raise HTTPException(status_code=404, detail="This look has no photo.")
+    storage.delete_image(old)

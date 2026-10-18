@@ -3,6 +3,7 @@ import { Plus, Search, Pencil, Trash2, Shirt, RefreshCw, Sparkles } from 'lucide
 import { api } from '../api.js';
 import Heading from '../components/Heading.jsx';
 import ItemForm from '../components/ItemForm.jsx';
+import { queueMissingCutouts } from '../cutoutQueue.js';
 
 export default function Wardrobe({ notify, onStyle }) {
   const [options, setOptions] = useState(null);
@@ -29,6 +30,7 @@ export default function Wardrobe({ notify, onStyle }) {
         if (cancelled) return;
         setOptions(opts);
         setItems(list);
+        queueMissingCutouts(list);
         setStatus('ready');
       } catch (err) {
         if (cancelled) return;
@@ -138,6 +140,7 @@ export default function Wardrobe({ notify, onStyle }) {
           item={editing === 'new' ? null : editing}
           onClose={() => setEditing(null)}
           onSaved={handleSaved}
+          notify={notify}
         />
       )}
     </>

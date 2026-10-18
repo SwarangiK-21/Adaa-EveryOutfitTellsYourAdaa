@@ -134,13 +134,20 @@ export default function Stylist({ anchorId, goToWardrobe, notify, onLookSaved })
     setSwapping(null);
     const outfit = result.outfits.find((o) => o.rank === rank);
     const ids = idsOf(outfit).map((id) => (id === piece.item.id ? option.item.id : id));
+    const update = (changes) =>
+      setResult((r) => ({ ...r, outfits: r.outfits.map((o) => (o.rank === rank ? { ...o, ...changes } : o)) }));
+    setSaved((s) => ({ ...s, [rank]: undefined }));
     try {
       const updated = await api.evaluateOutfit(resultPrefs, ids);
-      setResult((r) => ({ ...r, outfits: r.outfits.map((o) => (o.rank === rank ? { ...o, ...updated } : o)) }));
-      setSaved((s) => ({ ...s, [rank]: undefined }));
+      update({ ...updated, outdated: false });
       notify(`Swapped in ${option.item.name}.`);
     } catch (err) {
-      notify(err.message);
+      // Keep the piece you chose; only the explanation couldn't be refreshed.
+      update({
+        pieces: outfit.pieces.map((p) => (p.item.id === piece.item.id ? { role: option.role, item: option.item } : p)),
+        outdated: true,
+      });
+      notify(`Swapped in ${option.item.name}, but the reasons couldn't be refreshed: ${err.message}`);
     }
   };
 
@@ -240,6 +247,7 @@ export default function Stylist({ anchorId, goToWardrobe, notify, onLookSaved })
                       key={o.rank}
                       outfit={o}
                       onSwap={(piece) => setSwapping({ rank: o.rank, piece })}
+                      notice={o.outdated ? "Couldn't re-check this look after your swap, so the reasons below may be outdated. Try another swap or Style me again." : null}
                       actions={saved[o.rank]
                         ? <button className="secondary" disabled><Check size={14} /> Saved to your looks</button>
                         : <button className="secondary" onClick={() => saveLook(o)}><Heart size={14} /> Save look</button>}
