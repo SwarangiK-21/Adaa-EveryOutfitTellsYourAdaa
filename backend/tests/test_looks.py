@@ -145,7 +145,8 @@ def test_history_survives_deleting_the_look(client):
     entry = client.get("/api/history").json()[0]
     assert entry["look_id"] is None
     assert entry["look_name"] == "Office Monday"
-    assert entry["pieces"] == []
+    # History remembers the pieces that were worn, even after the saved look is gone.
+    assert {p["item"]["id"] for p in entry["pieces"]} == {w["top"], w["skirt"]}
 
 
 def test_cannot_log_a_future_date(client):

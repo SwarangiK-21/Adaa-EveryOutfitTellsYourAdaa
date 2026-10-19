@@ -17,6 +17,8 @@ It runs entirely on your own computer with free, open-source tools: no paid APIs
 | Save looks, rename them, add **your own photo** wearing a look, mark "Wore it today", and see your outfit history | **Saved Looks** |
 | **Plan a trip:** choose the occasion for each day; get a different outfit for every day (no garment worn twice; shoes, bags and jewellery are reused), plus a packing checklist | **Trip Planner** |
 | **What to buy next:** the few pieces that would unlock the most new outfits with what you own (ideas only, Adaa never shops) | **Shop Smart** |
+| **Weather:** add your city once; the stylist shows today's forecast and dresses you for it (light pieces on hot days, warm layers when it's cold, a caution about heels in the rain). Can be switched off per request | **Preferences**, **AI Stylist** |
+| **Wear stats:** pieces not worn in 30/60/90 days (with *Style it*), most worn, and **cost per wear** from the optional price on each piece; *Wore it today* on any stylist outfit; a nudge on Overview | **Wear Stats** |
 | Save your usual style, comfort and colour preferences | **Preferences** |
 
 **The core rule:** Adaa never invents a piece. If something is missing (no bag, nothing tagged for a wedding, "my green kurta" when you don't have one), it says so and shows the best real combination instead.
@@ -56,8 +58,9 @@ Each look opens with a large preview, always labelled:
 | + | Outfit board previews from your own photos (background removed in the browser) | Done |
 | + | Optional AI try-on on your own photo (Colab + CatVTON) | Works, but slow and approximate, so it's off unless you ask |
 | + | Auto-fill from photo, Trip Planner, Shop Smart (wardrobe gaps) | Done |
+| + | Weather-aware styling (Open-Meteo), wear stats and cost per wear | Done |
 
-104 automated backend tests pass. A full manual browser pass is recorded in [docs/TESTING.md](docs/TESTING.md).
+114 automated backend tests pass. A full manual browser pass is recorded in [docs/TESTING.md](docs/TESTING.md).
 
 ## Tech
 
@@ -117,7 +120,9 @@ Everything lives in `backend/data/`:
 - `adaa.db`: the SQLite database (wardrobe, saved looks, history)
 - `uploads/`: your photos
 
-Git ignores this folder, so your photos are never pushed to GitHub. To **back up**, copy the whole `backend/data` folder somewhere safe while the backend is stopped. Preferences are saved in your browser.
+Git ignores this folder, so your photos are never pushed to GitHub. To **back up**, copy the whole `backend/data` folder somewhere safe while the backend is stopped. Preferences (and your weather city) are saved in your browser.
+
+**The one thing that goes online:** if you add a city for the weather, your browser asks [Open-Meteo](https://open-meteo.com) (free, no account, no key) for that city's forecast, sending only its coordinates (and the name you type when searching). Nothing about your wardrobe is sent. Remove the city in Preferences to turn this off.
 
 ## Tests
 
@@ -128,7 +133,7 @@ python -m pip install -r requirements-dev.txt   # first time only
 python -m pytest
 ```
 
-Expected: `104 passed`. Tests use a temporary folder, so they never touch your real wardrobe.
+Expected: `114 passed`. Tests use a temporary folder, so they never touch your real wardrobe.
 
 ## API
 
@@ -142,7 +147,7 @@ Interactive docs: http://127.0.0.1:8000/docs (while the backend is running).
 | GET / PUT / DELETE | `/api/items/{id}` | One item / edit (photo optional) / delete |
 | GET | `/api/items/{id}/photo` | The item's photo |
 | POST | `/api/stylist/parse` | Read a typed request into filters |
-| POST | `/api/recommendations` | Up to 4 outfits for an occasion and preferences |
+| POST | `/api/recommendations` | Up to 4 outfits for an occasion and preferences (optional `weather: {temp_c, rain}`) |
 | POST | `/api/outfits/evaluate` | Reasons and cautions for a given set of pieces |
 | POST | `/api/outfits/alternatives` | Swap options for one piece |
 | GET / POST | `/api/looks` | List / save looks |
@@ -157,6 +162,8 @@ Interactive docs: http://127.0.0.1:8000/docs (while the backend is running).
 | GET | `/api/tryon/status` | Is your try-on server reachable? |
 | POST | `/api/tryon` | An image of you wearing these pieces (cached) |
 | GET | `/api/insights/gaps` | What to buy next: pieces that would add the most outfits |
+| GET | `/api/insights/wear?days=30` | Wear stats: not worn in N days, most worn, cost per wear |
+| POST | `/api/history` | Record wearing an outfit that isn't saved (`{"item_ids": [...], "occasion": "College"}`) |
 | POST | `/api/trips/plan` | A different outfit per day, no garment repeated (`{"days": ["Travel", "Casual"], "style": null}`), and a packing list |
 
 ## Project layout
@@ -173,17 +180,18 @@ Adaa/
 │  ├─ storage.py            Photo checks (real file type, size) and saving/deleting
 │  ├─ tryon.py              Virtual try-on: which garments go on you, talking to Colab, caching
 │  ├─ routes/               API routes: items, recommendations (+ parse), looks, planner, tryon
-│  ├─ recommender/          colours.py, garments.py, engine.py, parser.py, planner.py (gaps, trips)
-│  └─ tests/                104 pytest tests
+│  ├─ recommender/          colours.py, garments.py, engine.py, parser.py, planner.py (gaps, trips, wear stats), weather.py
+│  └─ tests/                114 pytest tests
 ├─ frontend/
 │  ├─ vite.config.js        Dev server; forwards /api to the backend
 │  └─ src/
 │     ├─ App.jsx            Layout, navigation, Overview, Preferences
 │     ├─ api.js             All calls to the backend
 │     ├─ preferences.js     Saved preferences (browser storage)
-│     ├─ pages/             Wardrobe, Stylist, SavedLooks, TripPlanner, ShopSmart
+│     ├─ pages/             Wardrobe, Stylist, SavedLooks, TripPlanner, WearStats, ShopSmart
+│     ├─ weather.js         Today's forecast from Open-Meteo for your saved city
 │     ├─ boardImage.js       Saves an outfit board as a PNG (Download image)
-│     ├─ components/        ItemForm, CutoutEditor, EraseCutout, OutfitCard, OutfitPreview, OutfitBoard, SwapPanel, AskBox, Heading
+│     ├─ components/        ItemForm, CutoutEditor, EraseCutout, WeatherSettings, OutfitCard, OutfitPreview, OutfitBoard, SwapPanel, AskBox, Heading
 │     ├─ cutout.js, cutout.worker.js, cutoutQueue.js   Background removal for garment pictures (in the browser)
 │     └─ styles.css
 ├─ tryon/Adaa_TryOn_Colab.ipynb   Notebook that runs the try-on model on a free Colab GPU

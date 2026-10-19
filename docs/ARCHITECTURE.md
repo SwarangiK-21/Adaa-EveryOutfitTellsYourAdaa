@@ -42,22 +42,23 @@ Because the recommender is plain Python that takes a list of items and returns o
 wardrobe_items              looks                       wear_log
 ──────────────              ─────                       ────────
 id                          id                          id
-name                        name                        look_id → looks (SET NULL on delete)
-category                    prefs (JSON: occasion,      look_name   (kept even if look is deleted)
-item_type                          style, colour...)    occasion
-colour                      missing_pieces              worn_on     (date)
-style                       created_at, updated_at      created_at
-occasions (JSON list)
-notes                       look_items
-image_filename              ──────────
-created_at, updated_at      look_id → looks (CASCADE)
-                            item_id → wardrobe_items
+name                        name                        look_id → looks (SET NULL on delete; NULL
+category                    prefs (JSON: occasion,                for outfits worn without saving)
+item_type                          style, colour,       look_name   (kept even if look is deleted)
+colour                             weather...)          occasion
+style                       missing_pieces              worn_on     (date)
+occasions (JSON list)       created_at, updated_at      created_at
+notes
+price (optional)            look_items                  wear_items
+cutout_filename/_version    ──────────                  ──────────
+image_filename              look_id → looks (CASCADE)   wear_id → wear_log (CASCADE)
+created_at, updated_at      item_id → wardrobe_items    item_id (no FK: history outlives items)
                             position
 ```
 
 - Foreign keys are switched on for every connection, so a saved look can never point at an item that doesn't exist.
 - Deleting a wardrobe item runs in one transaction: it removes the item from any saved looks, adds 1 to each look's `missing_pieces` (so the look can say "1 piece was deleted"), then deletes the item and its photo.
-- History stores the look's name and occasion, so it survives if the saved look is deleted.
+- History stores the look's name and occasion, and `wear_items` stores the exact pieces worn that day, so history (and wear stats) survive later swaps or deleting the look. Older history is filled in from the saved look's pieces on startup.
 - Tables are created with `CREATE TABLE IF NOT EXISTS` on startup, so older databases gain new tables automatically without losing data.
 
 ## Photos
@@ -176,6 +177,19 @@ Both features reuse the stylist's own rules (roles, top/bottom fit, colour harmo
 Clothes and shoes are ranked first (they make outfits possible), then bags and jewellery; the best shoe idea always makes the list. It also notes occasions with no complete outfit and a lopsided top/bottom count. Ideas only: there are no shop links.
 
 **Trip Planner (`POST /api/trips/plan`).** Rule: **no garment is worn twice on a trip** (shoes, bags and jewellery may be). For each day (1-14, an occasion each) it lists the 12 best outfit bases tagged for that occasion, plus the 6 best untagged ones at a cost. A search then picks one per day so that no garment appears twice, filling as many days as possible with the best total score. It starts with the days that have the fewest options, so a scarce Party outfit isn't used up on a Casual day; this is capped at 60,000 steps. A day that can't get fresh clothes is left empty with a note ("not enough different clothes for Party... add or tag more") instead of repeating. Shoes, earrings, necklace and bag prefer pieces already in the suitcase. The result lists each day's outfit, a packing list (the days each piece is used) and notes.
+
+## Weather (`recommender/weather.py`, `frontend/src/weather.js`)
+
+- **Forecast:** the browser asks Open-Meteo (free, no key) for today's high, rain chance and weather code at the city saved in Preferences (geocoding by name, also Open-Meteo), cached for an hour. Rain = chance of at least 50 %, or a rain code.
+- **Styling:** the request carries `weather: {temp_c, rain, label}` (the stylist chip has a *Use* switch). It's a gentle nudge, not a filter:
+  - **Hot (high ≥ 30 °C):** light pieces +1 (crop tops, tees, shorts, skirts, dresses, kurtis, palazzos, sandals, or "linen/cotton/sleeveless" in the name). Warm pieces −1.5, layers −3 (so jackets aren't added).
+  - **Cold (≤ 17 °C):** warm pieces +1, layers +2 (so one gets added). Shorts, skirts and sandals −1.5.
+  - **Rain:** heels −1, light-coloured bottoms −0.5.
+- **Explaining it:** each outfit gets a reason ("Light, breezy pieces for a 34°C day", "Your wool sweater keeps you warm at 9°C", "Rain-friendly…") or a caution ("Might feel warm at 34°C: your jacket", "Rain is expected: your heels may not love puddles"). With no city set, nothing changes.
+
+## Wear stats (`GET /api/insights/wear?days=30`)
+
+Counts come from `wear_items`: *Wore it today* on a saved look, or on any stylist outfit (`POST /api/history`). For each piece, Adaa works out times worn, last worn and days since. **Not worn** lists pieces never worn (oldest first), then those not worn for the longest. **Most worn** shows the top 5. **Cost per wear** = price ÷ max(wears, 1), shown for pieces with a price, best value first. The totals are spent, average cost per wear (spent ÷ total wears) and pieces worn in the window. The window can be 7–365 days (the page offers 30/60/90). The Overview shows a nudge when pieces haven't been worn in 30 days.
 
 ## Auto-fill from a photo (browser)
 

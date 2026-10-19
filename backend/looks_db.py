@@ -105,13 +105,34 @@ def delete_photo(conn, look_id: int) -> str | None:
 
 
 def log_wear(conn, look: dict, worn_on: date) -> dict:
+    """A saved look was worn: remember the look and exactly which pieces it had that day."""
+    return log_outfit_wear(conn, look["item_ids"], look["name"], look["prefs"]["occasion"], worn_on, look["id"])
+
+
+def log_outfit_wear(conn, item_ids: list[int], name: str, occasion: str, worn_on: date,
+                    look_id: int | None = None) -> dict:
     with conn:
         cur = conn.execute(
             "INSERT INTO wear_log (look_id, look_name, occasion, worn_on, created_at)"
             " VALUES (?, ?, ?, ?, ?)",
-            (look["id"], look["name"], look["prefs"]["occasion"], worn_on.isoformat(), _now()),
+            (look_id, name, occasion, worn_on.isoformat(), _now()),
         )
+        conn.executemany("INSERT OR IGNORE INTO wear_items (wear_id, item_id) VALUES (?, ?)",
+                         [(cur.lastrowid, i) for i in item_ids])
     return get_wear(conn, cur.lastrowid)
+
+
+def worn_item_ids(conn, wear_id: int) -> list[int]:
+    return [r["item_id"] for r in conn.execute(
+        "SELECT item_id FROM wear_items WHERE wear_id = ? ORDER BY rowid", (wear_id,))]
+
+
+def item_wear(conn) -> dict[int, tuple[int, str]]:
+    """item id -> (times worn, last date worn), from outfit history."""
+    rows = conn.execute(
+        "SELECT wi.item_id, COUNT(DISTINCT w.id) AS n, MAX(w.worn_on) AS last"
+        " FROM wear_items wi JOIN wear_log w ON w.id = wi.wear_id GROUP BY wi.item_id")
+    return {r["item_id"]: (r["n"], r["last"]) for r in rows}
 
 
 def get_wear(conn, wear_id: int) -> dict | None:

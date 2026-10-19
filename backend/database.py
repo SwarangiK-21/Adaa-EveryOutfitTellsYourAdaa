@@ -49,6 +49,14 @@ CREATE TABLE IF NOT EXISTS wear_log (
     created_at TEXT NOT NULL
 );
 
+-- Which pieces were worn in each history entry (for wear stats). No foreign key to the item,
+-- so history stays even if a piece is deleted later.
+CREATE TABLE IF NOT EXISTS wear_items (
+    wear_id  INTEGER NOT NULL REFERENCES wear_log(id) ON DELETE CASCADE,
+    item_id  INTEGER NOT NULL,
+    PRIMARY KEY (wear_id, item_id)
+);
+
 -- Verified previews: the user's own photo wearing a saved look (one per look).
 -- item_ids remembers the look's pieces when the photo was taken, so we can tell
 -- when the look has changed since and the photo no longer matches.
@@ -90,6 +98,13 @@ def init_db() -> None:
         if "cutout_version" not in columns:
             # Which cut-out method made it ("2" = automatic v2, "2m" = framed by the user...)
             conn.execute("ALTER TABLE wardrobe_items ADD COLUMN cutout_version TEXT")
+        if "price" not in columns:
+            conn.execute("ALTER TABLE wardrobe_items ADD COLUMN price REAL")
+        # History from before wear_items existed: use the saved look's pieces (best we know).
+        conn.execute(
+            "INSERT OR IGNORE INTO wear_items (wear_id, item_id)"
+            " SELECT w.id, li.item_id FROM wear_log w JOIN look_items li ON li.look_id = w.look_id"
+            " WHERE NOT EXISTS (SELECT 1 FROM wear_items wi WHERE wi.wear_id = w.id)")
         conn.commit()
     finally:
         conn.close()
@@ -140,12 +155,12 @@ def create_item(conn, fields: ItemFields, image_filename: str) -> dict:
     now = _now()
     cur = conn.execute(
         """INSERT INTO wardrobe_items
-           (name, category, item_type, colour, style, occasions, notes,
+           (name, category, item_type, colour, style, occasions, notes, price,
             image_filename, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             fields.name, fields.category, fields.item_type, fields.colour, fields.style,
-            json.dumps(fields.occasions), fields.notes, image_filename, now, now,
+            json.dumps(fields.occasions), fields.notes, fields.price, image_filename, now, now,
         ),
     )
     conn.commit()
@@ -156,11 +171,11 @@ def update_item(conn, item_id: int, fields: ItemFields, image_filename: str) -> 
     conn.execute(
         """UPDATE wardrobe_items
            SET name = ?, category = ?, item_type = ?, colour = ?, style = ?,
-               occasions = ?, notes = ?, image_filename = ?, updated_at = ?
+               occasions = ?, notes = ?, price = ?, image_filename = ?, updated_at = ?
            WHERE id = ?""",
         (
             fields.name, fields.category, fields.item_type, fields.colour, fields.style,
-            json.dumps(fields.occasions), fields.notes, image_filename, _now(), item_id,
+            json.dumps(fields.occasions), fields.notes, fields.price, image_filename, _now(), item_id,
         ),
     )
     conn.commit()

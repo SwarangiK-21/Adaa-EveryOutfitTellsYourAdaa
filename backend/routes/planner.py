@@ -4,9 +4,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
+from datetime import date
+
+from fastapi import Query
+
 import database
-from recommender.planner import find_gaps, plan_trip
-from schemas import GapReport, TripPlan, TripRequest, item_out
+import looks_db
+from recommender.planner import find_gaps, plan_trip, wear_stats
+from schemas import GapReport, TripPlan, TripRequest, WearStats, item_out
 
 router = APIRouter(prefix="/api", tags=["planning"])
 Db = Annotated[sqlite3.Connection, Depends(database.get_db)]
@@ -32,3 +37,12 @@ def trip_plan(request: TripRequest, db: Db):
     for packed in plan["packing"]:
         packed["item"] = item_out(packed["item"])
     return plan
+
+
+@router.get("/insights/wear", response_model=WearStats)
+def wardrobe_wear(db: Db, days: Annotated[int, Query(ge=7, le=365)] = 30):
+    """How much each piece is worn: not worn in N days, most worn, and cost per wear."""
+    stats = wear_stats(database.list_items(db), looks_db.item_wear(db), date.today(), days)
+    for key in ("not_worn", "most_worn", "cost_per_wear"):   # a piece can appear in several lists
+        stats[key] = [{**row, "item": item_out(row["item"])} for row in stats[key]]
+    return stats

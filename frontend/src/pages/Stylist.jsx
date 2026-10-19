@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Sparkles, RefreshCw, Plus, Info, Heart, Check } from 'lucide-react';
+import { Sparkles, RefreshCw, Plus, Info, Heart, Check, CloudSun, Shirt } from 'lucide-react';
 import { api } from '../api.js';
 import Heading from '../components/Heading.jsx';
 import OutfitCard from '../components/OutfitCard.jsx';
 import AskBox from '../components/AskBox.jsx';
 import SwapPanel from '../components/SwapPanel.jsx';
 import { loadPreferences, toStylistDefaults } from '../preferences.js';
+import { useTodayWeather, styleHint } from '../weather.js';
 
 // Chips for picking one value. '' means "Any".
 function ChoiceChips({ label, value, choices, onChange, allowAny = true }) {
@@ -26,7 +27,7 @@ function ChoiceChips({ label, value, choices, onChange, allowAny = true }) {
 const prefsOf = ({ occasion, style, colour, colour_mood, comfort }) => ({ occasion, style, colour, colour_mood, comfort });
 const idsOf = (outfit) => outfit.pieces.map((p) => p.item.id);
 
-export default function Stylist({ anchorId, goToWardrobe, notify, onLookSaved }) {
+export default function Stylist({ anchorId, goToWardrobe, goToPreferences, notify, onLookSaved }) {
   const [options, setOptions] = useState(null);
   const [items, setItems] = useState([]);
   const [loadError, setLoadError] = useState('');
@@ -39,6 +40,10 @@ export default function Stylist({ anchorId, goToWardrobe, notify, onLookSaved })
   const [result, setResult] = useState(null);
   const [resultPrefs, setResultPrefs] = useState(null); // the preferences these results were made for
   const [saved, setSaved] = useState({});               // outfit rank -> saved look id
+  const [worn, setWorn] = useState({});                 // outfit rank -> logged as worn today
+  // Today's weather for your saved city (Preferences), as a gentle nudge. Can be switched off.
+  const { place, weather, error: weatherError } = useTodayWeather();
+  const [useWeather, setUseWeather] = useState(true);
   const [swapping, setSwapping] = useState(null);       // { rank, piece } while the swap panel is open
   const [error, setError] = useState('');
   const [chat, setChat] = useState(null); // the last typed request and what Adaa understood
@@ -61,13 +66,16 @@ export default function Stylist({ anchorId, goToWardrobe, notify, onLookSaved })
     setStatus('loading');
     setError('');
     try {
+      const wx = useWeather && weather ? { temp_c: weather.temp_c, rain: weather.rain, label: weather.label } : null;
       const data = await api.recommend({
         ...values,
+        weather: wx,
         anchor_item_id: values.anchor_item_id === '' ? null : Number(values.anchor_item_id),
       });
       setResult(data);
-      setResultPrefs(prefsOf(values));
+      setResultPrefs({ ...prefsOf(values), weather: wx });
       setSaved({});
+      setWorn({});
       setStatus('done');
       // On narrow screens the results are below the form, so bring them into view.
       if (window.innerWidth < 1050) resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -128,6 +136,16 @@ export default function Stylist({ anchorId, goToWardrobe, notify, onLookSaved })
     }
   };
 
+  const woreIt = async (outfit) => {
+    try {
+      await api.wearOutfit(idsOf(outfit), resultPrefs.occasion);
+      setWorn((w) => ({ ...w, [outfit.rank]: true }));
+      notify('Added to your outfit history. It counts in your wear stats.');
+    } catch (err) {
+      notify(err.message);
+    }
+  };
+
   // Replace one piece, then ask the engine to re-explain the outfit.
   const swapPiece = async (option) => {
     const { rank, piece } = swapping;
@@ -178,6 +196,22 @@ export default function Stylist({ anchorId, goToWardrobe, notify, onLookSaved })
       <AskBox items={items} chat={chat} asking={asking} onAsk={ask} onPick={pickAmbiguous} />
       <div className="stylist-layout">
         <form className="style-form" onSubmit={submit}>
+          {place ? (
+            <div className={`weather-chip ${useWeather ? '' : 'off'}`}>
+              <CloudSun size={17} />
+              <span>
+                <b>{weather ? `Today: ${weather.label}` : weatherError || "Checking today's weather…"}</b>
+                {weather && <small>{useWeather ? styleHint(weather) : 'Not using the weather'}</small>}
+              </span>
+              {weather && (
+                <label className="weather-toggle">
+                  <input type="checkbox" checked={useWeather} onChange={(e) => setUseWeather(e.target.checked)} /> Use
+                </label>
+              )}
+            </div>
+          ) : (
+            <p className="weather-chip quiet"><CloudSun size={15} /> <span>Add your city in <button type="button" className="text-btn" onClick={goToPreferences}>Preferences</button> to dress for today's weather.</span></p>
+          )}
           <ChoiceChips label="Where are you going?" value={form.occasion} choices={options.occasions} allowAny={false} onChange={(v) => set('occasion', v)} />
 
           <label className="field">
@@ -248,9 +282,14 @@ export default function Stylist({ anchorId, goToWardrobe, notify, onLookSaved })
                       outfit={o}
                       onSwap={(piece) => setSwapping({ rank: o.rank, piece })}
                       notice={o.outdated ? "Couldn't re-check this look after your swap, so the reasons below may be outdated. Try another swap or Style me again." : null}
-                      actions={saved[o.rank]
-                        ? <button className="secondary" disabled><Check size={14} /> Saved to your looks</button>
-                        : <button className="secondary" onClick={() => saveLook(o)}><Heart size={14} /> Save look</button>}
+                      actions={<>
+                        {saved[o.rank]
+                          ? <button className="secondary" disabled><Check size={14} /> Saved to your looks</button>
+                          : <button className="secondary" onClick={() => saveLook(o)}><Heart size={14} /> Save look</button>}
+                        {worn[o.rank]
+                          ? <button className="secondary" disabled><Check size={14} /> Worn today</button>
+                          : <button className="secondary" onClick={() => woreIt(o)}><Shirt size={14} /> Wore it today</button>}
+                      </>}
                     />
                   ))}
                 </div>

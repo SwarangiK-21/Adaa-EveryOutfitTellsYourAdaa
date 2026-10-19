@@ -16,11 +16,20 @@ class ItemFields(BaseModel):
     style: str
     occasions: list[str] = Field(min_length=1)
     notes: str = Field(default="", max_length=300)
+    price: float | None = Field(default=None, ge=0, le=10_000_000)   # optional, for cost per wear
 
     @field_validator("name", "item_type", "colour", "notes", mode="before")
     @classmethod
     def strip_text(cls, value):
         return value.strip() if isinstance(value, str) else value
+
+    @field_validator("price", mode="before")
+    @classmethod
+    def blank_price(cls, value):
+        if isinstance(value, str):
+            value = value.strip().replace(",", "")
+            return None if not value else value
+        return value
 
     @field_validator("category")
     @classmethod
@@ -71,6 +80,14 @@ def item_out(item: dict) -> ItemOut:
 
 # ---------- Outfit recommendations ----------
 
+class WeatherNow(BaseModel):
+    """Today's forecast (from Open-Meteo, fetched by the browser), used as a gentle styling nudge."""
+
+    temp_c: float = Field(ge=-60, le=60)      # today's high
+    rain: bool = False
+    label: str | None = Field(default=None, max_length=80)   # e.g. "33°C, sunny in Pune"
+
+
 class StylePrefs(BaseModel):
     """The occasion and preferences an outfit is styled for. Only occasion is required."""
 
@@ -79,6 +96,7 @@ class StylePrefs(BaseModel):
     colour: str | None = Field(default=None, max_length=40)
     colour_mood: str | None = None
     comfort: str | None = None
+    weather: WeatherNow | None = None
 
     @field_validator("style", "colour", "colour_mood", "comfort", mode="before")
     @classmethod
@@ -242,11 +260,46 @@ class WearIn(BaseModel):
 
 class HistoryEntry(BaseModel):
     id: int
-    look_id: int | None       # None if the saved look was deleted later
+    look_id: int | None       # None if the saved look was deleted later, or it was never saved
     look_name: str
     occasion: str
     worn_on: str
-    pieces: list[OutfitPiece]  # the look's current pieces (empty if the look was deleted)
+    pieces: list[OutfitPiece]  # the pieces actually worn that day (still in the wardrobe)
+
+
+class WearOutfitIn(WearIn):
+    """Record wearing an outfit that isn't a saved look (e.g. straight from the stylist)."""
+
+    item_ids: ItemIds = Field(min_length=1, max_length=12)
+    occasion: str
+    name: str | None = Field(default=None, max_length=80)
+
+    @field_validator("occasion")
+    @classmethod
+    def check_occasion(cls, value):
+        if value not in OCCASIONS:
+            raise ValueError(f"occasion must be one of: {', '.join(OCCASIONS)}")
+        return value
+
+
+class ItemWear(BaseModel):
+    item: ItemOut
+    wears: int                      # times worn (from outfit history)
+    last_worn_on: str | None
+    days_since: int | None          # days since last worn (None = never)
+    cost_per_wear: float | None     # price / wears (price if never worn); None without a price
+
+
+class WearStats(BaseModel):
+    days: int                       # the "not worn in N days" window
+    total_items: int
+    worn_recently: int              # pieces worn in the window
+    total_spent: float | None       # sum of the prices you entered
+    priced_items: int
+    average_cost_per_wear: float | None
+    not_worn: list[ItemWear]        # not worn in the window (or never), longest first
+    most_worn: list[ItemWear]
+    cost_per_wear: list[ItemWear]   # priced pieces, best value first
 
 
 

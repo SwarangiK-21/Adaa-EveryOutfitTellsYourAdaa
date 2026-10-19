@@ -12,7 +12,7 @@ import storage
 from recommender.engine import RecommendationError, alternatives, evaluate
 from schemas import (
     HistoryEntry, LookCreate, LookOut, LookUpdate, OutfitCheck, OutfitEvaluation,
-    StylePrefs, SwapOption, SwapRequest, WearIn, item_out,
+    StylePrefs, SwapOption, SwapRequest, WearIn, WearOutfitIn, item_out,
 )
 
 router = APIRouter(prefix="/api", tags=["looks"])
@@ -148,9 +148,32 @@ def wear_look(look_id: int, db: Db, body: WearIn | None = None):
 
 
 def _history_out(db, entry: dict, items: list[dict]) -> dict:
-    look = looks_db.get_look(db, entry["look_id"]) if entry["look_id"] else None
-    pieces = _look_out(db, look, items)["pieces"] if look else []
+    # The pieces worn that day (a later swap in the saved look doesn't rewrite history).
+    by_id = {i["id"]: i for i in items}
+    worn = [by_id[i] for i in looks_db.worn_item_ids(db, entry["id"]) if i in by_id]
+    if worn:
+        prefs = {"occasion": entry["occasion"]}
+        pieces = evaluate(worn, [i["id"] for i in worn], StylePrefs(**prefs))["pieces"]
+        pieces = [{"role": p["role"], "item": item_out(p["item"])} for p in pieces]
+    else:
+        look = looks_db.get_look(db, entry["look_id"]) if entry["look_id"] else None
+        pieces = _look_out(db, look, items)["pieces"] if look else []
     return {**entry, "pieces": pieces}
+
+
+@router.post("/history", response_model=HistoryEntry, status_code=201)
+def wear_outfit(body: WearOutfitIn, db: Db):
+    """Record wearing an outfit that isn't saved (e.g. straight from the stylist)."""
+    items = database.list_items(db)
+    known = {i["id"]: i for i in items}
+    missing = [i for i in body.item_ids if i not in known]
+    if missing:
+        raise HTTPException(status_code=400, detail="Some of these pieces are no longer in your wardrobe.")
+    ids = list(dict.fromkeys(body.item_ids))
+    name = body.name or " + ".join(known[i]["name"] for i in ids
+                                   if known[i]["category"] == "Clothing") or "Outfit"
+    entry = looks_db.log_outfit_wear(db, ids, name[:80], body.occasion, body.worn_on or date.today())
+    return _history_out(db, entry, items)
 
 
 @router.get("/history", response_model=list[HistoryEntry])

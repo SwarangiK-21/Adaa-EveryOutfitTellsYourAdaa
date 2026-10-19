@@ -8,7 +8,7 @@ Run from `backend/` with the virtual environment active:
 python -m pytest
 ```
 
-Expected result: **104 passed**. Each test runs against a fresh temporary database and photo folder, so your real wardrobe is never touched.
+Expected result: **114 passed**. Each test runs against a fresh temporary database and photo folder, so your real wardrobe is never touched.
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -20,6 +20,7 @@ Expected result: **104 passed**. Each test runs against a fresh temporary databa
 | `test_tryon.py` | 17 | Your photo and server settings; status check; bottom-then-top order; dress in one pass; skipped accessories; caching and new image after a swap; new photo clears old try-ons; clear errors (nothing to try on, server offline, not set up, no photo); safe image names; link-only change keeps the token |
 | `test_cutouts.py` | 8 | Saving, serving and deleting garment cut-outs; method version stored; new photo clears the cut-out; model download route and unknown models |
 | `test_planner.py` | 12 | Shop Smart: missing bottoms and shoes suggested, things you own skipped (denim = blue), bags ranked after clothes, empty wardrobe; Trip Planner: no garment ever worn twice (shoes reused), a plan found where day-by-day picking would fail, an empty day instead of a repeat, only real items, API validation |
+| `test_weather_wear.py` | 9 | Hot day: light pieces, no jacket; cold day: sweater, jeans, boots; rain caution; no weather = no change; weather validated; wear stats (not worn, most worn, cost per wear, totals); prices saved/cleared/validated; wearing an unsaved outfit counts |
 | `test_workflow.py` | 1 | The whole journey: empty wardrobe → add 10 pieces → *"Style my green kurta for a traditional family function"* → outfits → swap → save → wear → history → delete a worn piece |
 
 ## Manual end-to-end pass (browser)
@@ -47,7 +48,7 @@ Done on 15 Oct 2026, starting from an **empty** data folder, using the real form
 
 ## Quick checklist before a demo
 
-1. `python -m pytest` → `104 passed`
+1. `python -m pytest` → `114 passed`
 2. Backend running: http://127.0.0.1:8000/api/health → `"status":"ok"`
 3. Frontend running: http://localhost:5173 → Overview shows your piece count
 4. AI Stylist → ask for one of your demo requests → outfits with photos appear
@@ -180,3 +181,20 @@ Reported: a 5-day trip wore the white top on 3 days and the short skirt on 2. No
 | A scarce Party outfit isn't used up on a Casual day (search instead of day-by-day picking) | ✅ test |
 | Not enough clothes: the day is left empty with a note, never a repeat | ✅ test |
 | Backend tests | ✅ 105 passed |
+
+## Weather and wear stats pass (19 Oct 2026)
+
+Run on a **copy of the real wardrobe** (31 items).
+
+| Check | Result |
+|---|---|
+| Preferences → city search "Pune" (Open-Meteo geocoding) → Pune, Maharashtra, India | ✅ |
+| Today's forecast shown: "34°C, drizzle in Pune" (the laptop's own weather showed 33°C) | ✅ |
+| AI Stylist: weather chip "Styling for light, breezy pieces and rain-friendly shoes", with a *Use* switch | ✅ |
+| College outfits at 34°C: "Light, breezy pieces for a 34°C day"; the full-sleeve top held back; "Rain is expected: your black shoes may not love puddles" on the outfit with heels | ✅ |
+| *Wore it today* on a stylist outfit → "Worn today"; counted in Wear Stats | ✅ |
+| Wear Stats: 9 of 31 pieces worn in 30 days (old saved-look history filled in), 22 not worn with *Style it*, most worn list | ✅ |
+| Price ₹1,200 on "crop top" (Edit piece) → cost per wear ₹1,200 (worn once), total spent and average | ✅ |
+| Overview nudge: "22 pieces not worn in 30 days … give them a day out" with photos, opens Wear Stats | ✅ |
+| History keeps the pieces worn even after deleting the saved look (test updated) | ✅ |
+| Backend tests | ✅ 114 passed |

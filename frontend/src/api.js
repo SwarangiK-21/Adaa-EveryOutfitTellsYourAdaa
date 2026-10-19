@@ -125,6 +125,11 @@ export const api = {
   // days: the occasion for each day, e.g. ['Travel', 'Casual', 'Party']; style: optional
   planTrip: (days, style) => postJson('/api/trips/plan', { days, style: style || null }),
 
+  // Wear stats: not worn in N days, most worn, cost per wear
+  getWearStats: (days = 30) => request(`/api/insights/wear?days=${days}`),
+  // Record wearing an outfit that isn't saved (e.g. straight from the stylist)
+  wearOutfit: (itemIds, occasion) => postJson('/api/history', { item_ids: itemIds, occasion }),
+
   getHistory: () => request('/api/history'),
   deleteHistoryEntry: (id) => request(`/api/history/${id}`, { method: 'DELETE' }),
 };

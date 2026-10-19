@@ -12,7 +12,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from itertools import combinations
 
-from recommender import colours, garments as g
+from recommender import colours, garments as g, weather as wx
 
 STYLE_CLASH = {frozenset({"Traditional", "Western"})}
 MINIMAL_OCCASIONS = {"Casual", "College", "Office", "Travel"}
@@ -94,7 +94,7 @@ def _request_points(piece: Piece, req, weight: float = 1.0) -> float:
         points += 2.0
     if colours.matches_mood(piece.colour, req.colour_mood):
         points += 0.75
-    return points * weight
+    return points * weight + wx.points(piece, getattr(req, "weather", None))
 
 
 def _dominant_style(pieces: list[Piece]) -> str:
@@ -269,6 +269,9 @@ def _complete(base: Outfit, wardrobe: list[Piece], req, usage: Counter, anchor: 
         outfit.reasons.append((1.0, f"Your {shoes.name} keep it comfortable"))
     if anchor and anchor.id in outfit.ids:
         outfit.reasons.append((10.0, f"Built around your {anchor.name}"))
+    reasons, cautions = wx.notes(outfit.pieces, getattr(req, "weather", None))
+    outfit.reasons.extend(reasons)
+    outfit.cautions.extend(cautions)
     return outfit
 
 
@@ -402,6 +405,9 @@ def evaluate(items: list[dict], item_ids: list[int], req) -> dict:
     for p in others:
         outfit.score += _addition_points(p, outfit, req, Counter()) * 0.5
         outfit.pieces.append(p)
+    reasons, weather_cautions = wx.notes(outfit.pieces, getattr(req, "weather", None))
+    outfit.reasons.extend(reasons)
+    outfit.cautions.extend(weather_cautions)
 
     cautions = list(outfit.cautions)
     if clash:

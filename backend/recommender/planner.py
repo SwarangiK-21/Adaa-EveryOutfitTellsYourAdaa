@@ -5,6 +5,7 @@ Both only use the rules the stylist already uses (roles, top/bottom fit, colour 
 occasion tags), so their advice matches the outfits Adaa actually suggests.
 """
 from collections import Counter
+from datetime import date
 from dataclasses import dataclass
 
 from recommender import colours, engine, garments as g
@@ -294,3 +295,40 @@ def plan_trip(items: list[dict], days: list[str], style: str | None = None) -> d
     outfits = sum(1 for d in plan if d["outfit"])
     return {"days": plan, "packing": packing, "pieces": len(packing), "outfits": outfits,
             "notes": list(dict.fromkeys(notes))}
+
+
+# ---------- Wear stats ----------
+
+def wear_stats(items: list[dict], wear: dict[int, tuple[int, str]], today: date, days: int = 30) -> dict:
+    """How much each piece is worn: not worn lately, most worn, and cost per wear.
+
+    wear: item id -> (times worn, last date worn as "YYYY-MM-DD"), from outfit history.
+    """
+    rows = []
+    for item in items:
+        n, last = wear.get(item["id"], (0, None))
+        since = (today - date.fromisoformat(last)).days if last else None
+        price = item.get("price")
+        rows.append({
+            "item": item, "wears": n, "last_worn_on": last, "days_since": since,
+            "cost_per_wear": round(price / max(n, 1), 2) if price is not None else None,
+        })
+    not_worn = [r for r in rows if r["days_since"] is None or r["days_since"] > days]
+    # Never worn first (oldest additions first), then the longest since last worn.
+    not_worn.sort(key=lambda r: (r["days_since"] is not None, -(r["days_since"] or 0), r["item"]["created_at"]))
+    most_worn = sorted((r for r in rows if r["wears"]), key=lambda r: (-r["wears"], r["item"]["name"]))[:5]
+    priced = [r for r in rows if r["item"].get("price") is not None]
+    cost = sorted(priced, key=lambda r: (r["cost_per_wear"], -r["wears"], r["item"]["name"]))
+    spent = sum(r["item"]["price"] for r in priced)
+    total_wears = sum(max(r["wears"], 1) for r in priced)
+    return {
+        "days": days,
+        "total_items": len(items),
+        "worn_recently": sum(1 for r in rows if r["days_since"] is not None and r["days_since"] <= days),
+        "total_spent": round(spent, 2) if priced else None,
+        "priced_items": len(priced),
+        "average_cost_per_wear": round(spent / total_wears, 2) if priced else None,
+        "not_worn": not_worn,
+        "most_worn": most_worn,
+        "cost_per_wear": cost,
+    }

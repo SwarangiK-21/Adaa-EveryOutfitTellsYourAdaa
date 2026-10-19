@@ -20,6 +20,7 @@ const emptyFields = (options) => ({
   style: options.styles[0],
   occasions: [],
   notes: '',
+  price: '',
 });
 
 // Add a new wardrobe item (item = null) or edit an existing one.
@@ -30,6 +31,7 @@ export default function ItemForm({ options, item, onClose, onSaved, notify }) {
       ? {
           name: item.name, category: item.category, item_type: item.item_type,
           colour: item.colour, style: item.style, occasions: item.occasions, notes: item.notes,
+          price: item.price ?? '',
         }
       : emptyFields(options),
   );
@@ -217,11 +219,17 @@ export default function ItemForm({ options, item, onClose, onSaved, notify }) {
               </label>
             </div>
 
-            <label className="field">
-              <span>Main colour</span>
-              <input list="colour-suggestions" value={fields.colour} maxLength={40} onChange={(e) => set('colour', e.target.value)} placeholder="e.g. Green" />
-              <datalist id="colour-suggestions">{COLOUR_SUGGESTIONS.map((c) => <option key={c} value={c} />)}</datalist>
-            </label>
+            <div className="field-row">
+              <label className="field">
+                <span>Main colour</span>
+                <input list="colour-suggestions" value={fields.colour} maxLength={40} onChange={(e) => set('colour', e.target.value)} placeholder="e.g. Green" />
+                <datalist id="colour-suggestions">{COLOUR_SUGGESTIONS.map((c) => <option key={c} value={c} />)}</datalist>
+              </label>
+              <label className="field">
+                <span>Price <i>(optional, for cost per wear)</i></span>
+                <input type="number" inputMode="decimal" min="0" step="1" value={fields.price} onChange={(e) => set('price', e.target.value)} placeholder="e.g. 1499" />
+              </label>
+            </div>
 
             <fieldset className="field">
               <legend>Style</legend>

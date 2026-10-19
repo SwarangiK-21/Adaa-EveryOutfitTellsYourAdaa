@@ -79,10 +79,11 @@ def create_item(
     style: Annotated[str, Form()],
     occasions: Annotated[list[str], Form()],
     notes: Annotated[str, Form()] = "",
+    price: Annotated[str, Form(max_length=20)] = "",
 ):
     fields = _parse_fields(
         name=name, category=category, item_type=item_type, colour=colour,
-        style=style, occasions=occasions, notes=notes,
+        style=style, occasions=occasions, notes=notes, price=price,
     )
     try:
         filename = storage.save_image(photo)
@@ -108,13 +109,14 @@ def update_item(
     style: Annotated[str, Form()],
     occasions: Annotated[list[str], Form()],
     notes: Annotated[str, Form()] = "",
+    price: Annotated[str, Form(max_length=20)] = "",
     photo: Annotated[UploadFile | None, File(description="Optional new photo")] = None,
 ):
     """Replace an item's details. Send a new photo only if it should change."""
     existing = _get_or_404(db, item_id)
     fields = _parse_fields(
         name=name, category=category, item_type=item_type, colour=colour,
-        style=style, occasions=occasions, notes=notes,
+        style=style, occasions=occasions, notes=notes, price=price,
     )
 
     filename = existing["image_filename"]
