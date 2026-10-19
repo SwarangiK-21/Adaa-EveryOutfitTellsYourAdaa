@@ -8,7 +8,7 @@ Run from `backend/` with the virtual environment active:
 python -m pytest
 ```
 
-Expected result: **93 passed**. Each test runs against a fresh temporary database and photo folder, so your real wardrobe is never touched.
+Expected result: **104 passed**. Each test runs against a fresh temporary database and photo folder, so your real wardrobe is never touched.
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -17,7 +17,9 @@ Expected result: **93 passed**. Each test runs against a fresh temporary databas
 | `test_parser.py` | 18 | Occasion words (sangeet, diwali, interview…); style, comfort and colour mood; *"Style my black crop top for a party"*; name vs type matching; typos; asking when ambiguous; reporting pieces you don't own; missing occasion |
 | `test_looks.py` | 13 | Save, list, rename, delete looks; no duplicates; numbered names; swap options stay wearable and tagged pieces rank first; evaluation cautions; swaps inside saved looks; wear history; history survives deleting a look; no future dates; deleting a wardrobe item keeps the look and flags it |
 | `test_look_photos.py` | 7 | Verified photo upload and serving; photo becomes outdated after a swap or a deleted piece; replacing/removing/deleting cleans up files; rejects non-images |
-| `test_tryon.py` | 11 | Your photo and server settings; status check; bottom-then-top order; dress in one pass; skipped accessories; caching and new image after a swap; new photo clears old try-ons; clear errors (nothing to try on, server offline, not set up, no photo); safe image names; link-only change keeps the token |
+| `test_tryon.py` | 17 | Your photo and server settings; status check; bottom-then-top order; dress in one pass; skipped accessories; caching and new image after a swap; new photo clears old try-ons; clear errors (nothing to try on, server offline, not set up, no photo); safe image names; link-only change keeps the token |
+| `test_cutouts.py` | 8 | Saving, serving and deleting garment cut-outs; method version stored; new photo clears the cut-out; model download route and unknown models |
+| `test_planner.py` | 12 | Shop Smart: missing bottoms and shoes suggested, things you own skipped (denim = blue), bags ranked after clothes, empty wardrobe; Trip Planner: no garment ever worn twice (shoes reused), a plan found where day-by-day picking would fail, an empty day instead of a repeat, only real items, API validation |
 | `test_workflow.py` | 1 | The whole journey: empty wardrobe → add 10 pieces → *"Style my green kurta for a traditional family function"* → outfits → swap → save → wear → history → delete a worn piece |
 
 ## Manual end-to-end pass (browser)
@@ -45,7 +47,7 @@ Done on 15 Oct 2026, starting from an **empty** data folder, using the real form
 
 ## Quick checklist before a demo
 
-1. `python -m pytest` → `93 passed`
+1. `python -m pytest` → `104 passed`
 2. Backend running: http://127.0.0.1:8000/api/health → `"status":"ok"`
 3. Frontend running: http://localhost:5173 → Overview shows your piece count
 4. AI Stylist → ask for one of your demo requests → outfits with photos appear
@@ -152,3 +154,29 @@ Run on a **copy of the real wardrobe** (28 items).
 | *Add a piece* shows photo tips under the photo box (desktop and phone width, no sideways scroll) | ✅ |
 | **Download image** under the board saves `adaa-<look>.png`, 900×1500, cream background, shadows, capitalised look name | ✅ (checked by capturing the image in the test browser) |
 | Backend tests | ✅ 93 passed |
+
+## Planning and auto-fill pass (19 Oct 2026)
+
+Run on a **copy of the real wardrobe** (28 items).
+
+| Check | Result |
+|---|---|
+| Shop Smart: 41 outfits today; top ideas are beige trousers / white palazzo / white kurta (+6 to +7 outfits each, with "goes with your..." photos); gold juttis for the festive gowns that have no shoes; note "No complete outfit is tagged for Wedding yet" | ✅ |
+| Shop Smart doesn't suggest what you own (your blue straight jeans count as "blue jeans") and lists bag/jewellery ideas after clothes and shoes | ✅ (fixed during the pass) |
+| Trip Planner, 5 days (Travel, Casual, College, Party, Date): an outfit every day, no repeats, **9 pieces** to pack, packing checklist, a board for each day | ✅ |
+| Trip API rejects 0 days, more than 14, or an unknown occasion | ✅ |
+| Auto-fill on 28 photos: category right for all clothes, shoes and bags; jewellery and the watch correctly left blank; type right for about 20 of 22; colour right for about 17 of 22 | ✅ suggestions only. Misses: a maroon top read as a dress, a purple frock as a navy skirt, brown checks as grey, white under warm light as beige |
+| Add a piece with the straight-jeans photo: Name "Denim jeans", Clothing, Jeans, Denim, Western filled in; note asks to check | ✅ |
+| Backend tests (11 new for planning) | ✅ 104 passed |
+
+## Trip Planner: no repeated clothes (19 Oct 2026)
+
+Reported: a 5-day trip wore the white top on 3 days and the short skirt on 2. Now **no garment is worn twice on a trip**; shoes, bags and jewellery may be reused.
+
+| Check | Result |
+|---|---|
+| Your 5-day trip (Casual, Party, Office, Date, Party) on the real wardrobe | ✅ 5 different outfits, every garment worn once, 0.2 s |
+| 14-day stress test | ✅ 8 different outfits (the most your clothes allow without repeats), one combined note naming the empty days and what to add, 0.6 s |
+| A scarce Party outfit isn't used up on a Casual day (search instead of day-by-day picking) | ✅ test |
+| Not enough clothes: the day is left empty with a note, never a repeat | ✅ test |
+| Backend tests | ✅ 105 passed |

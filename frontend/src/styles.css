@@ -26,6 +26,9 @@
 .modal-head .icon-btn{background:#f4eee7}
 .form-body{display:grid;grid-template-columns:230px 1fr;gap:20px;padding:18px 22px}
 .photo-col{display:grid;gap:10px;align-self:start}
+.autofill{margin:0;font-size:10px;line-height:1.5;color:#6f5140;background:#f3ece4;border-radius:8px;padding:8px 10px}
+.autofill svg{vertical-align:-2px;margin-right:3px}
+.autofill.quiet{background:none;padding:0;color:#9b8d80}
 .photo-tips{font-size:10px;color:#7d7064;line-height:1.45}
 .photo-tips b{display:block;font-size:10px;color:#6f5140;margin-bottom:4px}
 .photo-tips ul{margin:0;padding:0;list-style:none;display:grid;gap:3px}
@@ -231,3 +234,59 @@
 /* The product-card rule `.outfit img` (beige box, cover, rounded) must not apply to board pictures. */
 .outfit .board img{width:auto;height:auto;max-width:100%;max-height:100%;background:none;border-radius:0;object-fit:contain;aspect-ratio:auto}
 .outfit .board img.board-photo{border-radius:10px}
+/* Shop smart (wardrobe gaps) */
+.content>.form-error,.trip-form .form-error{margin:0 0 14px}
+.gap-summary{background:#f4eee7;border:1px solid #ece1d7;border-radius:13px;padding:14px 16px;margin-bottom:18px;display:grid;gap:6px}
+.gap-summary>div{display:flex;align-items:baseline;gap:9px}
+.gap-summary strong{font:500 28px 'Playfair Display',serif;color:#58483e}
+.gap-summary span{font-size:11px;color:#81766d}
+.gap-summary p{margin:0;font-size:11px;color:#7a5b48;display:flex;gap:6px;align-items:flex-start}
+.gap-summary p svg{flex:none;margin-top:1px}
+.gap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+.gap-card{background:#fffdfa;border:1px solid var(--line);border-radius:13px;padding:16px;display:grid;gap:10px;align-content:start}
+.gap-card header,.trip-day header{height:auto;border:0;padding:0;background:none}
+.gap-card header{display:flex;align-items:center;gap:11px}
+.gap-card header>div{flex:1;min-width:0}
+.gap-card header small{font-size:9px;letter-spacing:1.3px;color:#a08d7e;font-weight:700}
+.gap-card h3{font:600 17px 'Playfair Display',serif;margin:2px 0 0;color:#3f3631}
+.gap-swatch{width:34px;height:34px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 1px #0000001a}
+.gap-count{font:600 22px 'Playfair Display',serif;color:#745746;text-align:right;line-height:1}
+.gap-count small{display:block;font:600 9px 'DM Sans',sans-serif;color:#a08d7e;letter-spacing:.5px}
+.gap-card>p{margin:0;font-size:11px;line-height:1.6;color:#6f655d}
+.gap-occasions{display:flex;flex-wrap:wrap;gap:5px}
+.gap-occasions span{font-size:9px;background:#f0e7de;color:#6f5140;border-radius:20px;padding:4px 8px;font-weight:700}
+.gap-pairs small{display:block;font-size:9px;color:#9b8d80;margin-bottom:5px}
+.gap-pairs>div{display:flex;gap:6px;flex-wrap:wrap}
+.gap-pairs figure{margin:0;width:52px}
+.gap-pairs img,.gap-pairs .img-fallback{width:52px;height:52px;border-radius:8px;object-fit:cover;background:#eee6da;display:grid;place-items:center}
+.gap-pairs figcaption{font-size:8px;color:#8a7f75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+/* Trip planner */
+.trip-layout{display:grid;grid-template-columns:300px 1fr;gap:18px;align-items:start}
+.stepper{display:flex;align-items:center;gap:12px}
+.stepper .icon-btn{background:#f4eee7}
+.stepper .icon-btn:disabled{opacity:.4;cursor:default}
+.stepper b{font-size:13px;color:#58483e;min-width:62px;text-align:center}
+.trip-days{display:grid;gap:7px;max-height:330px;overflow:auto;padding-right:2px}
+.trip-days label{display:grid;grid-template-columns:52px 1fr;align-items:center;gap:8px;font-size:11px;color:#6f655d}
+.trip-days select{border:1px solid var(--line);border-radius:8px;padding:8px;background:white;font:inherit;font-size:11px;color:#4f463f}
+.packing{background:#fffdfa;border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:16px}
+.packing h3{font:600 16px 'Playfair Display',serif;margin:0 0 10px;display:flex;justify-content:space-between;align-items:baseline}
+.packing h3 small{font:600 10px 'DM Sans',sans-serif;color:#9b8d80}
+.packing ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px}
+.packing label{display:flex;align-items:center;gap:9px;padding:6px;border-radius:9px;cursor:pointer;color:#5d8a52}
+.packing label:hover{background:#f7f1ea}
+.packing input{accent-color:#745746}
+.packing img,.packing .img-fallback{width:38px;height:38px;border-radius:7px;object-fit:cover;background:#eee6da;flex:none;display:grid;place-items:center}
+.packing label>span{flex:1;min-width:0}
+.packing b{display:block;font-size:11px;color:#3f3631;text-transform:capitalize;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.packing small{font-size:9px;color:#9b8d80}
+.packing li.done b{text-decoration:line-through;color:#a3988e}
+.trip-days-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.trip-day{background:#fffdfa;border:1px solid var(--line);border-radius:13px;padding:10px;display:grid;gap:8px;align-content:start}
+.trip-day header{display:flex;justify-content:space-between;align-items:baseline;font-size:11px}
+.trip-day header b{font:600 14px 'Playfair Display',serif;color:#3f3631}
+.trip-day header span{font-size:9px;font-weight:700;color:#6f5140;background:#f0e7de;border-radius:20px;padding:3px 8px}
+.trip-board{max-width:none;border-radius:10px}
+.trip-day>p{margin:0;font-size:10px;color:#6f655d;text-transform:capitalize;line-height:1.5}
+@media(max-width:1050px){.trip-layout{grid-template-columns:1fr}}
+@media(max-width:540px){.trip-days-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.gap-grid{grid-template-columns:1fr}}

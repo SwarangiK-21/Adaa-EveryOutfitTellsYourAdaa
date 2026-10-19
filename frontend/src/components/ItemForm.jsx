@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ImagePlus, X, Check } from 'lucide-react';
+import { ImagePlus, X, Check, Sparkles, RefreshCw } from 'lucide-react';
 import { api } from '../api.js';
 import CutoutEditor from './CutoutEditor.jsx';
 import { forgetCutout, queueMissingCutouts } from '../cutoutQueue.js';
@@ -8,8 +8,8 @@ const MAX_PHOTO_MB = 5;
 const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const COLOUR_SUGGESTIONS = [
   'Black', 'White', 'Ivory', 'Cream', 'Beige', 'Brown', 'Tan', 'Grey', 'Navy', 'Blue',
-  'Sky blue', 'Teal', 'Green', 'Sage', 'Olive', 'Mustard', 'Yellow', 'Orange', 'Peach',
-  'Red', 'Maroon', 'Pink', 'Rose', 'Lavender', 'Purple', 'Gold', 'Silver', 'Multicolour',
+  'Sky blue', 'Denim', 'Teal', 'Green', 'Sage', 'Olive', 'Mustard', 'Yellow', 'Orange', 'Peach',
+  'Red', 'Maroon', 'Pink', 'Baby pink', 'Rose', 'Lemon', 'Bottle green', 'Lavender', 'Purple', 'Gold', 'Silver', 'Multicolour',
 ];
 
 const emptyFields = (options) => ({
@@ -38,6 +38,10 @@ export default function ItemForm({ options, item, onClose, onSaved, notify }) {
   const [preview, setPreview] = useState(isEdit ? item.image_url : '');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  // Reading a new photo to suggest category, type, colour and name: null | { status, text }
+  const [autoFill, setAutoFill] = useState(null);
+  const touched = useRef(new Set());   // fields the user typed or picked: never overwritten
+  const photoRun = useRef(0);
   const firstField = useRef(null);
 
   const hasChanges = photo !== null || JSON.stringify(fields) !== JSON.stringify(initialFields);
@@ -60,7 +64,10 @@ export default function ItemForm({ options, item, onClose, onSaved, notify }) {
   // Free the temporary preview URL when it is replaced or the form closes.
   useEffect(() => () => preview.startsWith('blob:') && URL.revokeObjectURL(preview), [preview]);
 
-  const set = (key, value) => setFields((f) => ({ ...f, [key]: value }));
+  const set = (key, value) => {
+    touched.current.add(key);
+    setFields((f) => ({ ...f, [key]: value }));
+  };
   // Read the latest occasions inside the update, so quick taps never undo each other.
   const toggleOccasion = (o) =>
     setFields((f) => ({
@@ -94,6 +101,35 @@ export default function ItemForm({ options, item, onClose, onSaved, notify }) {
     setError('');
     setPhoto(file);
     setPreview(url);
+    if (!isEdit) readPhoto(url);
+  };
+
+  // Suggest the details from the photo (clothes parser, in the browser). Only empty or untouched
+  // fields are filled, and the user can change anything.
+  const readPhoto = async (url) => {
+    const run = ++photoRun.current;
+    setAutoFill({ status: 'reading' });
+    try {
+      const { analysePhoto } = await import('../cutout.js');
+      const found = await analysePhoto(url);
+      if (run !== photoRun.current) return;   // a newer photo was chosen meanwhile
+      if (!found) { setAutoFill({ status: 'none' }); return; }
+      setFields((f) => {
+        const next = { ...f };
+        const fill = (key, value) => { if (value && !touched.current.has(key)) next[key] = value; };
+        fill('category', found.category);
+        fill('item_type', found.item_type);
+        fill('colour', found.colour);
+        fill('style', found.style);
+        if (!touched.current.has('name') && !f.name.trim() && found.colour) {
+          next.name = `${found.colour} ${found.item_type.toLowerCase()}`;
+        }
+        return next;
+      });
+      setAutoFill({ status: 'done', text: [found.category, found.item_type, found.colour].filter(Boolean).join(' · ') });
+    } catch {
+      if (run === photoRun.current) setAutoFill({ status: 'none' });
+    }
   };
 
   const submit = async (e) => {
@@ -150,6 +186,15 @@ export default function ItemForm({ options, item, onClose, onSaved, notify }) {
                 <li className="avoid">Avoid hangers, people wearing it and other clothes in the shot</li>
               </ul>
             </div>
+            {autoFill?.status === 'reading' && (
+              <p className="autofill"><RefreshCw size={12} className="spin" /> Reading your photo…</p>
+            )}
+            {autoFill?.status === 'done' && (
+              <p className="autofill"><Sparkles size={12} /> Filled in from your photo: <b>{autoFill.text}</b>. Please check and change anything that's off.</p>
+            )}
+            {autoFill?.status === 'none' && (
+              <p className="autofill quiet">Adaa couldn't tell what this is from the photo (it recognises clothes, shoes and bags, not jewellery yet). Please fill in the details.</p>
+            )}
           </div>
 
           <div className="form-fields">

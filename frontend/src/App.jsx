@@ -1,16 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { LayoutDashboard, Shirt, MessageCircle, Heart, SlidersHorizontal, Sparkles, ArrowUpRight, ChevronRight, Menu, X, Check } from 'lucide-react';
+import { LayoutDashboard, Shirt, MessageCircle, Heart, SlidersHorizontal, Sparkles, ArrowUpRight, ChevronRight, Menu, X, Check, Luggage, ShoppingBag } from 'lucide-react';
 import { api } from './api.js';
 import Heading from './components/Heading.jsx';
 import Wardrobe from './pages/Wardrobe.jsx';
 import Stylist from './pages/Stylist.jsx';
 import SavedLooks from './pages/SavedLooks.jsx';
+import TripPlanner from './pages/TripPlanner.jsx';
+import ShopSmart from './pages/ShopSmart.jsx';
 import { TryOnContext } from './tryon.js';
 import { queueMissingCutouts } from './cutoutQueue.js';
 import { WelcomeSetup, YourPhotoSettings } from './components/YourPhoto.jsx';
 import { PREFERENCE_CHOICES, DEFAULT_PREFERENCES, loadPreferences, savePreferences } from './preferences.js';
 
-const nav = [{name:'Overview',Icon:LayoutDashboard},{name:'My Wardrobe',Icon:Shirt},{name:'AI Stylist',Icon:MessageCircle},{name:'Saved Looks',Icon:Heart},{name:'Preferences',Icon:SlidersHorizontal}];
+const nav = [{name:'Overview',Icon:LayoutDashboard},{name:'My Wardrobe',Icon:Shirt},{name:'AI Stylist',Icon:MessageCircle},{name:'Saved Looks',Icon:Heart},{name:'Trip Planner',Icon:Luggage},{name:'Shop Smart',Icon:ShoppingBag},{name:'Preferences',Icon:SlidersHorizontal}];
 
 export default function App(){
  const [page,setPage]=useState('Overview'),[itemCount,setItemCount]=useState(null),[anchorId,setAnchorId]=useState(null),[mobile,setMobile]=useState(false),[toast,setToast]=useState(''),[lookCount,setLookCount]=useState(0);
@@ -46,6 +48,8 @@ export default function App(){
     {page==='My Wardrobe'&&<Wardrobe notify={notify} onStyle={(item)=>change('AI Stylist',item.id)}/>}
     {page==='AI Stylist'&&<Stylist key={anchorId??'none'} anchorId={anchorId} goToWardrobe={()=>change('My Wardrobe')} notify={notify} onLookSaved={()=>setLookCount(c=>c+1)}/>}
     {page==='Saved Looks'&&<SavedLooks notify={notify} goToStylist={()=>change('AI Stylist')} onCountChange={setLookCount}/>}
+    {page==='Trip Planner'&&<TripPlanner goToWardrobe={()=>change('My Wardrobe')}/>}
+    {page==='Shop Smart'&&<ShopSmart goToWardrobe={()=>change('My Wardrobe')}/>}
     {page==='Preferences'&&<><Heading eyebrow="MADE TO FEEL LIKE YOU" title={<>Your style, <em>your choices.</em></>} sub="These optional preferences help personalise future recommendations."/><Preferences notify={notify}/></>}
    </div><footer><span>Made for your wardrobe, not your shopping cart.</span><span>ADAA 1.0 · LOCAL PROTOTYPE</span></footer>
   </main>{toast&&<div className="toast"><Check size={16}/>{toast}</div>}

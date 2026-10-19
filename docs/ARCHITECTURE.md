@@ -166,6 +166,26 @@ OutfitBoard.jsx: sizes the pieces to each other using each cut-out's real propor
 - **Download image:** `boardImage.js` redraws the board on a 900×1500 canvas from the pictures exactly where they appear on screen (same cream background and shadows), adds the look's name, and downloads it as `adaa-<look>.png`. All in the browser.
 - **Photo tips:** `ItemForm.jsx` shows short tips for clean garment photos under the photo box, since the board is only as good as the photo.
 
+## Planning (`recommender/planner.py`)
+
+Both features reuse the stylist's own rules (roles, top/bottom fit, colour harmony, occasion tags), so their advice matches the outfits Adaa suggests.
+
+**Shop Smart (`GET /api/insights/gaps`).** A fixed catalogue of 17 versatile pieces (white sneakers, black heels, nude flats, gold juttis, blue jeans, black/beige trousers, black skirt, white shirt, black top, white kurta, white palazzo, gold jhumkas, silver studs, black clutch, tan tote, gold potli), each with the occasions it's usually worn for. For each one you don't already own (same kind and colour family; denim counts as blue):
+- *Clothes:* the wardrobe's outfit bases (top + bottom or a one-piece, tagged for the occasion, no colour clash) are counted with and without it. The difference is "new outfits".
+- *Shoes / bag / earrings:* the outfits it would finish for occasions where you have none of that kind tagged.
+Clothes and shoes are ranked first (they make outfits possible), then bags and jewellery; the best shoe idea always makes the list. It also notes occasions with no complete outfit and a lopsided top/bottom count. Ideas only: there are no shop links.
+
+**Trip Planner (`POST /api/trips/plan`).** Rule: **no garment is worn twice on a trip** (shoes, bags and jewellery may be). For each day (1-14, an occasion each) it lists the 12 best outfit bases tagged for that occasion, plus the 6 best untagged ones at a cost. A search then picks one per day so that no garment appears twice, filling as many days as possible with the best total score. It starts with the days that have the fewest options, so a scarce Party outfit isn't used up on a Casual day; this is capped at 60,000 steps. A day that can't get fresh clothes is left empty with a note ("not enough different clothes for Party... add or tag more") instead of repeating. Shoes, earrings, necklace and bag prefer pieces already in the suitcase. The result lists each day's outfit, a packing list (the days each piece is used) and notes.
+
+## Auto-fill from a photo (browser)
+
+When a photo is chosen in *Add a piece*, `analysePhoto()` (in `cutout.js`) runs the clothes parser in its own Web Worker, so it never waits behind background cut-outs (about 3 s). Top, skirt and dress labels are grouped, and the kind is decided like this:
+- If the parser clearly says top or skirt (70 %), that is used.
+- Otherwise, when someone is wearing it, legs below mean skirt, arms beside mean top (dress if tall), and a "top" and "skirt" in the same colour mean one dress.
+- Otherwise the shape decides: tall means dress; wide at the top means top; wider at the hem means skirt.
+
+Trousers, shoes, bag, dupatta, belt, hat and sunglasses come straight from their labels, and blue trousers become jeans. The colour is the largest group of similar inner pixels (k-means in Lab), matched to the named colours the form suggests; for checks or prints, the most colourful sizeable group wins. Clothes must cover at least 10 % of the photo (6 % when worn), so jewellery isn't mistaken for clothing; then nothing is filled and the form says so. Only fields the user hasn't touched are filled, plus a name like "Denim jeans", and a note asks the user to check.
+
 ## Virtual try-on (optional)
 
 ```

@@ -120,6 +120,11 @@ export const api = {
   tryOnStatus: () => request('/api/tryon/status'),
   tryOn: (itemIds, cachedOnly = false) => postJson('/api/tryon', { item_ids: itemIds, cached_only: cachedOnly }),
 
+  // ---- Planning ----
+  getGaps: () => request('/api/insights/gaps'),
+  // days: the occasion for each day, e.g. ['Travel', 'Casual', 'Party']; style: optional
+  planTrip: (days, style) => postJson('/api/trips/plan', { days, style: style || null }),
+
   getHistory: () => request('/api/history'),
   deleteHistoryEntry: (id) => request(`/api/history/${id}`, { method: 'DELETE' }),
 };

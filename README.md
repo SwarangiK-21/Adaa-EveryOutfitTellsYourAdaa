@@ -10,11 +10,13 @@ It runs entirely on your own computer with free, open-source tools: no paid APIs
 
 | Feature | Where |
 |---|---|
-| Add pieces with a photo and details (category, type, colour, style, occasions), then search, filter, edit and delete them | **My Wardrobe** |
+| Add pieces with a photo and details (category, type, colour, style, occasions), then search, filter, edit and delete them. **Auto-fill** reads the photo and suggests the category, type, colour, style and a name | **My Wardrobe** |
 | Ask in plain words, e.g. *"Style my green kurta for a traditional family function"*, or pick occasion, style, colour, colour mood and comfort | **AI Stylist** |
 | Get up to 4 distinct outfits, each with a **large full-body preview**, your product photos, reasons and honest cautions | **AI Stylist** |
 | Swap any piece for another one from your wardrobe that still works | Outfit cards |
 | Save looks, rename them, add **your own photo** wearing a look, mark "Wore it today", and see your outfit history | **Saved Looks** |
+| **Plan a trip:** choose the occasion for each day; get a different outfit for every day (no garment worn twice; shoes, bags and jewellery are reused), plus a packing checklist | **Trip Planner** |
+| **What to buy next:** the few pieces that would unlock the most new outfits with what you own (ideas only, Adaa never shops) | **Shop Smart** |
 | Save your usual style, comfort and colour preferences | **Preferences** |
 
 **The core rule:** Adaa never invents a piece. If something is missing (no bag, nothing tagged for a wedding, "my green kurta" when you don't have one), it says so and shows the best real combination instead.
@@ -53,8 +55,9 @@ Each look opens with a large preview, always labelled:
 | 6 | End-to-end testing, documentation, mentor demo | Done |
 | + | Outfit board previews from your own photos (background removed in the browser) | Done |
 | + | Optional AI try-on on your own photo (Colab + CatVTON) | Works, but slow and approximate, so it's off unless you ask |
+| + | Auto-fill from photo, Trip Planner, Shop Smart (wardrobe gaps) | Done |
 
-83 automated backend tests pass. A full manual browser pass is recorded in [docs/TESTING.md](docs/TESTING.md).
+104 automated backend tests pass. A full manual browser pass is recorded in [docs/TESTING.md](docs/TESTING.md).
 
 ## Tech
 
@@ -125,7 +128,7 @@ python -m pip install -r requirements-dev.txt   # first time only
 python -m pytest
 ```
 
-Expected: `93 passed`. Tests use a temporary folder, so they never touch your real wardrobe.
+Expected: `104 passed`. Tests use a temporary folder, so they never touch your real wardrobe.
 
 ## API
 
@@ -153,6 +156,8 @@ Interactive docs: http://127.0.0.1:8000/docs (while the backend is running).
 | PUT | `/api/tryon/settings` | Save your Colab link and token |
 | GET | `/api/tryon/status` | Is your try-on server reachable? |
 | POST | `/api/tryon` | An image of you wearing these pieces (cached) |
+| GET | `/api/insights/gaps` | What to buy next: pieces that would add the most outfits |
+| POST | `/api/trips/plan` | A different outfit per day, no garment repeated (`{"days": ["Travel", "Casual"], "style": null}`), and a packing list |
 
 ## Project layout
 
@@ -167,16 +172,16 @@ Adaa/
 │  ├─ looks_db.py           Saved looks and outfit history queries
 │  ├─ storage.py            Photo checks (real file type, size) and saving/deleting
 │  ├─ tryon.py              Virtual try-on: which garments go on you, talking to Colab, caching
-│  ├─ routes/               API routes: items, recommendations (+ parse), looks
-│  ├─ recommender/          colours.py, garments.py, engine.py, parser.py
-│  └─ tests/                83 pytest tests
+│  ├─ routes/               API routes: items, recommendations (+ parse), looks, planner, tryon
+│  ├─ recommender/          colours.py, garments.py, engine.py, parser.py, planner.py (gaps, trips)
+│  └─ tests/                104 pytest tests
 ├─ frontend/
 │  ├─ vite.config.js        Dev server; forwards /api to the backend
 │  └─ src/
 │     ├─ App.jsx            Layout, navigation, Overview, Preferences
 │     ├─ api.js             All calls to the backend
 │     ├─ preferences.js     Saved preferences (browser storage)
-│     ├─ pages/             Wardrobe, Stylist, SavedLooks
+│     ├─ pages/             Wardrobe, Stylist, SavedLooks, TripPlanner, ShopSmart
 │     ├─ boardImage.js       Saves an outfit board as a PNG (Download image)
 │     ├─ components/        ItemForm, CutoutEditor, EraseCutout, OutfitCard, OutfitPreview, OutfitBoard, SwapPanel, AskBox, Heading
 │     ├─ cutout.js, cutout.worker.js, cutoutQueue.js   Background removal for garment pictures (in the browser)
@@ -190,7 +195,8 @@ Adaa/
 - Single user, on one computer; no accounts or cloud sync (by design for now).
 - Recommendations follow hand-written rules. They're explainable and predictable, but not "learning".
 - Requests are understood by keyword rules: clear sentences work best; unusual phrasing may only be partly understood (Adaa shows what it understood).
-- Item details are entered by hand; there's no automatic garment recognition from photos.
+- Auto-fill recognises clothes, shoes and bags (not jewellery or watches) and is a suggestion: on a test with 28 real photos it got the category right every time, the type about 9 times in 10 and the colour about 3 times in 4 (pale, very dark and checked colours are the hardest).
+- Shop Smart suggests from a fixed list of 17 versatile pieces (sneakers, heels, jeans, a white shirt, jhumkas...), not from shops.
 - Later ideas: makeup suggestions, body-type-aware styling, an optional free local language model for richer chat, using wear history to suggest less-worn pieces.
 - Out of scope: virtual try-on, cloud hosting, accounts.
 

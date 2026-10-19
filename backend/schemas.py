@@ -293,3 +293,65 @@ class TryOnOut(BaseModel):
     skipped: list[str]     # pieces the model can't put on a photo (jewellery, bags...)
     notes: list[str] = []  # e.g. "Your black heels couldn't be added this time..."
     cached: bool
+
+
+# ---------- Planning: what to buy next, and what to pack ----------
+
+class GapSuggestion(BaseModel):
+    name: str                  # e.g. "White sneakers" (a suggestion, not something you own)
+    category: str
+    item_type: str
+    colour: str
+    new_outfits: int           # complete outfits it would add
+    occasions: list[str]
+    reason: str
+    pairs_with: list[ItemOut]  # your own pieces it goes with
+
+
+class GapReport(BaseModel):
+    suggestions: list[GapSuggestion]
+    outfits_now: int           # distinct complete outfits your wardrobe makes today
+    counts: dict[str, int]     # pieces per role, e.g. {"Top": 6, "Bottom": 3}
+    notes: list[str]
+
+
+class TripRequest(BaseModel):
+    days: list[str] = Field(min_length=1, max_length=14)   # the occasion for each day
+    style: str | None = None
+
+    @field_validator("days")
+    @classmethod
+    def check_days(cls, value):
+        for occasion in value:
+            if occasion not in OCCASIONS:
+                raise ValueError(f"each day must be one of: {', '.join(OCCASIONS)}")
+        return value
+
+    @field_validator("style", mode="before")
+    @classmethod
+    def check_style(cls, value):
+        if value in ("", None):
+            return None
+        if value not in STYLES:
+            raise ValueError(f"style must be one of: {', '.join(STYLES)}")
+        return value
+
+
+class TripDay(BaseModel):
+    day: int
+    occasion: str
+    outfit: OutfitOut | None
+
+
+class PackedItem(BaseModel):
+    item: ItemOut
+    uses: int
+    days: list[int]
+
+
+class TripPlan(BaseModel):
+    days: list[TripDay]
+    packing: list[PackedItem]
+    pieces: int     # how many pieces to pack
+    outfits: int    # how many days got an outfit
+    notes: list[str]
