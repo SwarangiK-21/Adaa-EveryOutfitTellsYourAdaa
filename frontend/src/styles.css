@@ -25,6 +25,14 @@
 .modal-head h2{font:500 25px 'Playfair Display',serif;margin:6px 0 0}
 .modal-head .icon-btn{background:#f4eee7}
 .form-body{display:grid;grid-template-columns:230px 1fr;gap:20px;padding:18px 22px}
+.photo-col{display:grid;gap:10px;align-self:start}
+.photo-tips{font-size:10px;color:#7d7064;line-height:1.45}
+.photo-tips b{display:block;font-size:10px;color:#6f5140;margin-bottom:4px}
+.photo-tips ul{margin:0;padding:0;list-style:none;display:grid;gap:3px}
+.photo-tips li{position:relative;padding-left:15px}
+.photo-tips li::before{position:absolute;left:0;top:0;font-weight:700}
+.photo-tips li.good::before{content:"✓";color:#5d7a52}
+.photo-tips li.avoid::before{content:"✕";color:#a2563f}
 .photo-pick{position:relative;border:1.5px dashed #dccbbb;border-radius:12px;background:#f7f1ea;min-height:280px;display:grid;place-items:center;cursor:pointer;overflow:hidden;align-self:start}
 .photo-pick:focus-within{outline:2px solid #9b7865;outline-offset:3px}
 .photo-pick input{position:absolute;inset:0;opacity:0;cursor:pointer}
@@ -146,6 +154,7 @@
 .preview figcaption{font-size:10px;line-height:1.6;color:#8a837b;text-align:center;max-width:330px;white-space:normal;overflow:visible}
 .preview-note{color:#93613c}
 .preview figcaption .text-btn{padding:0;font-size:10px;text-decoration:underline}
+.preview figcaption .download-btn{display:inline-flex;align-items:center;gap:3px;vertical-align:baseline}
 .preview-badge{position:absolute;top:10px;left:10px;z-index:20;display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:20px;background:#fffdfae8;color:#6f5140;font-size:10px;font-weight:700;box-shadow:0 1px 4px #0000000f}
 .preview-badge.verified{background:#eef3e9;color:#4f6b45}
 .preview-badge.outdated{background:#f8eedd;color:#93613c}
@@ -216,6 +225,8 @@
 .crop-area{position:relative;max-width:320px;cursor:crosshair;user-select:none;touch-action:none;border-radius:10px;overflow:hidden}
 .crop-area img{display:block;width:100%;pointer-events:none}
 .crop-box{position:absolute;border:2px solid #745746;box-shadow:0 0 0 9999px #00000059;border-radius:3px}
+.erase-area{position:relative;max-width:320px;min-height:120px;border-radius:10px;overflow:hidden;display:grid;place-items:center;color:#a08d7e}
+.erase-area canvas{width:100%;height:auto;cursor:crosshair;touch-action:none}
 @media(max-width:640px){.cutout-editor{margin:0 14px 6px}.cutout-row{flex-direction:column;align-items:flex-start}}
 /* The product-card rule `.outfit img` (beige box, cover, rounded) must not apply to board pictures. */
 .outfit .board img{width:auto;height:auto;max-width:100%;max-height:100%;background:none;border-radius:0;object-fit:contain;aspect-ratio:auto}

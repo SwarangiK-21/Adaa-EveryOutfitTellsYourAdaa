@@ -129,3 +129,26 @@ Run on a **copy of the real wardrobe** after adding the clothes parser and the p
 | Fixed during the pass: overlapping jobs made the parser fail ("Session already started") and a weaker picture was saved silently; now jobs run one at a time and a failure is retried. The parser cut part of a white bag photographed alone; now it is only used when someone wears the garment. Faint floating specks removed. Tall tops (shot on a model) drawn no taller than wide | ✅ |
 | Midi skirt worn by a model ("black bodycon skirt"): the parser called most of it "dress" and the crop top "hat"/"face", so keeping only "skirt" pixels shredded it | ✅ fixed by switching to a **subtractive** method: keep what background removal sees, cut away only what is clearly the person, shoes, bag or the other garment. Re-checked 10 worn photos (skirts, jeans, gowns, dresses, tops): all whole and clean |
 | Backend tests | ✅ 93 passed |
+
+## Outfit board polish pass (19 Oct 2026)
+
+Run on a **copy of the real wardrobe** (28 items).
+
+| Check | Result |
+|---|---|
+| Shoes sized to the hem (about half the bottom's width), never oversized next to skinny jeans | ✅ |
+| Top kept in balance with the bottom (at most ~1.35× its width); slim fits given a little more room | ✅ |
+| Accessories stacked in neat columns close beside the outfit, no large empty gaps | ✅ |
+| Leftover fringes trimmed: skin at the bodycon skirt's slit, white sneaker edge at the straight jeans' hem | ✅ |
+| *Erase bits* brush (My Wardrobe → Edit → Outfit picture): erased the hanger hook on "white fancy", Undo, Save; board and preview update; saved as `7m` | ✅ |
+| Hand-made pictures (framed or erased) are not replaced when the method version changes | ✅ |
+| Backend tests | ✅ 93 passed |
+
+## Sharing and photo tips pass (19 Oct 2026)
+
+| Check | Result |
+|---|---|
+| Shoes under short skirts: full size, just below the hem (they were shrunk by a height limit meant for long outfits) | ✅ |
+| *Add a piece* shows photo tips under the photo box (desktop and phone width, no sideways scroll) | ✅ |
+| **Download image** under the board saves `adaa-<look>.png`, 900×1500, cream background, shadows, capitalised look name | ✅ (checked by capturing the image in the test browser) |
+| Backend tests | ✅ 93 passed |

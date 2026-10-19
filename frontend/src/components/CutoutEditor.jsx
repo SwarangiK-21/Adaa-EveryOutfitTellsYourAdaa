@@ -1,15 +1,17 @@
 import React, { useRef, useState } from 'react';
-import { Crop, RefreshCw, Check, X } from 'lucide-react';
+import { Crop, RefreshCw, Check, X, Eraser } from 'lucide-react';
 import { redoCutout, useCutoutUrl } from '../cutoutQueue.js';
+import EraseCutout from './EraseCutout.jsx';
 
 /*
   "Outfit picture" for one wardrobe item: the garment with its background removed.
   If the photo shows someone wearing it (or other things), the user drags a box
-  around just the garment and the cut-out is made again from that part.
+  around just the garment and the cut-out is made again from that part, or paints
+  away leftovers (a hanger, a strip of skin) with the erase brush.
 */
 export default function CutoutEditor({ item, notify }) {
   const cutoutUrl = useCutoutUrl(item);
-  const [framing, setFraming] = useState(false);
+  const [mode, setMode] = useState('view');      // 'view' | 'frame' | 'erase'
   const [box, setBox] = useState(null);          // { x, y, w, h } in 0..1
   const [busy, setBusy] = useState(false);
   const start = useRef(null);
@@ -35,7 +37,7 @@ export default function CutoutEditor({ item, notify }) {
     try {
       await redoCutout(item, crop);
       notify?.('Outfit picture updated.');
-      setFraming(false);
+      setMode('view');
       setBox(null);
     } catch (err) {
       notify?.(err.message || "Couldn't make the outfit picture.");
@@ -51,14 +53,17 @@ export default function CutoutEditor({ item, notify }) {
         <i>Your photo without its background, used to build outfits.</i>
       </div>
 
-      {!framing ? (
+      {mode === 'erase' ? (
+        <EraseCutout item={item} url={cutoutUrl} notify={notify} onDone={() => setMode('view')} />
+      ) : mode === 'view' ? (
         <div className="cutout-row">
           <div className="cutout-preview checker">
             {busy ? <RefreshCw size={18} className="spin" /> : cutoutUrl ? <img src={cutoutUrl} alt="Outfit picture" /> : <small>Being prepared…</small>}
           </div>
           <div className="cutout-actions">
-            <p className="muted">Does it show only the garment? If the photo has a person or other things in it, frame just the garment.</p>
-            <button type="button" className="secondary" onClick={() => setFraming(true)} disabled={busy}><Crop size={13} /> Frame just the garment</button>
+            <p className="muted">Does it show only the garment? If the photo has a person or other things in it, frame just the garment, or erase the leftovers.</p>
+            <button type="button" className="secondary" onClick={() => setMode('frame')} disabled={busy}><Crop size={13} /> Frame just the garment</button>
+            <button type="button" className="secondary" onClick={() => setMode('erase')} disabled={busy || !cutoutUrl}><Eraser size={13} /> Erase bits</button>
             <button type="button" className="secondary" onClick={() => make(null)} disabled={busy}><RefreshCw size={13} /> Redo from whole photo</button>
           </div>
         </div>
@@ -83,7 +88,7 @@ export default function CutoutEditor({ item, notify }) {
             <button type="button" className="primary" onClick={() => make(box)} disabled={busy || !box || box.w < 0.05 || box.h < 0.05}>
               {busy ? <><RefreshCw size={13} className="spin" /> Making…</> : <><Check size={13} /> Use this part</>}
             </button>
-            <button type="button" className="secondary" onClick={() => { setFraming(false); setBox(null); }} disabled={busy}><X size={13} /> Cancel</button>
+            <button type="button" className="secondary" onClick={() => { setMode('view'); setBox(null); }} disabled={busy}><X size={13} /> Cancel</button>
           </div>
         </div>
       )}

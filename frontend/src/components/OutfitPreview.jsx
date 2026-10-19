@@ -1,8 +1,9 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { BadgeCheck, Shirt, AlertTriangle, ImageOff, Sparkles, RefreshCw, LayoutGrid } from 'lucide-react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { BadgeCheck, Shirt, AlertTriangle, ImageOff, Sparkles, RefreshCw, LayoutGrid, Download } from 'lucide-react';
 import OutfitBoard, { needsCutouts } from './OutfitBoard.jsx';
 import { TryOnContext, requestTryOn } from '../tryon.js';
 import { subscribeCutouts } from '../cutoutQueue.js';
+import { downloadBoard } from '../boardImage.js';
 
 /*
   Full-body preview of an outfit. Best available first:
@@ -42,7 +43,7 @@ export function PieceImage({ item, className }) {
 
 const formatDate = (iso) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 
-export default function OutfitPreview({ pieces, photo }) {
+export default function OutfitPreview({ pieces, photo, title }) {
   const { profile } = useContext(TryOnContext);
   const [showOld, setShowOld] = useState(false);
   const [photoFailed, setPhotoFailed] = useState(false);
@@ -51,6 +52,9 @@ export default function OutfitPreview({ pieces, photo }) {
   // status: 'idle' | 'loading' | 'ready' | 'failed'
   const [tryOnState, setTryOnState] = useState({ status: 'idle' });
   const [cutouts, setCutouts] = useState({ running: false });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const boardFrame = useRef(null);
   useEffect(() => subscribeCutouts(setCutouts), []);
 
   const verified = photo && photo.matches_current && !photoFailed;
@@ -108,9 +112,20 @@ export default function OutfitPreview({ pieces, photo }) {
 
   // 2. Outfit board (default)
   const preparing = needsCutouts(pieces) && cutouts.running;
+  const saveImage = async () => {
+    setSaving(true);
+    setSaveError('');
+    try {
+      await downloadBoard(boardFrame.current, title);
+    } catch (err) {
+      setSaveError(err.message || "Couldn't save the image.");
+    } finally {
+      setSaving(false);
+    }
+  };
   return (
     <figure className="preview">
-      <div className="preview-frame board-frame">
+      <div className="preview-frame board-frame" ref={boardFrame}>
         {outdated && showOld ? (
           <>
             <img className="preview-photo old" src={photo.url} alt="Your earlier photo of this look (outdated)" />
@@ -135,6 +150,15 @@ export default function OutfitPreview({ pieces, photo }) {
         {outdated && showOld
           ? 'Your earlier photo. Some pieces have changed since, so it no longer shows this exact look.'
           : 'Your own garment photos, arranged as an outfit.'}
+        {!(outdated && showOld) && (
+          <>
+            {' '}
+            <button type="button" className="text-btn download-btn" onClick={saveImage} disabled={saving}>
+              <Download size={11} /> {saving ? 'Saving…' : 'Download image'}
+            </button>
+          </>
+        )}
+        {saveError && <span className="preview-note"> {saveError}</span>}
         {preparing && !(outdated && showOld) && (
           <span className="preview-hint"> Cleaning up photo backgrounds… ({cutouts.done + 1} of {cutouts.total})</span>
         )}

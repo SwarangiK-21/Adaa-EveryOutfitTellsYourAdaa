@@ -33,7 +33,7 @@ export default function OutfitCard({ outfit, label, title, onSwap, actions, noti
       </header>
 
       <div className="outfit-layout">
-        <OutfitPreview pieces={outfit.pieces} photo={photo} />
+        <OutfitPreview pieces={outfit.pieces} photo={photo} title={heading} />
 
         <div className="outfit-details">
           {notice && <p className="outfit-notice"><AlertTriangle size={13} />{notice}</p>}

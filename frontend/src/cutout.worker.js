@@ -107,19 +107,27 @@ async function parseGarment(img, sx, sy, sw, sh, parts) {
   if (found / (h * w) < 0.02) return null;
 
   // "Near the garment": its cells grown by 3 (about 3% of the picture), to pick which pieces to keep.
-  let near = garment;
-  for (let r = 0; r < 3; r++) {
+  const near = grow(garment, w, h, 3);
+  // What to cut is grown by one cell, so thin fringes (a strip of skin, the edge of a sneaker or of
+  // the top underneath) go too.
+  return { away: upscale(grow(awayCells, w, h, 1), w, h), near, w, h };
+}
+
+// Grow a 0/1 cell map by `times` cells in each direction.
+function grow(cells, w, h, times) {
+  let m = cells;
+  for (let r = 0; r < times; r++) {
     const next = new Uint8Array(h * w);
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const i = y * w + x;
-        next[i] = near[i] || (x > 0 && near[i - 1]) || (x < w - 1 && near[i + 1])
-          || (y > 0 && near[i - w]) || (y < h - 1 && near[i + w]) ? 1 : 0;
+        next[i] = m[i] || (x > 0 && m[i - 1]) || (x < w - 1 && m[i + 1])
+          || (y > 0 && m[i - w]) || (y < h - 1 && m[i + w]) ? 1 : 0;
       }
     }
-    near = next;
+    m = next;
   }
-  return { away: upscale(awayCells, w, h), near, w, h };
+  return m;
 }
 
 // Smoothly scale a coarse 0/1 label map up to SIZE x SIZE, as 0..1 values.

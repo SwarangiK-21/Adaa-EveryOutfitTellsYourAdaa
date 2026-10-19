@@ -150,19 +150,21 @@ add/edit item ──► cutoutQueue.js (one at a time) ──► cutout.worker.j
                                                         ▼
                                 PUT /api/items/{id}/cutout  (PNG, stored next to the photo)
 OutfitBoard.jsx: sizes the pieces to each other using each cut-out's real proportions
-  (top a little wider than the bottom's waist, top hem over the waistband, shoes under the hem,
-   earrings/bangles/watch in a left column, necklace/bag/extra jewellery on the right)
+  (top at most ~1.35× the bottom's width, top hem over the waistband, shoes ~half the hem width just under it,
+   earrings/bangles/watch stacked on the left, necklace/bag/extra jewellery on the right, close beside the outfit)
 ```
 
 - **Models:** downloaded once by `backend/cutout_model.py` into `backend/data/models/` and served at `/api/models/{name}` with long-lived caching:
   - `isnet`: IS-Net "isnet-general-use" (Apache 2.0) for the background.
   - `clothes`: SegFormer-B2 clothes parser (Xenova/segformer_b2_clothes, quantised ONNX, 18 ATR labels). **NVIDIA licence: non-commercial / research use only.** `partsFor()` in `cutoutQueue.js` picks the labels for each item (jeans → pants, crop top → upper clothes, sandals → shoes, bag → bag; jewellery and watches skip the parser).
-- **Combining (subtractive):** the parser is used only when it finds a person (hair/face/arms/legs over 1 % of the picture) and the garment (over 2 %). Adaa keeps what IS-Net sees and only **cuts away what the parser clearly labels as something else**: the person (face, hair, arms, legs), hat/sunglasses, shoes, and the other garment (a top's jeans, a skirt's top). Look-alike labels are never cut (the parser often reads a skirt as "dress"), so uncertain parts of the garment stay instead of leaving holes. The parser's garment area (grown by 3 cells) then only decides **which pieces to keep**: a piece must lie mostly on it, which drops chairs and curtains. Product photos, flat lays and hangers use IS-Net alone. If the parser fails, the cut-out fails and is retried later. The worker runs one job at a time. Pieces smaller than 15 % of the biggest are dropped, so pairs like two shoes or earrings stay; faint pixels survive only next to the kept garment.
-- **Versions:** each cut-out stores `cutout_version` (`6` automatic, `6m` framed by the user). Bumping `CUTOUT_VERSION` redoes older automatic cut-outs in the background.
+- **Combining (subtractive):** the parser is used only when it finds a person (hair/face/arms/legs over 1 % of the picture) and the garment (over 2 %). Adaa keeps what IS-Net sees and only **cuts away what the parser clearly labels as something else**: the person (face, hair, arms, legs), hat/sunglasses, shoes, and the other garment (a top's jeans, a skirt's top). Look-alike labels are never cut (the parser often reads a skirt as "dress"), so uncertain parts of the garment stay instead of leaving holes. The cut-away area is grown by one cell, so thin fringes (skin, a sneaker edge, the top underneath) go too. The parser's garment area (grown by 3 cells) then only decides **which pieces to keep**: a piece must lie mostly on it, which drops chairs and curtains. Product photos, flat lays and hangers use IS-Net alone. If the parser fails, the cut-out fails and is retried later. The worker runs one job at a time. Pieces smaller than 15 % of the biggest are dropped, so pairs like two shoes or earrings stay; faint pixels survive only next to the kept garment.
+- **Versions:** each cut-out stores `cutout_version` (`7` automatic, `7m` framed or touched up by the user). Bumping `CUTOUT_VERSION` redoes older automatic cut-outs in the background.
 - **Why in the browser:** onnxruntime has no Python 3.15 build, so it can't run in the backend. WebGPU hung on Intel Iris Xe, and multi-threaded WASM hung too (nested threads), so it runs single-threaded in a **Web Worker**. That way it isn't throttled in background tabs and doesn't freeze the page.
-- **Framing:** `CutoutEditor.jsx` lets the user drag a box around just the garment (for photos worn by a model). Only that part is processed.
+- **Framing and erasing:** `CutoutEditor.jsx` lets the user drag a box around just the garment (only that part is processed), and `EraseCutout.jsx` is a brush that paints leftovers transparent on a canvas (undo, then trimmed and saved). Both save with an `m` version and are never redone automatically.
 - **Lifecycle:** replacing an item's photo clears its cut-out (a new one is queued), and deleting an item deletes its cut-out file. Older databases get the `cutout_filename` column automatically on startup.
 - **Fallback:** until a cut-out exists, the board shows the original photo in that position, and the caption says "Cleaning up photo backgrounds… (n of m)".
+- **Download image:** `boardImage.js` redraws the board on a 900×1500 canvas from the pictures exactly where they appear on screen (same cream background and shadows), adds the look's name, and downloads it as `adaa-<look>.png`. All in the browser.
+- **Photo tips:** `ItemForm.jsx` shows short tips for clean garment photos under the photo box, since the board is only as good as the photo.
 
 ## Virtual try-on (optional)
 

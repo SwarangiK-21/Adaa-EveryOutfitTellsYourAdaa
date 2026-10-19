@@ -4,9 +4,12 @@ import { useEffect, useState } from 'react';
 import { api } from './api.js';
 
 // Bump when the cut-out method improves: older automatic cut-outs are then redone.
-// "6" = background removal + clothes parser; "6m" = framed by the user (never redone automatically).
-export const CUTOUT_VERSION = '6';
-const isCurrent = (item) => item.cutout_url && String(item.cutout_version || '').startsWith(CUTOUT_VERSION);
+// "7" = background removal + clothes parser; "7m" = framed or erased by the user (never redone automatically).
+export const CUTOUT_VERSION = '7';
+const isCurrent = (item) => {
+  const v = String(item.cutout_version || '');
+  return !!item.cutout_url && (v === CUTOUT_VERSION || v.endsWith('m'));   // hand-made ones are kept
+};
 
 // Which clothes-parser labels make up this item (SegFormer ATR labels):
 // 4 top, 5 skirt, 6 pants, 7 dress, 8 belt, 9/10 shoes, 16 bag, 17 scarf, 1 hat, 3 sunglasses.
@@ -89,6 +92,14 @@ export async function redoCutout(item, crop) {
   const { makeCutout } = await cutter();
   const blob = await makeCutout(item.image_url, crop, partsFor(item));
   const saved = await api.saveCutout(item.id, blob, crop ? `${CUTOUT_VERSION}m` : CUTOUT_VERSION);
+  made.set(item.id, saved.cutout_url);
+  emit({});
+  return saved;
+}
+
+// Save a cut-out the user touched up by hand (e.g. erased a hanger). Never redone automatically.
+export async function saveEditedCutout(item, pngBlob) {
+  const saved = await api.saveCutout(item.id, pngBlob, `${CUTOUT_VERSION}m`);
   made.set(item.id, saved.cutout_url);
   emit({});
   return saved;

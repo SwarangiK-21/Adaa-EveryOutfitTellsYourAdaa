@@ -34,10 +34,12 @@ Each look opens with a large preview, always labelled:
 - **Models:** two free models run **in your browser** with Microsoft's onnxruntime-web (MIT), in a background thread, so the page stays responsive:
   - **IS-Net** (Apache 2.0) removes the background.
   - **SegFormer-B2 clothes parser** labels top / skirt / pants / dress / shoes / bag / skin, so Adaa keeps **only the garment**: when someone is wearing the garment in the photo, a top loses the model's face, arms and jeans. (Product photos and flat lays only need the background removed.) Its licence (NVIDIA) allows **non-commercial use only**, fine for this prototype; a commercial version would need a differently licensed parser.
-- **Sized to each other:** the board uses each cut-out's real proportions, makes the top a little wider than the bottom's waist, lays the top's hem over the waistband, puts the shoes just under the hem and lines up jewellery, watch and bag in two columns.
+- **Sized to each other:** the board uses each cut-out's real proportions, keeps the top in balance with the bottom (at most about 1.35× its width), lays the top's hem over the waistband, sizes the shoes to the hem (about half the bottom's width) right under it, and stacks jewellery, watch and bag in two neat columns close beside the outfit.
 - **Once per garment:** each garment is processed once (about 20–40 s on this laptop's CPU) and the result is saved, so boards then show instantly.
 - **First use:** the browser downloads the models once (~179 MB from the rembg project on GitHub and ~29 MB from Hugging Face, via the Adaa backend). After that it works offline. When the method improves, older automatic cut-outs are redone by themselves.
-- **Photos of someone wearing the garment** (e.g. jeans on a model): open the item in **My Wardrobe → Edit → Outfit picture → Frame just the garment**, then drag a box around just the garment.
+- **Leftovers** (a hanger, a strip of skin, part of a shoe): open the item in **My Wardrobe → Edit → Outfit picture**. **Frame just the garment** to drag a box around it, or **Erase bits** to paint the leftovers away (small / medium / large brush, Undo). Hand-made pictures are never replaced automatically.
+- **Best photos:** the *Add a piece* form shows tips under the photo box: just the garment, laid flat or on a plain wall, light background, whole garment in frame; avoid hangers, people and other clothes.
+- **Download image:** under every outfit board, **Download image** saves the look as a PNG (900×1500, with the look's name) to share on WhatsApp or Instagram. It is made in the browser; nothing is uploaded.
 
 ## Project status
 
@@ -175,7 +177,8 @@ Adaa/
 │     ├─ api.js             All calls to the backend
 │     ├─ preferences.js     Saved preferences (browser storage)
 │     ├─ pages/             Wardrobe, Stylist, SavedLooks
-│     ├─ components/        ItemForm, CutoutEditor, OutfitCard, OutfitPreview, OutfitBoard, SwapPanel, AskBox, Heading
+│     ├─ boardImage.js       Saves an outfit board as a PNG (Download image)
+│     ├─ components/        ItemForm, CutoutEditor, EraseCutout, OutfitCard, OutfitPreview, OutfitBoard, SwapPanel, AskBox, Heading
 │     ├─ cutout.js, cutout.worker.js, cutoutQueue.js   Background removal for garment pictures (in the browser)
 │     └─ styles.css
 ├─ tryon/Adaa_TryOn_Colab.ipynb   Notebook that runs the try-on model on a free Colab GPU

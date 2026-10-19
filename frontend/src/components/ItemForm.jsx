@@ -132,13 +132,25 @@ export default function ItemForm({ options, item, onClose, onSaved, notify }) {
         </div>
 
         <div className="form-body">
-          <label className="photo-pick">
-            {preview ? <img src={preview} alt="Selected piece" /> : (
-              <span><ImagePlus size={26} /><b>Add a photo</b><small>JPEG, PNG or WebP · up to {MAX_PHOTO_MB} MB</small></span>
-            )}
-            {preview && <em>Change photo</em>}
-            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={choosePhoto} />
-          </label>
+          <div className="photo-col">
+            <label className="photo-pick">
+              {preview ? <img src={preview} alt="Selected piece" /> : (
+                <span><ImagePlus size={26} /><b>Add a photo</b><small>JPEG, PNG or WebP · up to {MAX_PHOTO_MB} MB</small></span>
+              )}
+              {preview && <em>Change photo</em>}
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={choosePhoto} />
+            </label>
+            {/* Outfit boards are made from this photo, so a clean photo gives the best looks. */}
+            <div className="photo-tips">
+              <b>For the best outfit pictures</b>
+              <ul>
+                <li className="good">Just the garment, laid flat or against a plain wall</li>
+                <li className="good">Plain, light background and good light</li>
+                <li className="good">The whole garment in the frame</li>
+                <li className="avoid">Avoid hangers, people wearing it and other clothes in the shot</li>
+              </ul>
+            </div>
+          </div>
 
           <div className="form-fields">
             <label className="field">

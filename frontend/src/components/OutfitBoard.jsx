@@ -41,7 +41,10 @@ function baseWidth(piece) {
     case 'Blouse':
       return has(t, ['sleeveless', 'tank', 'cami', 'halter', 'tube', 'strap']) ? 44 : has(t, ['kurta', 'kurti', 'tunic']) ? 52 : 56;
     case 'Bottom':
-      return has(t, ['palazzo', 'sharara', 'baggy', 'wide', 'flare', 'lehenga']) ? 44 : has(t, ['skirt']) ? 42 : 38;
+      if (has(t, ['palazzo', 'sharara', 'baggy', 'wide', 'flare', 'lehenga'])) return 44;
+      if (has(t, ['skirt'])) return 42;
+      // Slim fits: the photo's box is mostly air between the legs, so give them a little more room.
+      return has(t, ['skinny', 'skin fit', 'slim', 'legging', 'jegging', 'churidar']) ? 41 : 38;
     case 'Outfit':
       return has(t, ['saree', 'sari', 'lehenga', 'gown', 'anarkali', 'maxi']) ? 58 : 50;
     case 'Layer': return 62;
@@ -79,7 +82,10 @@ function layout(pieces, urlOf, aspects) {
       const w = baseWidth(top);
       const long = has(typeOf(top), ['kurta', 'kurti', 'tunic', 'long']);
       const a = aspects[urlOf(top)] || 0.8;
-      topBox = box(top, long ? w : Math.min(w, 0.95 * w * a));
+      // ...and at most about 1.35 times as wide as the bottom, so the two balance.
+      const maxW = bottom ? baseWidth(bottom) * 1.35 : w;
+      const topW = Math.min(w, maxW);
+      topBox = box(top, long ? topW : Math.min(topW, 0.95 * topW * a));
       column.push({ ...topBox, y, z: 4 });
       y += topBox.h * (bottom ? 0.9 : 1);     // the top's hem sits over the waistband
     }
@@ -93,8 +99,14 @@ function layout(pieces, urlOf, aspects) {
   const longHem = onePiece ? has(t, ['saree', 'sari', 'gown', 'maxi', 'lehenga', 'anarkali', 'long'])
     : has(t, ['jeans', 'pant', 'trouser', 'palazzo', 'legging', 'churidar', 'salwar', 'maxi', 'long', 'sharara']);
   if (shoes) {
-    const s = box(shoes, baseWidth(shoes));
-    y += column.length ? (longHem ? -2 : 6) : 0;  // tucked under long hems; a small gap below short ones
+    // Shoes are sized to the hem: a pair is about half as wide as the trousers or skirt above it,
+    // and no taller than a fifth of a long outfit (short outfits still get full-size shoes).
+    const under = bottom || onePiece;
+    const a = aspects[urlOf(shoes)] || 1;
+    let sw = under ? Math.min(24, Math.max(17, baseWidth(under) * 0.52)) : baseWidth(shoes);
+    if (column.length) sw = Math.min(sw, Math.max(26, y * 0.2) * a);
+    const s = box(shoes, sw);
+    y += column.length ? (longHem ? -2 : 3) : 0;  // tucked under long hems; just below short ones
     column.push({ ...s, y, z: 1 });
     y += s.h;
   }
@@ -121,21 +133,31 @@ function layout(pieces, urlOf, aspects) {
     }
   }
 
-  // 3. Accessories in two tidy columns, spread evenly down the outfit's height. (Necklaces go in a
-  //    column too: product photos of chains are long diagonal lines that look like a hanger wire
-  //    when laid over the top.)
+  // 3. Accessories in two tidy columns beside the outfit. (Necklaces go in a column too: product
+  //    photos of chains are long diagonal lines that look like a hanger wire when laid over the top.)
+  //    Each column is a neat stack around the outfit's upper half, close to the clothes beside it.
   const left = [...by('Earrings'), ...by('Bangles / bracelet'), ...by('Accessory')];
   const right = [...by('Necklace'), ...by('Bag'), ...by('Jewellery')];
-  const span = { from: top0 + 4, to: top0 + columnH * scale - 6 };
-  const placeSide = (list, cx) => {
-    list.forEach((piece, i) => {
-      const b = box(piece, baseWidth(piece));
-      const slotTop = span.from + ((span.to - span.from) * (i + 0.5)) / list.length - b.h / 2;
-      slots.push({ piece, cx, y: Math.max(16, slotTop), w: b.w, h: b.h, z: 6 });
+  const main = slots.slice(0, column.length);
+  const outfitTop = top0; const outfitH = columnH * scale;
+  const halfWidthAt = (y0, y1) => Math.max(14, ...main.filter((m) => m.y < y1 && m.y + m.h > y0).map((m) => m.w / 2));
+  const placeSide = (list, side) => {
+    if (!list.length) return;
+    const boxes = list.map((piece) => box(piece, baseWidth(piece)));
+    const room = outfitH - 8;
+    const used = boxes.reduce((sum, b) => sum + b.h, 0);
+    const gap = Math.min(9, Math.max(2, (room - used) / Math.max(1, boxes.length - 1)));
+    const total = used + gap * (boxes.length - 1);
+    let y = Math.max(16, outfitTop + Math.max(4, outfitH * 0.42 - total / 2));
+    boxes.forEach((b) => {
+      const reach = halfWidthAt(y, y + b.h) + 3 + b.w / 2;
+      const cx = side < 0 ? Math.max(b.w / 2 + 2, 50 - reach) : Math.min(98 - b.w / 2, 50 + reach);
+      slots.push({ piece: b.piece, cx, y, w: b.w, h: b.h, z: 6 });
+      y += b.h + gap;
     });
   };
-  placeSide(left, 13);
-  placeSide(right, 86);
+  placeSide(left, -1);
+  placeSide(right, 1);
   return slots;
 }
 
