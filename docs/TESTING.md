@@ -8,18 +8,20 @@ Run from `backend/` with the virtual environment active:
 python -m pytest
 ```
 
-Expected result: **114 passed**. Each test runs against a fresh temporary database and photo folder, so your real wardrobe is never touched.
+Expected result: **148 passed**. Each test runs against a fresh temporary database and photo folder, so your real wardrobe is never touched.
 
 | File | Tests | What it covers |
 |---|---|---|
 | `test_items.py` | 10 | Add, list, search, filter, edit (with and without a new photo), delete; rejects fake images, oversized photos and invalid details; 64 simultaneous photo requests |
 | `test_recommendations.py` | 19 | Only real items are used and outfits are distinct; pairing rules; empty wardrobe; occasion tags; honest relaxed mode; building around a piece; colour, comfort and style preferences; consistent metals; saree blouse; minimal jewellery for casual looks; colour parsing; API validation |
-| `test_parser.py` | 18 | Occasion words (sangeet, diwali, interview…); style, comfort and colour mood; *"Style my black crop top for a party"*; name vs type matching; typos; asking when ambiguous; reporting pieces you don't own; missing occasion |
+| `test_parser.py` | 38 | Occasion words (sangeet, diwali, interview…); style, comfort and colour mood; *"Style my black crop top for a party"*; name vs type matching; typos; asking when ambiguous; reporting pieces you don't own; missing occasion |
 | `test_looks.py` | 13 | Save, list, rename, delete looks; no duplicates; numbered names; swap options stay wearable and tagged pieces rank first; evaluation cautions; swaps inside saved looks; wear history; history survives deleting a look; no future dates; deleting a wardrobe item keeps the look and flags it |
 | `test_look_photos.py` | 7 | Verified photo upload and serving; photo becomes outdated after a swap or a deleted piece; replacing/removing/deleting cleans up files; rejects non-images |
 | `test_tryon.py` | 17 | Your photo and server settings; status check; bottom-then-top order; dress in one pass; skipped accessories; caching and new image after a swap; new photo clears old try-ons; clear errors (nothing to try on, server offline, not set up, no photo); safe image names; link-only change keeps the token |
 | `test_cutouts.py` | 8 | Saving, serving and deleting garment cut-outs; method version stored; new photo clears the cut-out; model download route and unknown models |
 | `test_planner.py` | 12 | Shop Smart: missing bottoms and shoes suggested, things you own skipped (denim = blue), bags ranked after clothes, empty wardrobe; Trip Planner: no garment ever worn twice (shoes reused), a plan found where day-by-day picking would fail, an empty day instead of a repeat, only real items, API validation |
+| `test_festivals.py` | 8 | Republic Day prefers saffron, white and green and says so; a colour request shows only outfits in it (untagged pieces in colour allowed, with a caution); whole-outfit-in-colour ranks first; nothing in the colour is explained; Makar Sankranti prefers black or yellow; missing festival colours explained; today's / next festival by date; API validation |
+| `test_events.py` | 6 | Full wedding follows each dress code with no garment repeated; jewellery and shoes reused; missing colour explained; no all-white at the wedding; jeans a last resort at a reception; API |
 | `test_weather_wear.py` | 9 | Hot day: light pieces, no jacket; cold day: sweater, jeans, boots; rain caution; no weather = no change; weather validated; wear stats (not worn, most worn, cost per wear, totals); prices saved/cleared/validated; wearing an unsaved outfit counts |
 | `test_workflow.py` | 1 | The whole journey: empty wardrobe → add 10 pieces → *"Style my green kurta for a traditional family function"* → outfits → swap → save → wear → history → delete a worn piece |
 
@@ -48,7 +50,7 @@ Done on 15 Oct 2026, starting from an **empty** data folder, using the real form
 
 ## Quick checklist before a demo
 
-1. `python -m pytest` → `114 passed`
+1. `python -m pytest` → `148 passed`
 2. Backend running: http://127.0.0.1:8000/api/health → `"status":"ok"`
 3. Frontend running: http://localhost:5173 → Overview shows your piece count
 4. AI Stylist → ask for one of your demo requests → outfits with photos appear
@@ -198,3 +200,41 @@ Run on a **copy of the real wardrobe** (31 items).
 | Overview nudge: "22 pieces not worn in 30 days … give them a day out" with photos, opens Wear Stats | ✅ |
 | History keeps the pieces worn even after deleting the saved look (test updated) | ✅ |
 | Backend tests | ✅ 114 passed |
+
+## Wedding planner, festivals, Hinglish and voice (19 Oct 2026)
+
+Run on a **copy of the real wardrobe** (32 items).
+
+| Check | Result |
+|---|---|
+| Overview festival card on 19 Oct 2026: "Navratri Day 9: Peacock Green · Maa Siddhidatri" | ✅ |
+| *Style me in peacock green* → stylist preset to Festive + Traditional + peacock green; first look: Bottle green saree ("Features your preferred colour, peacock green") | ✅ |
+| Wedding Planner, full wedding: Mehendi → long gown (green), Wedding → Red Saree, Reception → party top + bodycon skirt; Haldi and Sangeet honestly flagged "nothing in yellow / pink… so this is the closest match"; 12 pieces, no garment repeated | ✅ |
+| Reception used to pick baggy jeans; casual pieces are now a last resort at dressy functions | ✅ fixed during the pass |
+| Hinglish: "Aaj college ke liye kuch comfy aur neela" → College, Comfort first, blue; 8 more Hinglish phrases in tests | ✅ |
+| Voice button shown in the ask box (Chrome); Hinglish example in "Try saying" | ✅ shown. Speaking itself needs a real microphone, so it wasn't tested here |
+| Backend tests | ✅ 128 passed |
+
+## Festival requests (19 Oct 2026)
+
+| Check | Result |
+|---|---|
+| "Style me for republic day" → Festival: Republic Day (saffron, white and green), Festive; top look: green long gown | ✅ |
+| "style me for ganesh chaturti" (typo) → Ganesh Chaturthi (yellow, red, orange and green), Traditional; Red Saree, Bottle green saree | ✅ |
+| "style me for makar sankranti" → Makar Sankranti (black, yellow and green), Traditional; black gown ("Black, yellow and green for Makar Sankranti: your gown"), green saree | ✅ |
+| "Diwali party look" → party with Diwali colours; "Diwali puja outfit" → Diwali; "kuch for 15 august" → Independence Day; "sankranthi ke liye kuch kaala" → Sankranti + black | ✅ tests |
+| Festival chip on the stylist form, removable with × | ✅ |
+| Overview card now comes from the backend table (one source of truth) | ✅ |
+| Backend tests | ✅ 145 passed |
+
+## Colour-first fix (19 Oct 2026)
+
+Reported: "Rakhi pe kuch gulabi", "15th aug" and "26th jan" gave black and grey outfits. Cause: occasion tags beat colour. The pink pieces weren't tagged Festive, so they were never considered, and colour was only a small bonus. Also "15th aug" / "26th jan" (short month names) weren't recognised.
+
+| Request (real wardrobe, read-only) | Looks after the fix |
+|---|---|
+| Rakhi pe kuch gulabi | pink navari; pink party crop top with 3 bottoms (only pink looks; the crop top flagged as not tagged Festive) |
+| style me for 15th aug / 26th jan / republic day | green long gown; bottle green saree; white fancy + black jeans / skirt |
+| style me for ganesh chaturti | Red Saree; bottle green saree; green gown; yellow ruffle top + skirt |
+| style me for makar sankranti | black gown; bottle green saree; all-black crop top + skirt; green gown |
+| Backend tests | ✅ 148 passed |

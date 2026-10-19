@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Sparkles, RefreshCw, Plus, Info, Heart, Check, CloudSun, Shirt } from 'lucide-react';
+import { Sparkles, RefreshCw, Plus, Info, Heart, Check, CloudSun, Shirt, X } from 'lucide-react';
 import { api } from '../api.js';
 import Heading from '../components/Heading.jsx';
 import OutfitCard from '../components/OutfitCard.jsx';
@@ -24,10 +24,10 @@ function ChoiceChips({ label, value, choices, onChange, allowAny = true }) {
   );
 }
 
-const prefsOf = ({ occasion, style, colour, colour_mood, comfort }) => ({ occasion, style, colour, colour_mood, comfort });
+const prefsOf = ({ occasion, style, colour, colour_mood, comfort, festival }) => ({ occasion, style, colour, colour_mood, comfort, festival: festival || null });
 const idsOf = (outfit) => outfit.pieces.map((p) => p.item.id);
 
-export default function Stylist({ anchorId, goToWardrobe, goToPreferences, notify, onLookSaved }) {
+export default function Stylist({ anchorId, preset, goToWardrobe, goToPreferences, notify, onLookSaved }) {
   const [options, setOptions] = useState(null);
   const [items, setItems] = useState([]);
   const [loadError, setLoadError] = useState('');
@@ -35,6 +35,11 @@ export default function Stylist({ anchorId, goToWardrobe, goToPreferences, notif
   const [savedPrefs] = useState(() => toStylistDefaults(loadPreferences()));
   const [form, setForm] = useState({
     occasion: '', style: '', colour: '', colour_mood: '', comfort: '', ...savedPrefs, anchor_item_id: anchorId ?? '',
+    festival: '', festival_label: '',   // a festival brings its usual colours (e.g. Republic Day: saffron, white, green)
+    ...(preset ? {
+      occasion: preset.occasion, colour: preset.colour, style: preset.style ?? '',
+      festival: preset.festival ?? '', festival_label: preset.reason ?? '',
+    } : {}),
   });
   const [status, setStatus] = useState('idle'); // 'idle' | 'loading' | 'done' | 'error'
   const [result, setResult] = useState(null);
@@ -67,8 +72,10 @@ export default function Stylist({ anchorId, goToWardrobe, goToPreferences, notif
     setError('');
     try {
       const wx = useWeather && weather ? { temp_c: weather.temp_c, rain: weather.rain, label: weather.label } : null;
+      const { festival_label: _label, ...request } = values;
       const data = await api.recommend({
-        ...values,
+        ...request,
+        festival: values.festival || null,
         weather: wx,
         anchor_item_id: values.anchor_item_id === '' ? null : Number(values.anchor_item_id),
       });
@@ -90,6 +97,17 @@ export default function Stylist({ anchorId, goToWardrobe, goToPreferences, notif
     runStyle(form);
   };
 
+  // Opened with a preset (e.g. "Style me in peacock green" for today's festival): style straight away,
+  // once today's weather is known (if a city is set).
+  const presetDone = useRef(false);
+  const weatherSettled = !place || Boolean(weather) || Boolean(weatherError);
+  useEffect(() => {
+    if (preset && options && weatherSettled && !presetDone.current) {
+      presetDone.current = true;
+      runStyle(form);
+    }
+  }, [preset, options, weatherSettled]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // A typed request: read it into the form, then style straight away if we know the occasion.
   const ask = async (text) => {
     setAsking(true);
@@ -99,6 +117,8 @@ export default function Stylist({ anchorId, goToWardrobe, goToPreferences, notif
         occasion: parsed.occasion ?? '', style: parsed.style ?? '', colour: parsed.colour ?? '',
         colour_mood: parsed.colour_mood ?? '', comfort: parsed.comfort ?? '',
         anchor_item_id: parsed.anchor_item_id != null ? String(parsed.anchor_item_id) : '',
+        festival: parsed.festival ?? '',
+        festival_label: (parsed.understood.find((u) => u.startsWith('Festival: ')) || '').replace('Festival: ', ''),
       };
       // No occasion in the message but one already chosen? Treat it as a follow-up
       // ("make it more comfortable") and only change what the message mentions.
@@ -196,6 +216,13 @@ export default function Stylist({ anchorId, goToWardrobe, goToPreferences, notif
       <AskBox items={items} chat={chat} asking={asking} onAsk={ask} onPick={pickAmbiguous} />
       <div className="stylist-layout">
         <form className="style-form" onSubmit={submit}>
+          {form.festival && (
+            <p className="festival-chip">
+              <span>✦ {form.festival_label || 'Festival'} · its usual colours are preferred</span>
+              <button type="button" className="icon-btn" aria-label="Don't style for this festival"
+                onClick={() => setForm((f) => ({ ...f, festival: '', festival_label: '' }))}><X size={12} /></button>
+            </p>
+          )}
           {place ? (
             <div className={`weather-chip ${useWeather ? '' : 'off'}`}>
               <CloudSun size={17} />

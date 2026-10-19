@@ -10,8 +10,9 @@ from fastapi import Query
 
 import database
 import looks_db
+from recommender.events import function_list, plan_event
 from recommender.planner import find_gaps, plan_trip, wear_stats
-from schemas import GapReport, TripPlan, TripRequest, WearStats, item_out
+from schemas import EventFunction, EventRequest, GapReport, TripPlan, TripRequest, WearStats, item_out
 
 router = APIRouter(prefix="/api", tags=["planning"])
 Db = Annotated[sqlite3.Connection, Depends(database.get_db)]
@@ -26,10 +27,7 @@ def wardrobe_gaps(db: Db):
     return report
 
 
-@router.post("/trips/plan", response_model=TripPlan)
-def trip_plan(request: TripRequest, db: Db):
-    """An outfit for each day of a trip, packing as few pieces as possible."""
-    plan = plan_trip(database.list_items(db), request.days, request.style)
+def _plan_out(plan: dict) -> dict:
     for day in plan["days"]:
         if day["outfit"]:
             for piece in day["outfit"]["pieces"]:
@@ -37,6 +35,24 @@ def trip_plan(request: TripRequest, db: Db):
     for packed in plan["packing"]:
         packed["item"] = item_out(packed["item"])
     return plan
+
+
+@router.post("/trips/plan", response_model=TripPlan)
+def trip_plan(request: TripRequest, db: Db):
+    """An outfit for each day of a trip, no garment worn twice."""
+    return _plan_out(plan_trip(database.list_items(db), request.days, request.style))
+
+
+@router.get("/events/functions", response_model=list[EventFunction])
+def event_functions():
+    """Wedding functions Adaa can plan, with their usual dress codes."""
+    return function_list()
+
+
+@router.post("/events/plan", response_model=TripPlan)
+def event_plan(request: EventRequest, db: Db):
+    """A different look for each function (haldi, mehendi, sangeet...), following its dress code."""
+    return _plan_out(plan_event(database.list_items(db), request.functions, request.style))
 
 
 @router.get("/insights/wear", response_model=WearStats)

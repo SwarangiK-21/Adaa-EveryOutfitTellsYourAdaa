@@ -1,9 +1,17 @@
-import React, { useState } from 'react';
-import { Send } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Send, Mic, MicOff } from 'lucide-react';
 
-// Type a request in your own words; Adaa shows what it understood.
+// The browser's own speech-to-text (Chrome and Edge). Chrome sends the audio to Google's speech
+// service to turn it into text; nothing is recorded or kept by Adaa.
+const SpeechRecognition = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
+
+// Type (or say) a request in your own words, in English or Hinglish; Adaa shows what it understood.
 export default function AskBox({ items, chat, asking, onAsk, onPick }) {
   const [text, setText] = useState('');
+  const [listening, setListening] = useState(false);
+  const [voiceNote, setVoiceNote] = useState('');
+  const recogniser = useRef(null);
+  useEffect(() => () => recogniser.current?.abort(), []);
 
   const send = (value) => {
     const message = value.trim();
@@ -12,10 +20,36 @@ export default function AskBox({ items, chat, asking, onAsk, onPick }) {
     setText('');
   };
 
+  const listen = () => {
+    if (listening) { recogniser.current?.stop(); return; }
+    const r = new SpeechRecognition();
+    r.lang = 'en-IN';             // Indian English: understands Hinglish like "kuch comfy"
+    r.interimResults = true;
+    r.maxAlternatives = 1;
+    let heard = '';
+    r.onresult = (e) => {
+      heard = Array.from(e.results).map((res) => res[0].transcript).join(' ');
+      setText(heard);
+    };
+    r.onerror = (e) => {
+      setVoiceNote(e.error === 'not-allowed' || e.error === 'service-not-allowed'
+        ? 'Microphone access was blocked. Allow it in the browser to speak to Adaa.'
+        : e.error === 'no-speech' ? "I didn't hear anything. Try again?" : "Voice input didn't work this time. You can type instead.");
+    };
+    r.onend = () => {
+      setListening(false);
+      if (heard.trim()) send(heard);
+    };
+    recogniser.current = r;
+    setVoiceNote('');
+    setListening(true);
+    r.start();
+  };
+
   const firstClothing = items.find((i) => i.category === 'Clothing');
   const examples = [
     firstClothing ? `Style my ${firstClothing.name.toLowerCase()} for a party` : 'Something to wear to a party',
-    'Something comfy for college',
+    'Aaj college ke liye kuch comfy',
     'Elegant traditional look for a wedding',
     'Dinner date, something black',
   ];
@@ -27,11 +61,19 @@ export default function AskBox({ items, chat, asking, onAsk, onPick }) {
           value={text}
           maxLength={300}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Tell Adaa what you need, e.g. Style my black crop top for a party"
+          placeholder={listening ? 'Listening… say it in English or Hinglish' : 'Tell Adaa what you need, e.g. Style my black crop top for a party'}
           aria-label="Tell Adaa what you need"
         />
+        {SpeechRecognition && (
+          <button type="button" className={`mic ${listening ? 'on' : ''}`} onClick={listen} disabled={asking}
+            aria-label={listening ? 'Stop listening' : 'Speak your request'} title={listening ? 'Stop listening' : 'Speak your request'}>
+            {listening ? <MicOff size={17} /> : <Mic size={17} />}
+          </button>
+        )}
         <button aria-label="Send" disabled={asking}><Send size={17} /></button>
       </form>
+      {listening && <p className="voice-note">Listening… Chrome turns your voice into text using Google's speech service.</p>}
+      {!listening && voiceNote && <p className="voice-note">{voiceNote}</p>}
 
       {!chat && (
         <div className="prompts">

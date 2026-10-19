@@ -97,6 +97,17 @@ class StylePrefs(BaseModel):
     colour_mood: str | None = None
     comfort: str | None = None
     weather: WeatherNow | None = None
+    festival: str | None = None   # e.g. "republic_day": its usual colours are preferred
+
+    @field_validator("festival", mode="before")
+    @classmethod
+    def check_festival(cls, value):
+        from recommender.festivals import FESTIVALS
+        if value in ("", None):
+            return None
+        if value not in FESTIVALS:
+            raise ValueError("unknown festival")
+        return value
 
     @field_validator("style", "colour", "colour_mood", "comfort", mode="before")
     @classmethod
@@ -182,6 +193,7 @@ class ParsedRequest(BaseModel):
     colour_mood: str | None
     comfort: str | None
     anchor_item_id: int | None
+    festival: str | None = None   # e.g. "republic_day"
     understood: list[str]      # e.g. ["Occasion: Party", "Building around your crop top"]
     missing: list[str]         # e.g. ["occasion"]
     ambiguous: list[ItemRef]   # several pieces matched equally, e.g. two black tops
@@ -393,7 +405,39 @@ class TripRequest(BaseModel):
 class TripDay(BaseModel):
     day: int
     occasion: str
+    label: str | None = None        # "Day 3", or a function like "Haldi"
+    dress_code: str | None = None   # for wedding functions
     outfit: OutfitOut | None
+
+
+class EventFunction(BaseModel):
+    key: str
+    label: str
+    dress_code: str
+    colours: list[str]
+
+
+class EventRequest(BaseModel):
+    functions: list[str] = Field(min_length=1, max_length=10)   # e.g. ["haldi", "mehendi", "wedding"]
+    style: str | None = None
+
+    @field_validator("functions")
+    @classmethod
+    def check_functions(cls, value):
+        from recommender.events import FUNCTIONS
+        unknown = [f for f in value if f not in FUNCTIONS]
+        if unknown:
+            raise ValueError(f"unknown function(s): {', '.join(unknown)}")
+        return value
+
+    @field_validator("style", mode="before")
+    @classmethod
+    def check_style(cls, value):
+        if value in ("", None):
+            return None
+        if value not in STYLES:
+            raise ValueError(f"style must be one of: {', '.join(STYLES)}")
+        return value
 
 
 class PackedItem(BaseModel):
@@ -408,3 +452,19 @@ class TripPlan(BaseModel):
     pieces: int     # how many pieces to pack
     outfits: int    # how many days got an outfit
     notes: list[str]
+
+
+class FestivalNow(BaseModel):
+    """Today's festival (with today's colour for Navratri), or the next one within three weeks."""
+    key: str
+    name: str
+    today: bool
+    in_days: int
+    date: str
+    colour: str
+    colours: list[str]
+    day_label: str
+    title: str
+    tip: str
+    occasion: str
+    style: str | None

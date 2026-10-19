@@ -91,3 +91,62 @@ def test_parse_api(client):
     assert res.status_code == 200
     assert res.json()["occasion"] == "College"
     assert client.post("/api/stylist/parse", json={"text": ""}).status_code == 422
+
+
+# ---------- Hinglish ----------
+
+@pytest.mark.parametrize("text, expected", [
+    ("Aaj college ke liye kuch comfy", {"occasion": "College", "comfort": "Comfort first"}),
+    ("Shaadi ke liye kuch lal aur bhaari", {"occasion": "Wedding", "colour": "red", "comfort": "A polished look"}),
+    ("Ghoomne ke liye kuch peela", {"occasion": "Casual", "colour": "yellow"}),
+    ("Office ke liye kuch halka aur safed", {"occasion": "Office", "colour": "white", "comfort": "Comfort first"}),
+    ("Kal sangeet hai, kuch rangeen chahiye", {"occasion": "Wedding", "colour_mood": "Bright & playful"}),
+    ("Tyohar ke liye kuch gulabi", {"occasion": "Festive", "colour": "pink"}),
+    ("Safar ke liye aasmani", {"occasion": "Travel", "colour": "sky blue"}),
+])
+def test_hinglish_requests(text, expected):
+    result = parse(text)
+    for key, value in expected.items():
+        assert result[key] == value, (text, key, result[key])
+    assert not result["not_found"]
+
+
+def test_hinglish_my_piece_is_found():
+    result = parse("Meri hari kurti diwali ke liye")
+    assert result["occasion"] == "Festive"
+    assert result["anchor_item_id"] == 5          # the green kurti ("hari" = green)
+
+
+# ---------- Festivals ----------
+
+@pytest.mark.parametrize("text, festival, occasion", [
+    ("Style me for republic day", "republic_day", "Festive"),
+    ("style me for ganesh chaturti", "ganesh_chaturthi", "Festive"),       # typo
+    ("Style me for Makar Sankranti", "makar_sankranti", "Festive"),
+    ("sankranthi ke liye kuch kaala", "makar_sankranti", "Festive"),       # typo + Hinglish
+    ("Diwali party look", "diwali", "Party"),                              # party with Diwali colours
+    ("Diwali puja outfit", "diwali", "Festive"),
+    ("kuch for 15 august", "independence_day", "Festive"),
+    ("Holi", "holi", "Casual"),
+    ("christmas dinner date", "christmas", "Date"),
+    ("christmas", "christmas", "Party"),
+])
+def test_festivals_are_recognised(text, festival, occasion):
+    result = parse(text)
+    assert result["festival"] == festival
+    assert result["occasion"] == occasion
+
+
+def test_festival_brings_style_and_navratri_brings_todays_colour():
+    from datetime import date
+    result = parse_request("something for navratri", WARDROBE, date(2026, 10, 19))
+    assert result["style"] == "Traditional"
+    assert result["colour"] == "peacock green"
+    assert any("Navratri" in u for u in result["understood"])
+    typed = parse_request("navratri in western style", WARDROBE, date(2026, 10, 19))
+    assert typed["style"] == "Western"
+
+
+def test_short_words_are_not_mistaken_for_festivals():
+    for text in ("style me for a holiday", "said hello", "hold my bag"):
+        assert parse(text)["festival"] is None, text

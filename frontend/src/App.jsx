@@ -1,23 +1,25 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { LayoutDashboard, Shirt, MessageCircle, Heart, SlidersHorizontal, Sparkles, ArrowUpRight, ChevronRight, Menu, X, Check, Luggage, ShoppingBag, BarChart3, Clock } from 'lucide-react';
+import { LayoutDashboard, Shirt, MessageCircle, Heart, SlidersHorizontal, Sparkles, ArrowUpRight, ChevronRight, Menu, X, Check, Luggage, ShoppingBag, BarChart3, Clock, Gem } from 'lucide-react';
 import { api } from './api.js';
 import Heading from './components/Heading.jsx';
 import Wardrobe from './pages/Wardrobe.jsx';
 import Stylist from './pages/Stylist.jsx';
 import SavedLooks from './pages/SavedLooks.jsx';
 import TripPlanner from './pages/TripPlanner.jsx';
+import WeddingPlanner from './pages/WeddingPlanner.jsx';
 import ShopSmart from './pages/ShopSmart.jsx';
 import WearStats from './pages/WearStats.jsx';
 import { TryOnContext } from './tryon.js';
 import { queueMissingCutouts } from './cutoutQueue.js';
 import { WelcomeSetup, YourPhotoSettings } from './components/YourPhoto.jsx';
 import WeatherSettings from './components/WeatherSettings.jsx';
+import { swatchFor } from './components/OutfitPreview.jsx';
 import { PREFERENCE_CHOICES, DEFAULT_PREFERENCES, loadPreferences, savePreferences } from './preferences.js';
 
-const nav = [{name:'Overview',Icon:LayoutDashboard},{name:'My Wardrobe',Icon:Shirt},{name:'AI Stylist',Icon:MessageCircle},{name:'Saved Looks',Icon:Heart},{name:'Trip Planner',Icon:Luggage},{name:'Wear Stats',Icon:BarChart3},{name:'Shop Smart',Icon:ShoppingBag},{name:'Preferences',Icon:SlidersHorizontal}];
+const nav = [{name:'Overview',Icon:LayoutDashboard},{name:'My Wardrobe',Icon:Shirt},{name:'AI Stylist',Icon:MessageCircle},{name:'Saved Looks',Icon:Heart},{name:'Wedding Planner',Icon:Gem},{name:'Trip Planner',Icon:Luggage},{name:'Wear Stats',Icon:BarChart3},{name:'Shop Smart',Icon:ShoppingBag},{name:'Preferences',Icon:SlidersHorizontal}];
 
 export default function App(){
- const [page,setPage]=useState('Overview'),[itemCount,setItemCount]=useState(null),[anchorId,setAnchorId]=useState(null),[mobile,setMobile]=useState(false),[toast,setToast]=useState(''),[lookCount,setLookCount]=useState(0);
+ const [page,setPage]=useState('Overview'),[itemCount,setItemCount]=useState(null),[anchorId,setAnchorId]=useState(null),[preset,setPreset]=useState(null),[mobile,setMobile]=useState(false),[toast,setToast]=useState(''),[lookCount,setLookCount]=useState(0);
  // Show a message briefly. A new message restarts the timer, so it isn't cut short by an older one.
  const toastTimer=useRef(null);
  // Your photo + try-on server (shared with every outfit preview), and the first-run welcome step.
@@ -37,7 +39,12 @@ export default function App(){
  const [resting,setResting]=useState(null);
  useEffect(()=>{if(page!=='Overview')return;api.getWearStats(30).then(s=>setResting(s)).catch(()=>setResting(null))},[page]);
  // anchor: a wardrobe item to build the outfit around (from "Style this" on a wardrobe card).
- const change=(p,anchor=null)=>{setPage(p);setAnchorId(anchor);setMobile(false)};
+ // preset: stylist settings to start from (e.g. today's festival colour); styling starts at once.
+ const change=(p,anchor=null,stylistPreset=null)=>{setPage(p);setAnchorId(anchor);setPreset(stylistPreset);setMobile(false)};
+ // Today's festival (or the next one within 3 weeks), from Adaa's festival table.
+ const [festival,setFestival]=useState(null);
+ useEffect(()=>{if(page!=='Overview')return;api.getFestivalNow().then(setFestival).catch(()=>setFestival(null))},[page]);
+ const festivalPreset=(f)=>({occasion:f.occasion,style:f.style??'',festival:f.key,colour:f.today?f.colour:'',reason:f.title});
  return <TryOnContext.Provider value={{profile,refreshProfile}}><div className="shell">
   <aside className={'sidebar '+(mobile?'open':'')}><div className="brand"><div className="brand-icon"><Sparkles/></div><div><b>Adaa</b><small>YOUR PERSONAL STYLIST</small></div><button className="close mobile" onClick={()=>setMobile(false)}><X/></button></div>
    <p className="nav-label">WORKSPACE</p>{nav.map(({name,Icon})=><button key={name} className={'nav '+(page===name?'active':'')} onClick={()=>change(name)}><Icon size={18}/>{name}{name==='Saved Looks'&&lookCount>0?<span className="count">{lookCount}</span>:null}</button>)}
@@ -47,13 +54,15 @@ export default function App(){
    <div className="content">
     {page==='Overview'&&<><Heading eyebrow="YOUR STYLE, SIMPLIFIED" title={<>{greeting()}. <em>What feels like you today?</em></>} sub="A calmer way to get dressed, using the pieces you already own." action={<button className="primary" onClick={()=>change('AI Stylist')}><Sparkles size={16}/> Ask my stylist</button>}/>
      <section className="hero"><div className="hero-copy"><label>✦ YOUR DAILY STYLE NOTE</label><h2>Wear what you love.<br/><em>See it differently.</em></h2><p>Tell your stylist where you're going and how you want to feel. Explore fresh combinations from your wardrobe.</p><button className="light" onClick={()=>change('AI Stylist')}>Find my outfit ↗</button><small>● Your wardrobe. Your world. Your Adaa.</small></div><div className="hero-art"><div className="sun"></div><span className="art-title">THE ART OF<br/>GETTING DRESSED</span><div className="garment g1"></div><div className="garment g2"></div><div className="garment g3"></div><span className="sticker">LESS, BUT<br/><b>LOVELY</b></span></div></section>
+     {festival&&<section className="festival-card"><div className="festival-swatches">{festival.colours.slice(0,4).map(c=><span key={c} style={{background:swatchFor(c)}} title={c}/>)}</div><div className="festival-copy"><small>{festival.today?'✦ TODAY\'S FESTIVAL COLOUR':'✦ COMING UP'}</small><h3>{festival.title}</h3><p>{festival.day_label?`${festival.day_label}. `:''}{festival.tip}</p><p className="festival-note">Festival dates can differ by a day in your region.</p></div><button className="primary" onClick={()=>change('AI Stylist',null,festivalPreset(festival))}><Sparkles size={15}/> {festival.colours.length===1?`Style me in ${festival.colour}`:`Style me for ${festival.name}`}</button></section>}
      <SectionTitle title="A little look inside" eyebrow="YOUR COLLECTION" action={<button className="text-btn" onClick={()=>change('My Wardrobe')}>View wardrobe ↗</button>}/><div className="stats"><Stat icon={<Shirt/>} value={itemCount??'–'} label="Pieces in your wardrobe" color="peach"/><Stat icon={<Heart/>} value={lookCount??'–'} label="Saved looks" color="rose"/><Stat icon={<Sparkles/>} value="∞" label="Ways to re-style" color="sage"/></div>
      {resting&&resting.total_items>0&&resting.not_worn.length>0&&<button className="resting-nudge" onClick={()=>change('Wear Stats')}><Clock size={18}/><span><b>{resting.not_worn.length} piece{resting.not_worn.length===1?'':'s'} not worn in 30 days</b><small>{resting.not_worn.slice(0,3).map(r=>r.item.name).join(', ')}{resting.not_worn.length>3?'…':''}: give them a day out</small></span><span className="resting-photos">{resting.not_worn.slice(0,4).map(r=><img key={r.item.id} src={r.item.image_url} alt=""/>)}</span><ArrowUpRight size={16}/></button>}
      <SectionTitle title="Little things, lovely possibilities" eyebrow="START EXPLORING"/><div className="quick">{[['♡','Ask your stylist','Tell us the occasion, colour or mood.','Get styled','AI Stylist'],['♧','Organise your wardrobe','Keep your favourite pieces in one place.','Explore your pieces','My Wardrobe'],['✧','Keep the good looks','Save combinations you want to wear again.','See saved looks','Saved Looks']].map(a=><button className="quick-card" key={a[1]} onClick={()=>change(a[4])}><span>{a[0]}</span><h3>{a[1]}</h3><p>{a[2]}</p><b>{a[3]} ↗</b></button>)}</div><p className="disclaimer">ⓘ Adaa only styles you with pieces you have added to My Wardrobe.</p>
     </>}
     {page==='My Wardrobe'&&<Wardrobe notify={notify} onStyle={(item)=>change('AI Stylist',item.id)}/>}
-    {page==='AI Stylist'&&<Stylist key={anchorId??'none'} anchorId={anchorId} goToWardrobe={()=>change('My Wardrobe')} goToPreferences={()=>change('Preferences')} notify={notify} onLookSaved={()=>setLookCount(c=>c+1)}/>}
+    {page==='AI Stylist'&&<Stylist key={`${anchorId??'none'}-${preset?.reason??''}`} anchorId={anchorId} preset={preset} goToWardrobe={()=>change('My Wardrobe')} goToPreferences={()=>change('Preferences')} notify={notify} onLookSaved={()=>setLookCount(c=>c+1)}/>}
     {page==='Saved Looks'&&<SavedLooks notify={notify} goToStylist={()=>change('AI Stylist')} onCountChange={setLookCount}/>}
+    {page==='Wedding Planner'&&<WeddingPlanner goToWardrobe={()=>change('My Wardrobe')}/>}
     {page==='Trip Planner'&&<TripPlanner goToWardrobe={()=>change('My Wardrobe')}/>}
     {page==='Wear Stats'&&<WearStats onStyle={(item)=>change('AI Stylist',item.id)} goToWardrobe={()=>change('My Wardrobe')}/>}
     {page==='Shop Smart'&&<ShopSmart goToWardrobe={()=>change('My Wardrobe')}/>}

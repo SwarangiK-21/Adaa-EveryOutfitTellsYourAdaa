@@ -175,25 +175,61 @@ def find_gaps(items: list[dict], limit: int = 6) -> dict:
     }
 
 
-# ---------- Trip packing ----------
+# ---------- Trip packing (and event planning, which uses the same search) ----------
 
 UNTAGGED_COST = 6.0    # using clothes not tagged for that day's occasion (only if nothing else fits)
 REUSE_BONUS = 2.0      # shoes / bag / jewellery already in the suitcase are preferred
 OPTIONS_PER_DAY = 12   # best outfits considered for each day
 SEARCH_LIMIT = 60000   # steps of the search before settling for the best plan found
+DRESS_CODE_BONUS = 3.0  # per garment in one of the day's dress-code colours
+AVOID_COST = 4.0        # per garment in a colour the dress code avoids
 _TRIP_SLOTS = (g.FOOTWEAR, g.EARRINGS, g.NECKLACE, g.BAG)
 
 
-def _day_options(items: list[dict], occasion: str, style: str | None) -> list[tuple[float, engine.Outfit, bool]]:
+@dataclass(frozen=True)
+class DaySpec:
+    """What one day (or one wedding function) asks for."""
+    occasions: tuple[str, ...]            # tagged for any of these counts as "tagged"
+    label: str                            # "Day 3" or "Haldi"
+    style: str | None = None
+    comfort: str | None = None
+    colours: tuple[str, ...] = ()         # dress-code colours, e.g. ("yellow", "mustard")
+    avoid: tuple[str, ...] = ()           # colours to avoid, e.g. ("white", "black") at a wedding
+    too_casual: tuple[str, ...] = ()      # kinds of piece that don't suit it, e.g. ("jeans",)
+    dress_code: str | None = None         # shown to the user
+    slots: tuple[str, ...] = _TRIP_SLOTS
+
+
+def _colour_hits(pieces, names: tuple[str, ...]) -> list:
+    wanted = [colours.parse(n) for n in names]
+    return [p for p in pieces if p.item["category"] == "Clothing"
+            and any(colours.same_family(w, p.colour) for w in wanted if w)]
+
+
+def _req(spec: DaySpec, occasion: str | None = None) -> _Req:
+    return _Req(occasion or spec.occasions[0], style=spec.style, comfort=spec.comfort)
+
+
+def _day_options(items: list[dict], spec: DaySpec) -> list[tuple[float, engine.Outfit, bool]]:
     """(score, outfit base, uses untagged clothes) for one day, best first."""
-    req = _Req(occasion, style=style)
-    clothes = [engine._prepare(i, occasion) for i in items if i["category"] == "Clothing"]
-    tagged = sorted(engine._base_outfits(clothes, req, None, strict=True), key=lambda b: (-b.score, sorted(b.ids)))
-    seen = {b.ids for b in tagged}
-    untagged = sorted((b for b in engine._base_outfits(clothes, req, None, strict=False) if b.ids not in seen),
-                      key=lambda b: (-b.score, sorted(b.ids)))
-    return ([(b.score, b, False) for b in tagged[:OPTIONS_PER_DAY]]
-            + [(b.score - UNTAGGED_COST, b, True) for b in untagged[:OPTIONS_PER_DAY]])
+    tagged: dict[frozenset, engine.Outfit] = {}
+    for occasion in spec.occasions:
+        clothes = [engine._prepare(i, occasion) for i in items if i["category"] == "Clothing"]
+        for b in engine._base_outfits(clothes, _req(spec, occasion), None, strict=True):
+            if b.ids not in tagged or b.score > tagged[b.ids].score:
+                tagged[b.ids] = b
+    clothes = [engine._prepare(i, spec.occasions[0]) for i in items if i["category"] == "Clothing"]
+    untagged = [b for b in engine._base_outfits(clothes, _req(spec), None, strict=False) if b.ids not in tagged]
+
+    def points(b: engine.Outfit) -> float:
+        return (b.score + DRESS_CODE_BONUS * len(_colour_hits(b.pieces, spec.colours))
+                - AVOID_COST * len(_colour_hits(b.pieces, spec.avoid))
+                - AVOID_COST * sum(1 for p in b.pieces if p.type_key in spec.too_casual))
+
+    best_tagged = sorted(tagged.values(), key=lambda b: (-points(b), sorted(b.ids)))[:OPTIONS_PER_DAY]
+    best_untagged = sorted(untagged, key=lambda b: (-points(b), sorted(b.ids)))[:OPTIONS_PER_DAY]
+    return ([(points(b), b, False) for b in best_tagged]
+            + [(points(b) - UNTAGGED_COST, b, True) for b in best_untagged])
 
 
 def _choose(options: list[list[tuple[float, engine.Outfit, bool]]]) -> list[int | None]:
@@ -229,36 +265,53 @@ def _choose(options: list[list[tuple[float, engine.Outfit, bool]]]) -> list[int 
     return best["pick"]
 
 
-def plan_trip(items: list[dict], days: list[str], style: str | None = None) -> dict:
-    """An outfit for each day of a trip. No garment is worn twice; shoes, bags and jewellery are
-    reused where they suit, so the suitcase stays light."""
-    options_by_occasion = {o: _day_options(items, o, style) for o in set(days)}
-    options = [options_by_occasion[o] for o in days]
+def plan_days(items: list[dict], specs: list[DaySpec], unit: str = "day") -> dict:
+    """An outfit for each day (or function). No garment is worn twice; shoes, bags and jewellery
+    are reused where they suit."""
+    cache: dict[DaySpec, list] = {}
+    options = [cache.setdefault(s, _day_options(items, s)) for s in specs]
     chosen = _choose(options)
 
-    wardrobe_cache: dict[str, list[engine.Piece]] = {}
     notes: list[str] = []
     packed: Counter = Counter()          # item id -> times worn
     worn_on: dict[int, list[int]] = {}
     plan = []
-    short: list[tuple[int, str]] = []    # days left empty because every suitable piece is already used
-    for day, occasion in enumerate(days, start=1):
+    short: list[DaySpec] = []            # left empty because every suitable piece is already used
+    for day, spec in enumerate(specs, start=1):
+        entry = {"day": day, "occasion": spec.occasions[0], "label": spec.label,
+                 "dress_code": spec.dress_code, "outfit": None}
+        plan.append(entry)
         index = chosen[day - 1]
         if index is None:
-            plan.append({"day": day, "occasion": occasion, "outfit": None})
             if not options[day - 1]:
-                notes.append(f"Day {day}: no outfit possible for {occasion} from your wardrobe.")
+                notes.append(f"{spec.label}: no outfit possible from your wardrobe.")
             else:
-                short.append((day, occasion))
+                short.append(spec)
             continue
         _, base, untagged = options[day - 1][index]
         if untagged:
-            notes.append(f"Day {day}: nothing new is tagged for {occasion}, so it uses the closest match.")
+            notes.append(f"{spec.label}: nothing new is tagged for {_join(list(spec.occasions))}, "
+                         "so it uses the closest match.")
 
-        req = _Req(occasion, style=style)
-        wardrobe = wardrobe_cache.setdefault(occasion, [engine._prepare(i, occasion) for i in items])
+        req = _req(spec)
+        tags = set(spec.occasions)
+        wardrobe = [engine._prepare(i, spec.occasions[0]) for i in items]
+        for p in wardrobe:
+            p.tagged = bool(tags & set(p.item["occasions"]))
         outfit = base.copy()
-        for slot in _TRIP_SLOTS:
+        if spec.colours:
+            hits = _colour_hits(outfit.pieces, spec.colours)
+            if hits:
+                outfit.reasons.append((9.0, f"Fits the dress code: your {_join([p.name for p in hits])}"))
+            else:
+                outfit.cautions.append(f"Nothing in {_join(list(spec.colours))} fits here, so this is the closest match")
+        for p in _colour_hits(outfit.pieces, spec.avoid):
+            outfit.cautions.append(f"{p.colour.label} is usually avoided at a {spec.label.lower()}: your {p.name}")
+        casual = [p.name for p in outfit.pieces if p.type_key in spec.too_casual]
+        if casual:
+            outfit.cautions.append(f"A bit casual for a {spec.label.lower()}: your {_join(casual)}. "
+                                   "Add a dressier piece to your wardrobe for this one")
+        for slot in spec.slots:
             slot_options = [(engine._addition_points(p, outfit, req, Counter())
                              + (REUSE_BONUS if p.id in packed else 0), p)
                             for p in wardrobe if p.role == slot and p.tagged and p.id not in outfit.ids]
@@ -269,22 +322,19 @@ def plan_trip(items: list[dict], days: list[str], style: str | None = None) -> d
         for p in outfit.pieces:
             packed[p.id] += 1
             worn_on.setdefault(p.id, []).append(day)
-        plan.append({
-            "day": day, "occasion": occasion,
-            "outfit": {
-                "rank": day, "score": round(outfit.score, 1),
-                "pieces": [{"role": p.role, "item": p.item} for p in outfit.pieces],
-                "reasons": [r for _, r in sorted(outfit.reasons, key=lambda r: -r[0])][:3],
-                "cautions": list(dict.fromkeys(outfit.cautions)),
-            },
-        })
+        entry["outfit"] = {
+            "rank": day, "score": round(outfit.score, 1),
+            "pieces": [{"role": p.role, "item": p.item} for p in outfit.pieces],
+            "reasons": [r for _, r in sorted(outfit.reasons, key=lambda r: -r[0])][:3],
+            "cautions": list(dict.fromkeys(outfit.cautions)),
+        }
 
     if short:
         filled = sum(1 for d in plan if d["outfit"])
-        occasions = list(dict.fromkeys(o for _, o in short))
-        notes.insert(0, f"{'Day' if len(short) == 1 else 'Days'} {_join([str(d) for d, _ in short])}: "
-                        f"not enough different clothes to dress {len(days)} days without repeating any "
-                        f"(your wardrobe covers {filled}). Add or tag more clothes for {_join(occasions)}.")
+        occasions = list(dict.fromkeys(o for s in short for o in s.occasions))
+        notes.insert(0, f"{_join([s.label for s in short])}: not enough different clothes to dress "
+                        f"{len(specs)} {unit}s without repeating any (your wardrobe covers {filled}). "
+                        f"Add or tag more clothes for {_join(occasions)}.")
 
     by_id = {i["id"]: i for i in items}
     order = {c: n for n, c in enumerate(["Clothing", "Footwear", "Jewellery", "Bags", "Accessories"])}
@@ -295,6 +345,13 @@ def plan_trip(items: list[dict], days: list[str], style: str | None = None) -> d
     outfits = sum(1 for d in plan if d["outfit"])
     return {"days": plan, "packing": packing, "pieces": len(packing), "outfits": outfits,
             "notes": list(dict.fromkeys(notes))}
+
+
+def plan_trip(items: list[dict], days: list[str], style: str | None = None) -> dict:
+    """An outfit for each day of a trip. No garment is worn twice; shoes, bags and jewellery are
+    reused where they suit, so the suitcase stays light."""
+    specs = [DaySpec((occasion,), f"Day {n}", style=style) for n, occasion in enumerate(days, start=1)]
+    return plan_days(items, specs)
 
 
 # ---------- Wear stats ----------

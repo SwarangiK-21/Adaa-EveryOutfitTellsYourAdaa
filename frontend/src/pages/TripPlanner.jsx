@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Luggage, Minus, Plus, RefreshCw, Check, Info } from 'lucide-react';
+import { Luggage, Minus, Plus, RefreshCw } from 'lucide-react';
 import { api } from '../api.js';
 import Heading from '../components/Heading.jsx';
-import OutfitBoard from '../components/OutfitBoard.jsx';
-import { PieceImage } from '../components/OutfitPreview.jsx';
+import PlanResult from '../components/PlanResult.jsx';
 
 const MAX_DAYS = 14;
 const STYLES = ['', 'Traditional', 'Western', 'Indo-Western'];
@@ -19,7 +18,6 @@ export default function TripPlanner({ goToWardrobe }) {
   const [plan, setPlan] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [packed, setPacked] = useState(() => new Set());
 
   useEffect(() => { api.getOptions().then((o) => setOccasions(o.occasions)).catch((err) => setError(err.message)); }, []);
 
@@ -35,7 +33,6 @@ export default function TripPlanner({ goToWardrobe }) {
     setError('');
     try {
       setPlan(await api.planTrip(days, style));
-      setPacked(new Set());
     } catch (err) {
       setError(err.message);
     } finally {
@@ -43,11 +40,6 @@ export default function TripPlanner({ goToWardrobe }) {
     }
   };
 
-  const toggle = (id) => setPacked((s) => {
-    const next = new Set(s);
-    if (next.has(id)) next.delete(id); else next.add(id);
-    return next;
-  });
 
   return (
     <>
@@ -101,47 +93,7 @@ export default function TripPlanner({ goToWardrobe }) {
               <p>Choose the days on the left and press <b>Plan my trip</b>. Every outfit uses only pieces from your wardrobe.</p>
             </div>
           )}
-          {plan && (
-            <>
-              <div className="gap-summary">
-                <div><strong>{plan.pieces}</strong><span>piece{plan.pieces === 1 ? '' : 's'} to pack for {plan.outfits} outfit{plan.outfits === 1 ? '' : 's'}</span></div>
-                {plan.notes.map((n) => <p key={n}><Info size={13} /> {n}</p>)}
-                {plan.outfits === 0 && <p><button type="button" className="text-btn" onClick={goToWardrobe}>Add clothes to your wardrobe ↗</button></p>}
-              </div>
-
-              {plan.packing.length > 0 && (
-                <section className="packing">
-                  <h3>Packing list <small>{packed.size} of {plan.packing.length} packed</small></h3>
-                  <ul>
-                    {plan.packing.map(({ item, uses, days: worn }) => (
-                      <li key={item.id} className={packed.has(item.id) ? 'done' : ''}>
-                        <label>
-                          <input type="checkbox" checked={packed.has(item.id)} onChange={() => toggle(item.id)} />
-                          <PieceImage item={item} />
-                          <span><b>{item.name}</b><small>{item.category} · {uses === 1 ? `day ${worn[0]}` : `${uses} days (${worn.join(', ')})`}</small></span>
-                          {packed.has(item.id) && <Check size={14} />}
-                        </label>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
-
-              <div className="trip-days-grid">
-                {plan.days.map((d) => (
-                  <article className="trip-day" key={d.day}>
-                    <header><b>Day {d.day}</b><span>{d.occasion}</span></header>
-                    {d.outfit ? (
-                      <>
-                        <div className="preview-frame board-frame trip-board"><OutfitBoard pieces={d.outfit.pieces} /></div>
-                        <p>{d.outfit.pieces.filter((p) => p.item.category === 'Clothing').map((p) => p.item.name).join(' + ')}</p>
-                      </>
-                    ) : <p className="muted">No outfit for this day: there aren't enough different clothes for {d.occasion} without repeating any (see the note above).</p>}
-                  </article>
-                ))}
-              </div>
-            </>
-          )}
+          {plan && <PlanResult plan={plan} goToWardrobe={goToWardrobe} />}
         </div>
       </div>
     </>

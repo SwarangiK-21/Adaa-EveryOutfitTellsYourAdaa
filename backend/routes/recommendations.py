@@ -5,10 +5,13 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 
 import database
+from datetime import date
+
+from recommender import festivals
 from recommender.engine import RecommendationError, recommend
 from recommender.parser import parse_request
 from schemas import (
-    ParsedRequest, RecommendationRequest, RecommendationResponse, StylistMessage, item_out,
+    FestivalNow, ParsedRequest, RecommendationRequest, RecommendationResponse, StylistMessage, item_out,
 )
 
 router = APIRouter(prefix="/api", tags=["stylist"])
@@ -38,4 +41,10 @@ def parse_stylist_message(
     db: Annotated[sqlite3.Connection, Depends(database.get_db)],
 ):
     """Read a typed request like 'Style my black crop top for a party' into filters."""
-    return parse_request(message.text, database.list_items(db))
+    return parse_request(message.text, database.list_items(db), date.today())
+
+
+@router.get("/festivals/now", response_model=FestivalNow | None)
+def festival_now():
+    """Today's festival and its colour (Navratri: today's colour), or the next one within 3 weeks."""
+    return festivals.now(date.today())

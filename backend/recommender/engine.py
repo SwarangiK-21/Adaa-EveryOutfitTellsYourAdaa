@@ -12,7 +12,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from itertools import combinations
 
-from recommender import colours, garments as g, weather as wx
+from recommender import colours, festivals, garments as g, weather as wx
 
 STYLE_CLASH = {frozenset({"Traditional", "Western"})}
 MINIMAL_OCCASIONS = {"Casual", "College", "Office", "Travel"}
@@ -20,6 +20,7 @@ DRESSY_OCCASIONS = {"Party", "Festive", "Wedding", "Traditional function", "Date
 REUSE_PENALTY = 1.5        # discourages repeating an accessory across outfits
 BASE_OVERLAP_PENALTY = 1.0  # discourages repeating a garment across outfits
 ACCESSORY_THRESHOLD = 1.0   # an accessory must score at least this to be added
+COLOUR_SHARE_WEIGHT = 12.0  # asked for a colour: outfits fully in it rank above half-in-it ones
 SLOT_NAMES = {g.FOOTWEAR: "footwear", g.BAG: "bags"}
 
 
@@ -94,7 +95,45 @@ def _request_points(piece: Piece, req, weight: float = 1.0) -> float:
         points += 2.0
     if colours.matches_mood(piece.colour, req.colour_mood):
         points += 0.75
+    if _festival_match(piece, req):
+        points += 1.5
     return points * weight + wx.points(piece, getattr(req, "weather", None))
+
+
+def _festival_match(piece: Piece, req) -> bool:
+    """Is this piece in one of the colours people usually wear for the requested festival?"""
+    fest = festivals.get(getattr(req, "festival", None))
+    if not fest or piece.colour is None:
+        return False
+    return any(colours.same_family(colours.parse(c), piece.colour) for c in fest.colours)
+
+
+def _wanted_colours(req) -> tuple[list[colours.Colour], str]:
+    """The colours this request asks for, and how to name them: the colour you typed ("gulabi" ->
+    pink) wins; otherwise the festival's usual colours."""
+    if req.colour:
+        wanted = colours.parse(req.colour)
+        if wanted:
+            return [wanted], req.colour.lower()
+    fest = festivals.get(getattr(req, "festival", None))
+    if fest:
+        return [c for c in (colours.parse(n) for n in fest.colours) if c], fest.colour_text
+    return [], ""
+
+
+def _in_colours(base: Outfit, wanted: list[colours.Colour]) -> bool:
+    """Does a garment in this outfit base wear one of the wanted colours?"""
+    return any(colours.same_family(w, p.colour) for p in base.pieces for w in wanted)
+
+
+def _festival_notes(pieces: list[Piece], req) -> tuple[list[tuple[float, str]], list[str]]:
+    fest = festivals.get(getattr(req, "festival", None))
+    if not fest:
+        return [], []
+    hits = [p.name for p in pieces if _festival_match(p, req)]
+    if hits:
+        return [(2.5, f"{fest.colour_text.capitalize()} for {fest.name}: your {_join(hits[:3])}")], []
+    return [], [f"None of these pieces are {fest.colour_text}, the usual colours for {fest.name}"]
 
 
 def _dominant_style(pieces: list[Piece]) -> str:
@@ -272,6 +311,9 @@ def _complete(base: Outfit, wardrobe: list[Piece], req, usage: Counter, anchor: 
     reasons, cautions = wx.notes(outfit.pieces, getattr(req, "weather", None))
     outfit.reasons.extend(reasons)
     outfit.cautions.extend(cautions)
+    reasons, cautions = _festival_notes(outfit.pieces, req)
+    outfit.reasons.extend(reasons)
+    outfit.cautions.extend(cautions)
     return outfit
 
 
@@ -311,6 +353,35 @@ def recommend(items: list[dict], req) -> dict:
     if not bases:
         notes.insert(0, _why_no_outfits(clothes, anchor))
         return {"outfits": [], "notes": notes, "relaxed": False}
+
+    # Asked for a colour (or a festival's colours)? Then only outfits in those colours are shown.
+    # Pieces in the right colour that aren't tagged for the occasion are allowed too (with a note),
+    # because the colour is what was asked for. If nothing matches, say so and show the closest.
+    wanted, wanted_text = _wanted_colours(req)
+    if wanted:
+        in_colour = [b for b in bases if _in_colours(b, wanted)]
+        seen = {b.ids for b in bases}
+        untagged = [b for b in _base_outfits(clothes, req, anchor, strict=False)
+                    if b.ids not in seen and _in_colours(b, wanted)]
+        for b in untagged:
+            names = [p.name for p in b.pieces if not p.tagged]
+            if names:
+                verb, pronoun = ("isn't", "it's") if len(names) == 1 else ("aren't", "they're")
+                b.cautions.append(f"Your {_join(names)} {verb} tagged for {req.occasion}, "
+                                  f"but {pronoun} in {wanted_text}")
+        if in_colour or untagged:
+            bases = in_colour + untagged
+            # The more of the outfit is in those colours, the better: a green saree (all in colour)
+            # beats a white top with black jeans (half), whatever else they score.
+            for base in bases:
+                hits = sum(1 for p in base.pieces if any(colours.same_family(w, p.colour) for w in wanted))
+                base.score += COLOUR_SHARE_WEIGHT * hits / len(base.pieces)
+            if len(bases) < req.count:
+                notes.append(f"Only {len(bases)} outfit{'s' if len(bases) != 1 else ''} in {wanted_text} from your "
+                             f"wardrobe. Add more {wanted_text} pieces for more choice.")
+        else:
+            notes.insert(0, f"Nothing in your wardrobe is {wanted_text}, so these are the closest matches. "
+                            f"Add a {wanted_text.split(' and ')[0].split(', ')[0]} piece to see it here.")
 
     # Pick outfits one at a time, preferring ones that differ from those already chosen.
     chosen: list[Outfit] = []
@@ -408,6 +479,9 @@ def evaluate(items: list[dict], item_ids: list[int], req) -> dict:
     reasons, weather_cautions = wx.notes(outfit.pieces, getattr(req, "weather", None))
     outfit.reasons.extend(reasons)
     outfit.cautions.extend(weather_cautions)
+    reasons, festival_cautions = _festival_notes(outfit.pieces, req)
+    outfit.reasons.extend(reasons)
+    outfit.cautions.extend(festival_cautions)
 
     cautions = list(outfit.cautions)
     if clash:

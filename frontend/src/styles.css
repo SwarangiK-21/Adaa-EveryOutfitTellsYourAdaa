@@ -348,3 +348,40 @@
 .resting-photos{display:flex}
 .resting-photos img{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid #f4eee7;margin-left:-8px;background:#eee6da}
 @media(max-width:640px){.cpw-row{grid-template-columns:1fr 70px 44px 80px;gap:6px}.resting-photos{display:none}}
+/* Voice input */
+.compose .mic{background:#f0e7de;color:#745746}
+.compose .mic.on{background:#a2563f;color:white;animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 6px #a2563f26}}
+.voice-note{margin:-4px 12px 10px;font-size:10px;color:#8a7f75}
+/* Wedding planner */
+.function-list{list-style:none;margin:0;padding:0;display:grid;gap:6px;counter-reset:fn}
+.function-list li{display:flex;align-items:center;gap:9px;background:#f7f1ea;border-radius:9px;padding:7px 8px 7px 10px;counter-increment:fn}
+.function-list li::before{content:counter(fn);font:600 13px 'Playfair Display',serif;color:#a08d7e;width:14px}
+.function-list span{flex:1;min-width:0}
+.function-list b{display:block;font-size:11px;color:#3f3631}
+.function-list small{display:block;font-size:9px;color:#8a7f75;line-height:1.4}
+.function-list .icon-btn{width:26px;height:26px;background:#fffdfa}
+.trip-form .chips button{display:inline-flex;align-items:center;gap:3px}
+.trip-form .chips button:disabled{opacity:.5}
+.trip-form>.field>.text-btn{margin-top:8px;padding:0;font-size:10px;text-decoration:underline}
+.small-note{font-size:9px;margin:0}
+.dress-code{margin:-2px 0 0;font-size:10px;line-height:1.45;color:#7a5b48;background:#f7f1ea;border-radius:7px;padding:6px 8px}
+.plan-reason{margin:0;font-size:10px;color:#5d7a52;line-height:1.45}
+.plan-reason svg{vertical-align:-1px}
+.plan-caution{margin:0;font-size:10px;color:#93613c;line-height:1.45}
+.trip-days-grid.events{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+/* Festival colour of the day */
+.festival-card{display:flex;align-items:center;gap:18px;background:linear-gradient(120deg,#f6ece2,#efe4d8);border:1px solid #e7d9cb;border-radius:15px;padding:18px 20px;margin-bottom:24px}
+.festival-swatches{display:grid;grid-template-columns:repeat(2,22px);gap:5px;flex:none}
+.festival-swatches span{width:22px;height:22px;border-radius:50%;box-shadow:inset 0 0 0 1px #0000001a}
+.festival-swatches span:only-child{grid-column:span 2;width:49px;height:49px}
+.festival-copy{flex:1;min-width:0}
+.festival-copy small{font-size:9px;letter-spacing:1.4px;font-weight:700;color:#8b6b57}
+.festival-copy h3{font:600 20px 'Playfair Display',serif;margin:5px 0 4px;color:#3f3631}
+.festival-copy p{margin:0;font-size:11px;line-height:1.6;color:#786d63}
+.festival-copy .festival-note{font-size:9px;color:#a08d7e;margin-top:3px}
+.festival-card .primary{flex:none;text-transform:none}
+.festival-chip{margin:0;display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:#7a5b48;background:#f6ece2;border-radius:9px;padding:7px 8px 7px 11px}
+.festival-chip span{flex:1}
+.festival-chip .icon-btn{width:24px;height:24px;background:#fffdfa}
+@media(max-width:640px){.festival-card{flex-wrap:wrap}.festival-card .primary{width:100%}}

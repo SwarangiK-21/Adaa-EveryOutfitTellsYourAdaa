@@ -2,31 +2,38 @@
 
 Rule-based and local: we look for known words and phrases, and match
 "my ..." references against the user's own wardrobe items. Nothing is sent
-to an outside service.
+to an outside service. Hinglish works too: "Aaj college ke liye kuch comfy",
+"Shaadi ke liye kuch lal aur bhaari" (Hindi colour words live in colours.py).
 """
 import difflib
 import re
+from datetime import date
 
-from recommender import colours, garments as g
+from recommender import colours, festivals, garments as g
 
 # Phrases are matched longest-first, so "family function" wins over "function".
 OCCASION_WORDS = {
     "Wedding": ["wedding", "shaadi", "shadi", "marriage", "sangeet", "mehendi", "mehndi",
-                "haldi", "reception", "engagement", "baraat"],
+                "haldi", "reception", "engagement", "baraat", "vivah", "byah", "roka", "sagai"],
     "Traditional function": ["traditional function", "family function", "function", "puja",
-                             "pooja", "ceremony", "temple", "griha pravesh", "satyanarayan"],
+                             "pooja", "ceremony", "temple", "griha pravesh", "satyanarayan",
+                             "mandir", "katha", "havan"],
     "Festive": ["festive", "festival", "diwali", "navratri", "garba", "dandiya", "eid", "holi",
                 "ganpati", "ganesh chaturthi", "durga puja", "onam", "pongal", "rakhi",
-                "raksha bandhan", "christmas", "lohri", "gudi padwa"],
+                "raksha bandhan", "christmas", "lohri", "gudi padwa", "tyohar", "tyohaar",
+                "tyauhar", "dussehra", "dussera", "dasara", "bhai dooj", "dhanteras", "karva chauth",
+                "karwa chauth", "chhath", "janmashtami", "teej"],
     "Party": ["party", "birthday", "night out", "club", "clubbing", "cocktail", "celebration",
               "farewell", "freshers"],
     "Formal": ["formal", "interview", "conference", "seminar", "presentation", "viva"],
-    "Office": ["office", "work", "workplace", "meeting", "internship"],
+    "Office": ["office", "work", "workplace", "meeting", "internship", "daftar", "naukri"],
     "College": ["college", "class", "classes", "campus", "lecture", "university", "uni", "school"],
     "Date": ["dinner date", "date", "romantic", "anniversary"],
-    "Travel": ["travel", "trip", "vacation", "holiday", "flight", "airport", "road trip", "journey"],
+    "Travel": ["travel", "trip", "vacation", "holiday", "flight", "airport", "road trip", "journey",
+               "safar", "yatra"],
     "Casual": ["casual", "everyday", "daily", "hangout", "hang out", "shopping", "brunch",
-               "outing", "movie", "movies", "mall", "errands"],
+               "outing", "movie", "movies", "mall", "errands", "ghoomne", "ghumne", "bahar",
+               "ghar pe", "ghar par", "dosto ke saath", "doston ke saath"],
 }
 
 STYLE_WORDS = {
@@ -37,15 +44,17 @@ STYLE_WORDS = {
 
 COMFORT_WORDS = {
     "Comfort first": ["comfortable", "comfy", "comfort", "cozy", "cosy", "relaxed", "easy",
-                      "flat", "flats", "no heels"],
+                      "flat", "flats", "no heels", "aaram", "araam", "aaramdayak", "halka", "halki"],
     "A polished look": ["polished", "elegant", "classy", "glam", "glamorous", "dressy", "chic",
-                        "sophisticated", "stylish", "fancy"],
+                        "sophisticated", "stylish", "fancy", "bhaari", "bhari", "heavy", "grand",
+                        "shandaar", "shandar", "jhakaas"],
 }
 
 MOOD_WORDS = {
     "Pastels": ["pastel", "pastels", "soft colours", "soft colors"],
-    "Bright & playful": ["bright", "colourful", "colorful", "playful", "vibrant", "fun colours"],
-    "Dark & dramatic": ["dark", "dramatic", "moody"],
+    "Bright & playful": ["bright", "colourful", "colorful", "playful", "vibrant", "fun colours",
+                         "rangeen", "chamakdaar", "chatak"],
+    "Dark & dramatic": ["dark", "dramatic", "moody", "gehra", "gehre"],
     "Neutrals & earth tones": ["neutral", "neutrals", "earthy", "earth tones", "minimal", "subtle"],
 }
 
@@ -58,6 +67,12 @@ _IGNORE = {
     "dressed", "new", "nice", "pretty", "cute", "good", "best", "today", "tomorrow", "tonight",
     "weekend", "next", "family", "around", "build", "using", "use", "pair", "match", "matching",
     "piece", "pieces", "item", "items", "one", "like", "would", "love", "be", "is", "am", "are",
+    # Hinglish filler words
+    "aaj", "kal", "ke", "ki", "ka", "ko", "se", "liye", "lie", "kuch", "kuchh", "mera", "meri", "mere",
+    "mujhe", "chahiye", "pehen", "pehnu", "pehnoon", "pehenna", "pehnna", "pehne", "kya", "ek", "aur",
+    "bhi", "wala", "wali", "waala", "waali", "sa", "si", "koi", "hai", "ho", "karo", "batao", "bata",
+    "dikhao", "dena", "accha", "achha", "acha", "sundar", "mast", "saath", "sath", "par", "pe", "main",
+    "mein", "jaana", "jana", "jaa", "ja", "rahi", "raha", "hoon", "hu", "tha", "thi", "abhi", "please",
 }
 
 
@@ -75,6 +90,26 @@ def _find_phrase(text: str, table: dict[str, list[str]]) -> tuple[str | None, st
                 key = (m.start(), -len(phrase))
                 if best is None or key < best[0]:
                     best = (key, value, phrase)
+    return (best[1], best[2]) if best else (None, None)
+
+
+def _find_festival(text: str) -> tuple[festivals.Festival | None, str | None]:
+    """The festival named in the text, if any, and the words that named it. Small typos are fine
+    ("ganesh chaturti", "sankranthi"); short names (holi, eid, teej) must be exact."""
+    words = text.split()
+    best = None
+    for f in festivals.FESTIVALS.values():
+        for alias in f.aliases:
+            n = len(alias.split())
+            for i in range(len(words) - n + 1):
+                window = " ".join(words[i:i + n])
+                exact = window == alias
+                if not exact and (len(alias) < 6
+                                  or difflib.SequenceMatcher(None, window, alias).ratio() < 0.86):
+                    continue
+                key = (not exact, i, -len(alias))
+                if best is None or key < best[0]:
+                    best = (key, f, window)
     return (best[1], best[2]) if best else (None, None)
 
 
@@ -125,15 +160,25 @@ def _match_items(words: list[str], items: list[dict]) -> tuple[list[dict], set[s
     return [s[1] for s in best], set().union(*(s[2] for s in best))
 
 
-def parse_request(text: str, items: list[dict]) -> dict:
+def parse_request(text: str, items: list[dict], today: date | None = None) -> dict:
     """Read a typed request. Returns filters plus what was understood and what's missing."""
     cleaned = _clean(text)
     result = {"occasion": None, "style": None, "colour": None, "colour_mood": None,
-              "comfort": None, "anchor_item_id": None,
+              "comfort": None, "anchor_item_id": None, "festival": None,
               "understood": [], "missing": [], "ambiguous": [], "not_found": []}
 
-    occasion, phrase = _find_phrase(cleaned, OCCASION_WORDS)
+    # A festival or national day ("Republic Day", "ganesh chaturti") brings its own colours.
+    festival, phrase = _find_festival(cleaned)
     rest = _remove(cleaned, phrase)
+    if festival:
+        result["festival"] = festival.key
+        result["understood"].append(f"Festival: {festival.name} ({festival.colour_text})")
+
+    occasion, phrase = _find_phrase(rest, OCCASION_WORDS)
+    rest = _remove(rest, phrase)
+    # "Diwali puja" is still Diwali; "Diwali party" is a party with Diwali colours.
+    if festival and occasion in (None, "Traditional function", "Festive"):
+        occasion = festival.occasion
     if occasion:
         result["occasion"] = occasion
         result["understood"].append(f"Occasion: {occasion}")
@@ -147,6 +192,8 @@ def parse_request(text: str, items: list[dict]) -> dict:
             result["understood"].append(f"{label}: {value}")
             rest = _remove(rest, phrase)
 
+    # Hindi colour words become English ones, so "hari kurti" finds your green kurti.
+    rest = " ".join(colours.HINDI.get(w, w) for w in rest.split())
     words = [w for w in rest.split() if w not in _IGNORE]
     matches, used = _match_items(words, items)
     if len(matches) == 1:
@@ -164,14 +211,28 @@ def parse_request(text: str, items: list[dict]) -> dict:
             result["not_found"].append(piece)
 
     # A colour that wasn't part of naming an item is a colour preference.
-    for w in words:
+    for i, w in enumerate(words):
         if w in used:
             continue
-        colour = colours.parse(w, fuzzy=False)
+        # Two-word colours first ("sky blue", "bottle green"), then single words.
+        pair = f"{w} {words[i + 1]}" if i + 1 < len(words) else ""
+        colour = (colours.parse(pair, fuzzy=False) if pair else None)
+        if not colour or colour.name != pair:
+            colour = colours.parse(w, fuzzy=False)
         if colour and colour.kind != "multi":
             result["colour"] = colour.name
             result["understood"].append(f"Colour: {colour.name}")
             break
+
+    if festival:
+        # The festival's usual style, unless you asked for another; Navratri: today's colour.
+        if not result["style"] and festival.style:
+            result["style"] = festival.style
+            result["understood"].append(f"Style: {festival.style} (usual for {festival.name})")
+        todays = festivals.day_colour(festival.key, today or date.today())
+        if todays and not result["colour"]:
+            result["colour"] = todays[0]
+            result["understood"].append(f"Today's {festival.name} colour: {todays[0]}")
 
     if not occasion:
         result["missing"].append("occasion")

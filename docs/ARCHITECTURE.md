@@ -178,6 +178,39 @@ Clothes and shoes are ranked first (they make outfits possible), then bags and j
 
 **Trip Planner (`POST /api/trips/plan`).** Rule: **no garment is worn twice on a trip** (shoes, bags and jewellery may be). For each day (1-14, an occasion each) it lists the 12 best outfit bases tagged for that occasion, plus the 6 best untagged ones at a cost. A search then picks one per day so that no garment appears twice, filling as many days as possible with the best total score. It starts with the days that have the fewest options, so a scarce Party outfit isn't used up on a Casual day; this is capped at 60,000 steps. A day that can't get fresh clothes is left empty with a note ("not enough different clothes for Party... add or tag more") instead of repeating. Shoes, earrings, necklace and bag prefer pieces already in the suitcase. The result lists each day's outfit, a packing list (the days each piece is used) and notes.
 
+## Wedding planner (`recommender/events.py`)
+
+Each function has occasions (tagged for any of them counts), a usual style and comfort, dress-code colours, colours to avoid, and a short dress code shown to the user:
+
+| Function | Dress code |
+|---|---|
+| Haldi | Yellow, mustard, lemon or orange; comfort first |
+| Mehendi | Greens; comfort first |
+| Sangeet | Pink, magenta, purple, royal blue, gold or silver; Indo-Western |
+| Cocktail | Black, navy, wine, emerald or metallics; Western, polished |
+| Engagement / Roka | Pink, peach, lavender, rose, gold or blush |
+| Wedding ceremony | Red, maroon, pink, magenta, gold, orange or wine; traditional; avoid white and black |
+| Reception | Wine, navy, emerald, gold, silver or black; polished |
+| Puja / Griha pravesh | Yellow, red, orange, cream, white or green; traditional |
+
+It uses the trip planner's search (`planner.plan_days`, with a `DaySpec` per function), so **no garment is worn twice**. Each garment in a dress-code colour adds 3 points; each one in an avoided colour, or a casual piece (jeans, shorts, tees, hoodies) at the wedding, reception, engagement or cocktail, costs 4. Shoes, earrings, necklace, bangles and bag are reused across functions. Each look says why ("Fits the dress code: your Red Saree"), or cautions when nothing in the colours exists ("…so this is the closest match") or a piece is too casual.
+
+## Festivals (`recommender/festivals.py`)
+
+One table of about 30 festivals and national days: Republic and Independence Day, Gandhi Jayanti, Makar Sankranti, Pongal, Lohri, Bihu, Vasant Panchami, Maha Shivratri, Holi, Gudi Padwa / Ugadi, Baisakhi, Ram Navami, Eid, Raksha Bandhan, Teej, Janmashtami, Onam, Ganesh Chaturthi, Navratri, Durga Puja, Dussehra, Karva Chauth, Dhanteras, Diwali, Bhai Dooj, Chhath, Gurpurab, Christmas, New Year's Eve and Valentine's Day. For each one it stores:
+- the ways people type it ("ganpati", "26 jan", "uttarayan", "bakri eid"…),
+- the usual colours (e.g. Republic Day: saffron, white, green; Makar Sankranti: black, yellow, green),
+- the usual occasion and style, and a short tip.
+
+- **Typed requests:** the parser finds the festival first, tolerating small typos for longer names ("ganesh chaturti", "sankranthi"); short ones like Holi, Eid and Teej must be exact. It sets `festival`, the festival's occasion (unless another is named: "Diwali party" stays a party, while "Diwali puja" means Diwali) and its usual style (unless you ask for another). During Navratri it also sets **today's colour**.
+- **Styling (colour first):** when a request names a colour ("gulabi" → pink) or a festival (its usual colours), Adaa shows **only outfits in those colours**. The typed colour wins over the festival's. Pieces in the right colour that aren't tagged for the occasion are allowed, with a caution ("…isn't tagged for Festive, but it's in pink"). Outfits are ranked by how much of the outfit is in colour (+12 × share), so a green saree beats a white top with black jeans for 15 August. If nothing matches, the closest looks are shown with a note ("Nothing in your wardrobe is yellow…"), and fewer than 4 matches gets "Only 2 outfits in pink… add more". Each piece in a festival colour also gets +1.5, and each look says *"Saffron, white and green for Republic Day: your …"*. The festival stays on the form as a chip (with ×) and carries over to swaps and saved looks.
+- **Dates:** `DATES` lists Oct 2026 to Dec 2027, checked against several calendars, with Navratri's 9 day colours (2027 follows the usual weekday rule). `GET /api/festivals/now` gives today's festival or the next one within 3 weeks for the Overview card ("Navratri Day 9: Peacock Green · Maa Siddhidatri"). Its button opens the stylist preset to that festival and styles at once. Dates that weren't consistent across sources were left out, and the card notes that dates can differ by a day by region.
+
+## Hinglish and voice (`recommender/parser.py`, `AskBox.jsx`)
+
+- **Hinglish:** the parser knows Hindi colour words (lal, peela, hara, neela, kaala, safed, gulabi, aasmani…, in `colours.HINDI`), occasion words (shaadi, sagai, tyohar, dussehra, safar, daftar, ghoomne…), comfort words (aaram, halka / bhaari, shandaar) and moods (rangeen, gehra). Filler words (aaj, ke liye, kuch, meri…) are ignored. Hindi colour words are translated before matching your pieces, so *"meri hari kurti"* finds your **green** kurti. Two-word colours like "sky blue" (from "aasmani") are recognised.
+- **Voice:** a microphone button (Chrome / Edge) uses the browser's Web Speech API with Indian English (`en-IN`), which handles Hinglish. The words appear in the box as you speak and are sent when you stop. In Chrome the audio goes to Google's speech service; nothing is recorded by Adaa. The button is hidden where the browser doesn't support it.
+
 ## Weather (`recommender/weather.py`, `frontend/src/weather.js`)
 
 - **Forecast:** the browser asks Open-Meteo (free, no key) for today's high, rain chance and weather code at the city saved in Preferences (geocoding by name, also Open-Meteo), cached for an hour. Rain = chance of at least 50 %, or a rain code.

@@ -124,6 +124,11 @@ export const api = {
   getGaps: () => request('/api/insights/gaps'),
   // days: the occasion for each day, e.g. ['Travel', 'Casual', 'Party']; style: optional
   planTrip: (days, style) => postJson('/api/trips/plan', { days, style: style || null }),
+  getEventFunctions: () => request('/api/events/functions'),
+  // Today's festival (Navratri: today's colour) or the next one within 3 weeks, or null
+  getFestivalNow: () => request('/api/festivals/now'),
+  // functions: e.g. ['haldi', 'mehendi', 'wedding']; style: optional
+  planEvent: (functions, style) => postJson('/api/events/plan', { functions, style: style || null }),
 
   // Wear stats: not worn in N days, most worn, cost per wear
   getWearStats: (days = 30) => request(`/api/insights/wear?days=${days}`),

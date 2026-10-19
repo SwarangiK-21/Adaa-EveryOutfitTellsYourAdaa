@@ -56,6 +56,18 @@ _ALIASES = {
     "printed": "multi", "floral": "multi",
 }
 
+# Hindi / Hinglish colour words ("lal", "peela", "hara"...).
+HINDI = {
+    "lal": "red", "laal": "red", "peela": "yellow", "pila": "yellow", "peeli": "yellow", "pili": "yellow",
+    "hara": "green", "hari": "green", "neela": "blue", "nila": "blue", "neeli": "blue", "nili": "blue",
+    "kaala": "black", "kala": "black", "kaali": "black", "safed": "white", "safaid": "white",
+    "gulabi": "pink", "narangi": "orange", "kesari": "orange", "baingani": "purple", "jamuni": "purple",
+    "bhura": "brown", "bhoora": "brown", "sunehra": "gold", "sunehri": "gold", "chandi": "silver",
+    "aasmani": "sky blue", "asmani": "sky blue", "mehroon": "maroon",
+    "saffron": "orange", "bhagwa": "orange",
+}
+_ALIASES.update(HINDI)
+
 _DARK_NEUTRALS = {"black", "charcoal", "navy", "brown"}
 _SOFT_NEUTRALS = {"white", "off white", "ivory", "cream", "beige", "nude"}
 
