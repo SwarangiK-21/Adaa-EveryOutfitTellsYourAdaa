@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Search, Pencil, Trash2, Shirt, RefreshCw, Sparkles } from 'lucide-react';
 import { api } from '../api.js';
 import Heading from '../components/Heading.jsx';
+import { useUser } from '../user.js';
 import ItemForm from '../components/ItemForm.jsx';
 import { queueMissingCutouts } from '../cutoutQueue.js';
 
 export default function Wardrobe({ notify, onStyle }) {
+  const { first } = useUser();
   const [options, setOptions] = useState(null);
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState('');
@@ -43,7 +45,7 @@ export default function Wardrobe({ notify, onStyle }) {
 
   const handleSaved = (item, isNew) => {
     setEditing(null);
-    notify(isNew ? `"${item.name}" added to your wardrobe.` : `"${item.name}" updated.`);
+    notify(isNew ? `Nice one, ${first}! "${item.name}" is in your wardrobe.` : `"${item.name}" updated.`);
     reload();
   };
 
@@ -64,7 +66,7 @@ export default function Wardrobe({ notify, onStyle }) {
     <>
       <Heading
         eyebrow="THE PIECES THAT MAKE YOU"
-        title={<>My <em>wardrobe.</em></>}
+        title={<>{first}'s <em>wardrobe.</em></>}
         sub="A home for everything you wear, treasure and style your own way."
         action={<button className="primary" disabled={!options} onClick={() => setEditing('new')}><Plus size={16} /> Add a piece</button>}
       />

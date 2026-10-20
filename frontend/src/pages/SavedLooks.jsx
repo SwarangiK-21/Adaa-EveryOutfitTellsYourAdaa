@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Sparkles, RefreshCw, Check, Pencil, Trash2, X, Camera } from 'lucide-react';
 import { api } from '../api.js';
 import Heading from '../components/Heading.jsx';
+import { useUser } from '../user.js';
 import OutfitCard from '../components/OutfitCard.jsx';
 import SwapPanel from '../components/SwapPanel.jsx';
 
@@ -9,6 +10,7 @@ const formatDate = (iso) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 
 export default function SavedLooks({ notify, goToStylist, onCountChange }) {
+  const { first } = useUser();
   const [tab, setTab] = useState('saved'); // 'saved' | 'history'
   const [looks, setLooks] = useState(null);
   const [history, setHistory] = useState(null);
@@ -87,7 +89,7 @@ export default function SavedLooks({ notify, goToStylist, onCountChange }) {
     <Heading
       eyebrow="YOUR PERSONAL LOOKBOOK"
       title={<>Looks to <em>love again.</em></>}
-      sub="Keep the combinations you love, swap pieces, and remember what you wore."
+      sub={`Keep the combinations you love, ${first}, swap pieces, and remember what you wore.`}
     />
   );
 

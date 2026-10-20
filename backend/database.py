@@ -1,4 +1,8 @@
-"""SQLite connection, table setup and wardrobe item queries."""
+"""SQLite connection, table setup and wardrobe item queries.
+
+Every wardrobe item, look and history entry belongs to one account (user_id): queries take the
+signed-in user's id (uid) and only ever see that user's rows.
+"""
 import json
 import sqlite3
 from datetime import datetime, timezone
@@ -68,13 +72,26 @@ CREATE TABLE IF NOT EXISTS look_photos (
     created_at     TEXT NOT NULL
 );
 
--- The user's own full-body photo, used for virtual try-on (one row, id = 1).
-CREATE TABLE IF NOT EXISTS user_profile (
-    id             INTEGER PRIMARY KEY CHECK (id = 1),
-    photo_filename TEXT,
-    updated_at     TEXT NOT NULL
+-- Accounts. Passwords are stored only as salted scrypt hashes (see auth.py).
+CREATE TABLE IF NOT EXISTS users (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    name          TEXT NOT NULL,
+    email         TEXT NOT NULL UNIQUE,     -- lower case
+    phone         TEXT NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at    TEXT NOT NULL
 );
+
+-- Signed-in browsers. Only a hash of the session token is stored.
+CREATE TABLE IF NOT EXISTS sessions (
+    token_hash TEXT PRIMARY KEY,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+);
+
 """
+OWNED_TABLES = ("wardrobe_items", "looks", "wear_log")   # each row belongs to one user
 
 
 def connect() -> sqlite3.Connection:
@@ -100,6 +117,10 @@ def init_db() -> None:
             conn.execute("ALTER TABLE wardrobe_items ADD COLUMN cutout_version TEXT")
         if "price" not in columns:
             conn.execute("ALTER TABLE wardrobe_items ADD COLUMN price REAL")
+        for table in OWNED_TABLES:   # accounts: older rows get an owner when the first user signs up
+            if "user_id" not in {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN user_id INTEGER REFERENCES users(id)")
+            conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{table}_user ON {table}(user_id)")
         # History from before wear_items existed: use the saved look's pieces (best we know).
         conn.execute(
             "INSERT OR IGNORE INTO wear_items (wear_id, item_id)"
@@ -129,9 +150,9 @@ def row_to_dict(row: sqlite3.Row) -> dict:
     return item
 
 
-def list_items(conn, search: str = "", category: str | None = None) -> list[dict]:
-    sql = "SELECT * FROM wardrobe_items WHERE 1=1"
-    params: list = []
+def list_items(conn, uid: int, search: str = "", category: str | None = None) -> list[dict]:
+    sql = "SELECT * FROM wardrobe_items WHERE user_id = ?"
+    params: list = [uid]
     if category:
         sql += " AND category = ?"
         params.append(category)
@@ -146,20 +167,24 @@ def list_items(conn, search: str = "", category: str | None = None) -> list[dict
     return [row_to_dict(r) for r in conn.execute(sql, params)]
 
 
-def get_item(conn, item_id: int) -> dict | None:
-    row = conn.execute("SELECT * FROM wardrobe_items WHERE id = ?", (item_id,)).fetchone()
+def get_item(conn, item_id: int, uid: int | None = None) -> dict | None:
+    """One item; with uid, only if it belongs to that user (otherwise None, as if it didn't exist)."""
+    if uid is None:
+        row = conn.execute("SELECT * FROM wardrobe_items WHERE id = ?", (item_id,)).fetchone()
+    else:
+        row = conn.execute("SELECT * FROM wardrobe_items WHERE id = ? AND user_id = ?", (item_id, uid)).fetchone()
     return row_to_dict(row) if row else None
 
 
-def create_item(conn, fields: ItemFields, image_filename: str) -> dict:
+def create_item(conn, uid: int, fields: ItemFields, image_filename: str) -> dict:
     now = _now()
     cur = conn.execute(
         """INSERT INTO wardrobe_items
-           (name, category, item_type, colour, style, occasions, notes, price,
+           (user_id, name, category, item_type, colour, style, occasions, notes, price,
             image_filename, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
-            fields.name, fields.category, fields.item_type, fields.colour, fields.style,
+            uid, fields.name, fields.category, fields.item_type, fields.colour, fields.style,
             json.dumps(fields.occasions), fields.notes, fields.price, image_filename, now, now,
         ),
     )
@@ -194,23 +219,40 @@ def delete_item(conn, item_id: int) -> None:
         conn.execute("DELETE FROM wardrobe_items WHERE id = ?", (item_id,))
 
 
-# ---------- the user's own photo (for virtual try-on) ----------
+# ---------- accounts ----------
 
-def get_profile_photo(conn) -> dict | None:
-    row = conn.execute("SELECT photo_filename, updated_at FROM user_profile WHERE id = 1").fetchone()
-    return dict(row) if row and row["photo_filename"] else None
-
-
-def set_profile_photo(conn, filename: str | None) -> str | None:
-    """Store (or clear, with None) the user's photo. Returns the previous file name, if any."""
-    old = get_profile_photo(conn)
+def create_user(conn, name: str, email: str, phone: str, password_hash: str) -> dict:
     with conn:
-        conn.execute(
-            "INSERT INTO user_profile (id, photo_filename, updated_at) VALUES (1, ?, ?)"
-            " ON CONFLICT(id) DO UPDATE SET photo_filename = excluded.photo_filename, updated_at = excluded.updated_at",
-            (filename, _now()),
-        )
-    return old["photo_filename"] if old else None
+        cur = conn.execute(
+            "INSERT INTO users (name, email, phone, password_hash, created_at) VALUES (?, ?, ?, ?, ?)",
+            (name, email, phone, password_hash, _now()))
+    return get_user(conn, cur.lastrowid)
+
+
+def get_user(conn, uid: int) -> dict | None:
+    row = conn.execute("SELECT * FROM users WHERE id = ?", (uid,)).fetchone()
+    return dict(row) if row else None
+
+
+def find_user_by_email(conn, email: str) -> dict | None:
+    row = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+    return dict(row) if row else None
+
+
+def update_user(conn, uid: int, name: str, phone: str) -> dict:
+    with conn:
+        conn.execute("UPDATE users SET name = ?, phone = ? WHERE id = ?", (name, phone, uid))
+    return get_user(conn, uid)
+
+
+def claim_unowned(conn, uid: int) -> int:
+    """Give everything made before accounts existed to this user (the first to sign up).
+    Returns how many wardrobe items were moved into the account."""
+    with conn:
+        moved = conn.execute("UPDATE wardrobe_items SET user_id = ? WHERE user_id IS NULL", (uid,)).rowcount
+        for table in ("looks", "wear_log"):
+            conn.execute(f"UPDATE {table} SET user_id = ? WHERE user_id IS NULL", (uid,))
+    return moved
 
 
 # ---------- garment cut-outs (the garment with its background removed) ----------

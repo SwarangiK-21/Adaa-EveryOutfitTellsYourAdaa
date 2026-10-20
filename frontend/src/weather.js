@@ -1,19 +1,20 @@
 // Today's weather from Open-Meteo (free, no account, no key), fetched by the browser.
 // Only your saved city's coordinates are sent to Open-Meteo; nothing else leaves your device.
 import { useEffect, useState } from 'react';
+import { storageKey } from './user.js';
 
 const PLACE_KEY = 'adaa.place';
 const CACHE_KEY = 'adaa.weather';
 const CACHE_MS = 60 * 60 * 1000;   // refresh at most once an hour
 
 export function loadPlace() {
-  try { return JSON.parse(localStorage.getItem(PLACE_KEY)) || null; } catch { return null; }
+  try { return JSON.parse(localStorage.getItem(storageKey(PLACE_KEY))) || null; } catch { return null; }
 }
 
 export function savePlace(place) {
   try {
-    if (place) localStorage.setItem(PLACE_KEY, JSON.stringify(place));
-    else localStorage.removeItem(PLACE_KEY);
+    if (place) localStorage.setItem(storageKey(PLACE_KEY), JSON.stringify(place));
+    else localStorage.removeItem(storageKey(PLACE_KEY));
     sessionStorage.removeItem(CACHE_KEY);
     window.dispatchEvent(new Event('adaa-place'));
     return true;

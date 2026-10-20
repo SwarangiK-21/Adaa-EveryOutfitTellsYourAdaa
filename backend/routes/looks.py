@@ -6,6 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
+import auth
 import database
 import looks_db
 import storage
@@ -25,9 +26,9 @@ def _with_items(evaluation: dict) -> dict:
     return evaluation
 
 
-def _check_items(db, item_ids: list[int]) -> list[dict]:
-    """All wardrobe items, after making sure every requested id really exists."""
-    items = database.list_items(db)
+def _check_items(db, uid: int, item_ids: list[int]) -> list[dict]:
+    """All your wardrobe items, after making sure every requested id is really yours."""
+    items = database.list_items(db, uid)
     known = {i["id"] for i in items}
     missing = [i for i in item_ids if i not in known]
     if missing:
@@ -38,7 +39,7 @@ def _check_items(db, item_ids: list[int]) -> list[dict]:
 
 
 def _look_out(db, look: dict, items: list[dict] | None = None) -> dict:
-    items = items if items is not None else database.list_items(db)
+    items = items if items is not None else database.list_items(db, look["user_id"])
     prefs = StylePrefs(**look["prefs"])
     out = {**look, **_with_items(evaluate(items, look["item_ids"], prefs))}
     out["photo"] = _photo_out(look, items)
@@ -60,8 +61,8 @@ def _photo_out(look: dict, items: list[dict]) -> dict | None:
     }
 
 
-def _get_look_or_404(db, look_id: int) -> dict:
-    look = looks_db.get_look(db, look_id)
+def _get_look_or_404(db, look_id: int, uid: int) -> dict:
+    look = looks_db.get_look(db, look_id, uid)
     if look is None:
         raise HTTPException(status_code=404, detail="Saved look not found.")
     return look
@@ -70,16 +71,16 @@ def _get_look_or_404(db, look_id: int) -> dict:
 # ---------- swaps ----------
 
 @router.post("/outfits/evaluate", response_model=OutfitEvaluation)
-def evaluate_outfit(body: OutfitCheck, db: Db):
+def evaluate_outfit(body: OutfitCheck, db: Db, user: auth.User):
     """Reasons and cautions for an outfit, e.g. after swapping a piece."""
-    items = _check_items(db, body.item_ids)
+    items = _check_items(db, user["id"], body.item_ids)
     return _with_items(evaluate(items, body.item_ids, body.prefs))
 
 
 @router.post("/outfits/alternatives", response_model=list[SwapOption])
-def swap_options(body: SwapRequest, db: Db):
+def swap_options(body: SwapRequest, db: Db, user: auth.User):
     """Other pieces from the wardrobe that could replace one piece, best first."""
-    items = _check_items(db, body.item_ids)
+    items = _check_items(db, user["id"], body.item_ids)
     try:
         options = alternatives(items, body.item_ids, body.replace_item_id, body.prefs)
     except RecommendationError as exc:
@@ -92,43 +93,43 @@ def swap_options(body: SwapRequest, db: Db):
 # ---------- saved looks ----------
 
 @router.get("/looks", response_model=list[LookOut])
-def list_looks(db: Db):
-    items = database.list_items(db)
-    return [_look_out(db, look, items) for look in looks_db.list_looks(db)]
+def list_looks(db: Db, user: auth.User):
+    items = database.list_items(db, user["id"])
+    return [_look_out(db, look, items) for look in looks_db.list_looks(db, user["id"])]
 
 
 @router.post("/looks", response_model=LookOut, status_code=201)
-def save_look(body: LookCreate, db: Db):
-    items = _check_items(db, body.item_ids)
+def save_look(body: LookCreate, db: Db, user: auth.User):
+    items = _check_items(db, user["id"], body.item_ids)
     prefs = body.prefs.model_dump()
-    if looks_db.find_same_look(db, body.item_ids, prefs["occasion"]):
+    if looks_db.find_same_look(db, user["id"], body.item_ids, prefs["occasion"]):
         raise HTTPException(status_code=409, detail="You've already saved this look.")
     by_id = {i["id"]: i for i in items}
     name = (body.name or "").strip() or " + ".join(
         by_id[i]["name"] for i in body.item_ids if by_id[i]["category"] == "Clothing"
     ) or "My look"
     # Two looks with the same name are confusing: number the new one ("Crop top + Skirt 2").
-    taken = {l["name"].lower() for l in looks_db.list_looks(db)}
+    taken = {l["name"].lower() for l in looks_db.list_looks(db, user["id"])}
     base, n = name[:76], 2
     while name.lower() in taken:
         name, n = f"{base} {n}", n + 1
-    look = looks_db.create_look(db, name[:80], prefs, body.item_ids)
+    look = looks_db.create_look(db, user["id"], name[:80], prefs, body.item_ids)
     return _look_out(db, look, items)
 
 
 @router.put("/looks/{look_id}", response_model=LookOut)
-def update_look(look_id: int, body: LookUpdate, db: Db):
+def update_look(look_id: int, body: LookUpdate, db: Db, user: auth.User):
     """Rename a look and/or change its pieces (e.g. after a swap)."""
-    _get_look_or_404(db, look_id)
+    _get_look_or_404(db, look_id, user["id"])
     if body.item_ids is not None:
-        _check_items(db, body.item_ids)
+        _check_items(db, user["id"], body.item_ids)
     name = body.name.strip() if body.name else None
     return _look_out(db, looks_db.update_look(db, look_id, name, body.item_ids))
 
 
 @router.delete("/looks/{look_id}", status_code=204)
-def delete_look(look_id: int, db: Db):
-    _get_look_or_404(db, look_id)
+def delete_look(look_id: int, db: Db, user: auth.User):
+    _get_look_or_404(db, look_id, user["id"])
     old_photo = looks_db.delete_look(db, look_id)
     if old_photo:
         storage.delete_image(old_photo)
@@ -137,14 +138,14 @@ def delete_look(look_id: int, db: Db):
 # ---------- outfit history ----------
 
 @router.post("/looks/{look_id}/wear", response_model=HistoryEntry, status_code=201)
-def wear_look(look_id: int, db: Db, body: WearIn | None = None):
+def wear_look(look_id: int, db: Db, user: auth.User, body: WearIn | None = None):
     """Record that a saved look was worn (today, unless a date is given)."""
-    look = _get_look_or_404(db, look_id)
+    look = _get_look_or_404(db, look_id, user["id"])
     if not look["item_ids"]:
         raise HTTPException(status_code=400, detail="This look has no pieces left to wear.")
     worn_on = (body.worn_on if body else None) or date.today()
-    entry = looks_db.log_wear(db, look, worn_on)
-    return _history_out(db, entry, database.list_items(db))
+    entry = looks_db.log_wear(db, user["id"], look, worn_on)
+    return _history_out(db, entry, database.list_items(db, user["id"]))
 
 
 def _history_out(db, entry: dict, items: list[dict]) -> dict:
@@ -162,9 +163,9 @@ def _history_out(db, entry: dict, items: list[dict]) -> dict:
 
 
 @router.post("/history", response_model=HistoryEntry, status_code=201)
-def wear_outfit(body: WearOutfitIn, db: Db):
+def wear_outfit(body: WearOutfitIn, db: Db, user: auth.User):
     """Record wearing an outfit that isn't saved (e.g. straight from the stylist)."""
-    items = database.list_items(db)
+    items = database.list_items(db, user["id"])
     known = {i["id"]: i for i in items}
     missing = [i for i in body.item_ids if i not in known]
     if missing:
@@ -172,19 +173,19 @@ def wear_outfit(body: WearOutfitIn, db: Db):
     ids = list(dict.fromkeys(body.item_ids))
     name = body.name or " + ".join(known[i]["name"] for i in ids
                                    if known[i]["category"] == "Clothing") or "Outfit"
-    entry = looks_db.log_outfit_wear(db, ids, name[:80], body.occasion, body.worn_on or date.today())
+    entry = looks_db.log_outfit_wear(db, user["id"], ids, name[:80], body.occasion, body.worn_on or date.today())
     return _history_out(db, entry, items)
 
 
 @router.get("/history", response_model=list[HistoryEntry])
-def outfit_history(db: Db):
-    items = database.list_items(db)
-    return [_history_out(db, entry, items) for entry in looks_db.list_history(db)]
+def outfit_history(db: Db, user: auth.User):
+    items = database.list_items(db, user["id"])
+    return [_history_out(db, entry, items) for entry in looks_db.list_history(db, user["id"])]
 
 
 @router.delete("/history/{wear_id}", status_code=204)
-def delete_history_entry(wear_id: int, db: Db):
-    if looks_db.get_wear(db, wear_id) is None:
+def delete_history_entry(wear_id: int, db: Db, user: auth.User):
+    if looks_db.get_wear(db, wear_id, user["id"]) is None:
         raise HTTPException(status_code=404, detail="History entry not found.")
     looks_db.delete_wear(db, wear_id)
 
@@ -195,10 +196,11 @@ def delete_history_entry(wear_id: int, db: Db):
 def upload_look_photo(
     look_id: int,
     db: Db,
+    user: auth.User,
     photo: Annotated[UploadFile, File(description="Your photo wearing this look: JPEG, PNG or WebP, up to 5 MB")],
 ):
     """Attach your own photo of this look. It's shown as a verified preview while the look is unchanged."""
-    look = _get_look_or_404(db, look_id)
+    look = _get_look_or_404(db, look_id, user["id"])
     if not look["item_ids"]:
         raise HTTPException(status_code=400, detail="This look has no pieces left.")
     try:
@@ -216,8 +218,8 @@ def upload_look_photo(
 
 
 @router.get("/looks/{look_id}/photo")
-def get_look_photo(look_id: int, db: Db):
-    _get_look_or_404(db, look_id)
+def get_look_photo(look_id: int, db: Db, user: auth.User):
+    _get_look_or_404(db, look_id, user["id"])
     photo = looks_db.get_photo(db, look_id)
     path = storage.image_path(photo["image_filename"]) if photo else None
     if path is None:
@@ -226,8 +228,8 @@ def get_look_photo(look_id: int, db: Db):
 
 
 @router.delete("/looks/{look_id}/photo", status_code=204)
-def delete_look_photo(look_id: int, db: Db):
-    _get_look_or_404(db, look_id)
+def delete_look_photo(look_id: int, db: Db, user: auth.User):
+    _get_look_or_404(db, look_id, user["id"])
     old = looks_db.delete_photo(db, look_id)
     if old is None:
         raise HTTPException(status_code=404, detail="This look has no photo.")

@@ -1,4 +1,4 @@
-"""Database queries for saved looks and outfit history."""
+"""Database queries for saved looks and outfit history (each row belongs to one user: uid)."""
 import json
 from datetime import date
 
@@ -18,20 +18,24 @@ def _look_row(conn, row) -> dict:
     return look
 
 
-def list_looks(conn) -> list[dict]:
-    rows = conn.execute("SELECT * FROM looks ORDER BY created_at DESC, id DESC").fetchall()
+def list_looks(conn, uid: int) -> list[dict]:
+    rows = conn.execute("SELECT * FROM looks WHERE user_id = ? ORDER BY created_at DESC, id DESC", (uid,)).fetchall()
     return [_look_row(conn, r) for r in rows]
 
 
-def get_look(conn, look_id: int) -> dict | None:
-    row = conn.execute("SELECT * FROM looks WHERE id = ?", (look_id,)).fetchone()
+def get_look(conn, look_id: int, uid: int | None = None) -> dict | None:
+    """One look; with uid, only if it belongs to that user."""
+    if uid is None:
+        row = conn.execute("SELECT * FROM looks WHERE id = ?", (look_id,)).fetchone()
+    else:
+        row = conn.execute("SELECT * FROM looks WHERE id = ? AND user_id = ?", (look_id, uid)).fetchone()
     return _look_row(conn, row) if row else None
 
 
-def find_same_look(conn, item_ids: list[int], occasion: str) -> int | None:
+def find_same_look(conn, uid: int, item_ids: list[int], occasion: str) -> int | None:
     """Id of an existing saved look with exactly these pieces for this occasion, if any."""
     wanted = sorted(item_ids)
-    for look in list_looks(conn):
+    for look in list_looks(conn, uid):
         if sorted(look["item_ids"]) == wanted and look["prefs"]["occasion"] == occasion:
             return look["id"]
     return None
@@ -45,12 +49,12 @@ def _set_items(conn, look_id: int, item_ids: list[int]) -> None:
     )
 
 
-def create_look(conn, name: str, prefs: dict, item_ids: list[int]) -> dict:
+def create_look(conn, uid: int, name: str, prefs: dict, item_ids: list[int]) -> dict:
     now = _now()
     with conn:
         cur = conn.execute(
-            "INSERT INTO looks (name, prefs, created_at, updated_at) VALUES (?, ?, ?, ?)",
-            (name, json.dumps(prefs), now, now),
+            "INSERT INTO looks (user_id, name, prefs, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+            (uid, name, json.dumps(prefs), now, now),
         )
         _set_items(conn, cur.lastrowid, item_ids)
     return get_look(conn, cur.lastrowid)
@@ -104,18 +108,18 @@ def delete_photo(conn, look_id: int) -> str | None:
     return old["image_filename"] if old else None
 
 
-def log_wear(conn, look: dict, worn_on: date) -> dict:
+def log_wear(conn, uid: int, look: dict, worn_on: date) -> dict:
     """A saved look was worn: remember the look and exactly which pieces it had that day."""
-    return log_outfit_wear(conn, look["item_ids"], look["name"], look["prefs"]["occasion"], worn_on, look["id"])
+    return log_outfit_wear(conn, uid, look["item_ids"], look["name"], look["prefs"]["occasion"], worn_on, look["id"])
 
 
-def log_outfit_wear(conn, item_ids: list[int], name: str, occasion: str, worn_on: date,
+def log_outfit_wear(conn, uid: int, item_ids: list[int], name: str, occasion: str, worn_on: date,
                     look_id: int | None = None) -> dict:
     with conn:
         cur = conn.execute(
-            "INSERT INTO wear_log (look_id, look_name, occasion, worn_on, created_at)"
-            " VALUES (?, ?, ?, ?, ?)",
-            (look_id, name, occasion, worn_on.isoformat(), _now()),
+            "INSERT INTO wear_log (user_id, look_id, look_name, occasion, worn_on, created_at)"
+            " VALUES (?, ?, ?, ?, ?, ?)",
+            (uid, look_id, name, occasion, worn_on.isoformat(), _now()),
         )
         conn.executemany("INSERT OR IGNORE INTO wear_items (wear_id, item_id) VALUES (?, ?)",
                          [(cur.lastrowid, i) for i in item_ids])
@@ -127,21 +131,24 @@ def worn_item_ids(conn, wear_id: int) -> list[int]:
         "SELECT item_id FROM wear_items WHERE wear_id = ? ORDER BY rowid", (wear_id,))]
 
 
-def item_wear(conn) -> dict[int, tuple[int, str]]:
-    """item id -> (times worn, last date worn), from outfit history."""
+def item_wear(conn, uid: int) -> dict[int, tuple[int, str]]:
+    """item id -> (times worn, last date worn), from this user's outfit history."""
     rows = conn.execute(
         "SELECT wi.item_id, COUNT(DISTINCT w.id) AS n, MAX(w.worn_on) AS last"
-        " FROM wear_items wi JOIN wear_log w ON w.id = wi.wear_id GROUP BY wi.item_id")
+        " FROM wear_items wi JOIN wear_log w ON w.id = wi.wear_id WHERE w.user_id = ? GROUP BY wi.item_id", (uid,))
     return {r["item_id"]: (r["n"], r["last"]) for r in rows}
 
 
-def get_wear(conn, wear_id: int) -> dict | None:
-    row = conn.execute("SELECT * FROM wear_log WHERE id = ?", (wear_id,)).fetchone()
+def get_wear(conn, wear_id: int, uid: int | None = None) -> dict | None:
+    if uid is None:
+        row = conn.execute("SELECT * FROM wear_log WHERE id = ?", (wear_id,)).fetchone()
+    else:
+        row = conn.execute("SELECT * FROM wear_log WHERE id = ? AND user_id = ?", (wear_id, uid)).fetchone()
     return dict(row) if row else None
 
 
-def list_history(conn) -> list[dict]:
-    rows = conn.execute("SELECT * FROM wear_log ORDER BY worn_on DESC, id DESC").fetchall()
+def list_history(conn, uid: int) -> list[dict]:
+    rows = conn.execute("SELECT * FROM wear_log WHERE user_id = ? ORDER BY worn_on DESC, id DESC", (uid,)).fetchall()
     return [dict(r) for r in rows]
 
 

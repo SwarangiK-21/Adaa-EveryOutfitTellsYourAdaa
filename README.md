@@ -24,6 +24,7 @@ It runs entirely on your own computer with free, open-source tools: no paid APIs
 | **Weather:** add your city once; the stylist shows today's forecast and dresses you for it (light pieces on hot days, warm layers when it's cold, a caution about heels in the rain). Can be switched off per request | **Preferences**, **AI Stylist** |
 | **Wear stats:** pieces not worn in 30/60/90 days (with *Style it*), most worn, and **cost per wear** from the optional price on each piece; *Wore it today* on any stylist outfit; a nudge on Overview | **Wear Stats** |
 | Save your usual style, comfort and colour preferences | **Preferences** |
+| **Accounts:** sign up with your name, email, phone and a password. Each person gets their own wardrobe, looks and history, and Adaa **calls you by your name** everywhere (*"Swarangi, this one would look lovely on you."*). Change your name or phone, or log out, in Preferences | Sign-up screen, **Preferences** |
 
 **The core rule:** Adaa never invents a piece. If something is missing (no bag, nothing tagged for a wedding, "my green kurta" when you don't have one), it says so and shows the best real combination instead.
 
@@ -35,7 +36,6 @@ Each look opens with a large preview, always labelled:
 |---|---|
 | **Your pieces** (default) | An **outfit board** in "ghost mannequin" style: your **own garment photos with the background removed**, arranged as if worn (top over bottom, shoes below, jewellery at the neck, bag at the side). Every piece is your real photo; there's no AI-generated image. It's instant, and swaps update immediately. |
 | **Verified · your photo** | A photo *you* added of yourself wearing this saved look. Shown only while the look still has exactly the same pieces. |
-| **AI try-on · approximation** (optional) | Only if you connect the Colab try-on server and press **Try on me (AI)**. Slow (~1 min) and often inaccurate, so it's not the default. Setup: [docs/TRYON_SETUP.md](docs/TRYON_SETUP.md). |
 | **Outdated photo** | Your earlier photo after the look changed. |
 
 **How the board's clean garment pictures are made:**
@@ -60,12 +60,13 @@ Each look opens with a large preview, always labelled:
 | 5 | Saved looks, piece swaps, outfit history | Done |
 | 6 | End-to-end testing, documentation, mentor demo | Done |
 | + | Outfit board previews from your own photos (background removed in the browser) | Done |
-| + | Optional AI try-on on your own photo (Colab + CatVTON) | Works, but slow and approximate, so it's off unless you ask |
+| + | AI try-on on your own photo (Colab + CatVTON) | Tried, then removed: slow and inaccurate (still in git history) |
 | + | Auto-fill from photo, Trip Planner, Shop Smart (wardrobe gaps) | Done |
 | + | Weather-aware styling (Open-Meteo), wear stats and cost per wear | Done |
 | + | Wedding planner, festival colour of the day, Hinglish and voice requests | Done |
+| + | Accounts (email + password), a separate wardrobe per person, the app calls you by name | Done |
 
-148 automated backend tests pass. A full manual browser pass is recorded in [docs/TESTING.md](docs/TESTING.md).
+153 automated backend tests pass. A full manual browser pass is recorded in [docs/TESTING.md](docs/TESTING.md).
 
 ## Brand
 
@@ -126,10 +127,12 @@ Stop either one with `Ctrl + C`.
 ## Your data
 
 Everything lives in `backend/data/`:
-- `adaa.db`: the SQLite database (wardrobe, saved looks, history)
+- `adaa.db`: the SQLite database (accounts, wardrobe, saved looks, history)
 - `uploads/`: your photos
 
-Git ignores this folder, so your photos are never pushed to GitHub. To **back up**, copy the whole `backend/data` folder somewhere safe while the backend is stopped. Preferences (and your weather city) are saved in your browser.
+Git ignores this folder, so your photos are never pushed to GitHub. To **back up**, copy the whole `backend/data` folder somewhere safe while the backend is stopped. Preferences (and your weather city) are saved in your browser, separately for each account.
+
+**Accounts:** passwords are never stored, only a salted scrypt hash. Logging in sets a private session cookie that lasts 30 days. After 5 wrong passwords for an email, logging in pauses for 15 minutes. The **first account** you create receives everything that was in Adaa before accounts existed, so your wardrobe is kept. Your name, email and phone stay in `adaa.db` on this computer; nothing is sent anywhere.
 
 **Voice requests:** the microphone button uses the browser's built-in speech-to-text. In Chrome, the audio is sent to Google's speech service to turn it into text; Adaa itself never records or stores it. Typing works the same without it.
 
@@ -144,15 +147,18 @@ python -m pip install -r requirements-dev.txt   # first time only
 python -m pytest
 ```
 
-Expected: `148 passed`. Tests use a temporary folder, so they never touch your real wardrobe.
+Expected: `153 passed`. Tests use a temporary folder, so they never touch your real wardrobe.
 
 ## API
 
-Interactive docs: http://127.0.0.1:8000/docs (while the backend is running).
+Interactive docs: http://127.0.0.1:8000/docs (while the backend is running). Every route needs you to be logged in, except health, options, auth, festivals and the cut-out models.
 
 | Method | URL | What it does |
 |---|---|---|
 | GET | `/api/health` | Server status |
+| POST | `/api/auth/signup` | Create an account (`name`, `email`, `phone`, `password`) and log in |
+| POST | `/api/auth/login`, `/api/auth/logout` | Log in (sets the session cookie) / log out |
+| GET / PUT | `/api/auth/me` | Who is logged in / change your name or phone |
 | GET | `/api/options` | Allowed categories, styles, occasions, moods, comfort levels |
 | GET / POST | `/api/items` | List or search (`?search=&category=`) / add (form fields + `photo`) |
 | GET / PUT / DELETE | `/api/items/{id}` | One item / edit (photo optional) / delete |
@@ -168,10 +174,6 @@ Interactive docs: http://127.0.0.1:8000/docs (while the backend is running).
 | POST / GET / DELETE | `/api/looks/{id}/photo` | Add or replace / view / remove your photo wearing a look |
 | PUT / GET / DELETE | `/api/items/{id}/cutout` | The garment with its background removed (made in the browser) |
 | GET | `/api/models/{isnet\|clothes}` | The cut-out models (downloaded once: ~179 MB and ~29 MB) |
-| GET `/api/profile`, POST / GET / DELETE | `/api/profile/photo` | Your full-length photo for try-on |
-| PUT | `/api/tryon/settings` | Save your Colab link and token |
-| GET | `/api/tryon/status` | Is your try-on server reachable? |
-| POST | `/api/tryon` | An image of you wearing these pieces (cached) |
 | GET | `/api/insights/gaps` | What to buy next: pieces that would add the most outfits |
 | GET | `/api/insights/wear?days=30` | Wear stats: not worn in N days, most worn, cost per wear |
 | GET | `/api/festivals/now` | Today's festival (Navratri: today's colour) or the next one within 3 weeks |
@@ -191,36 +193,37 @@ Adaa/
 │  ├─ schemas.py            Request/response shapes and validation (Pydantic)
 │  ├─ database.py           SQLite connection, tables, wardrobe item queries
 │  ├─ looks_db.py           Saved looks and outfit history queries
+│  ├─ auth.py               Password hashing, sessions, login throttle, the logged-in-user dependency
 │  ├─ storage.py            Photo checks (real file type, size) and saving/deleting
-│  ├─ tryon.py              Virtual try-on: which garments go on you, talking to Colab, caching
-│  ├─ routes/               API routes: items, recommendations (+ parse), looks, planner, tryon
+│  ├─ routes/               API routes: auth, items, recommendations (+ parse), looks, planner
 │  ├─ recommender/          colours.py, garments.py, engine.py, parser.py, planner.py (gaps, trips, wear stats), events.py (wedding functions), festivals.py (festival colours and dates), weather.py
-│  └─ tests/                148 pytest tests
+│  └─ tests/                153 pytest tests
 ├─ frontend/
 │  ├─ vite.config.js        Dev server; forwards /api to the backend
 │  └─ src/
+│     ├─ Root.jsx           Shows the sign-up / log-in screen or the app
+│     ├─ user.js            The logged-in user, per-account browser storage, personal lines
 │     ├─ App.jsx            Layout, navigation, Overview, Preferences
 │     ├─ api.js             All calls to the backend
 │     ├─ preferences.js     Saved preferences (browser storage)
 │     ├─ pages/             Wardrobe, Stylist, SavedLooks, WeddingPlanner, TripPlanner, WearStats, ShopSmart
 │     ├─ weather.js         Today's forecast from Open-Meteo for your saved city
 │     ├─ boardImage.js       Saves an outfit board as a PNG (Download image)
-│     ├─ components/        ItemForm, CutoutEditor, EraseCutout, WeatherSettings, PlanResult, OutfitCard, OutfitPreview, OutfitBoard, SwapPanel, AskBox, Heading
+│     ├─ components/        AuthScreen, AccountSettings, ItemForm, CutoutEditor, EraseCutout, WeatherSettings, PlanResult, OutfitCard, OutfitPreview, OutfitBoard, SwapPanel, AskBox, Heading
 │     ├─ cutout.js, cutout.worker.js, cutoutQueue.js   Background removal for garment pictures (in the browser)
 │     └─ styles.css
-├─ tryon/Adaa_TryOn_Colab.ipynb   Notebook that runs the try-on model on a free Colab GPU
-└─ docs/                    ARCHITECTURE.md, TESTING.md, DEMO.md, TRYON_SETUP.md
+└─ docs/                    ARCHITECTURE.md, TESTING.md, DEMO.md
 ```
 
 ## Limitations and future ideas
 
-- Single user, on one computer; no accounts or cloud sync (by design for now).
+- Accounts work on one computer (or your home network); there's no cloud sync, and no "forgot password" email yet.
 - Recommendations follow hand-written rules. They're explainable and predictable, but not "learning".
 - Requests are understood by keyword rules: clear sentences work best; unusual phrasing may only be partly understood (Adaa shows what it understood).
 - Auto-fill recognises clothes, shoes and bags (not jewellery or watches) and is a suggestion: on a test with 28 real photos it got the category right every time, the type about 9 times in 10 and the colour about 3 times in 4 (pale, very dark and checked colours are the hardest).
 - Shop Smart suggests from a fixed list of 17 versatile pieces (sneakers, heels, jeans, a white shirt, jhumkas...), not from shops.
 - Later ideas: makeup suggestions, body-type-aware styling, an optional free local language model for richer chat, using wear history to suggest less-worn pieces.
-- Out of scope: virtual try-on, cloud hosting, accounts.
+- Out of scope: virtual try-on, cloud hosting.
 
 ## Mentor demo
 

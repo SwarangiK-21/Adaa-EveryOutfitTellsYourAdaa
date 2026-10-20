@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { RefreshCw, ShoppingBag, Info } from 'lucide-react';
 import { api } from '../api.js';
 import Heading from '../components/Heading.jsx';
+import { useUser } from '../user.js';
 import { PieceImage, swatchFor } from '../components/OutfitPreview.jsx';
 
 /*
@@ -9,6 +10,7 @@ import { PieceImage, swatchFor } from '../components/OutfitPreview.jsx';
   These are ideas, not products: Adaa never links to a shop or buys anything.
 */
 export default function ShopSmart({ goToWardrobe }) {
+  const { first } = useUser();
   const [report, setReport] = useState(null);
   const [error, setError] = useState('');
 
@@ -24,7 +26,7 @@ export default function ShopSmart({ goToWardrobe }) {
       <Heading
         eyebrow="BUY LESS, WEAR MORE"
         title={<>What would unlock <em>the most?</em></>}
-        sub="Ideas for one new piece that creates the most new outfits with clothes you already own. Adaa never shops or buys for you."
+        sub={`${first}, here are ideas for one new piece that would create the most new outfits with clothes you already own. Adaa never shops or buys for you.`}
       />
       {error && <p className="form-error">{error} <button type="button" className="text-btn" onClick={load}>Try again</button></p>}
       {!report && !error && <p className="muted"><RefreshCw size={13} className="spin" /> Looking through your wardrobe…</p>}

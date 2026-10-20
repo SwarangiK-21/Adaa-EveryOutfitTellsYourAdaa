@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Sparkles, RefreshCw, Plus, Info, Heart, Check, CloudSun, Shirt, X } from 'lucide-react';
 import { api } from '../api.js';
 import Heading from '../components/Heading.jsx';
+import { useUser, personalLine } from '../user.js';
 import OutfitCard from '../components/OutfitCard.jsx';
 import AskBox from '../components/AskBox.jsx';
 import SwapPanel from '../components/SwapPanel.jsx';
@@ -28,6 +29,7 @@ const prefsOf = ({ occasion, style, colour, colour_mood, comfort, festival }) =>
 const idsOf = (outfit) => outfit.pieces.map((p) => p.item.id);
 
 export default function Stylist({ anchorId, preset, goToWardrobe, goToPreferences, notify, onLookSaved }) {
+  const { first } = useUser();
   const [options, setOptions] = useState(null);
   const [items, setItems] = useState([]);
   const [loadError, setLoadError] = useState('');
@@ -150,7 +152,7 @@ export default function Stylist({ anchorId, preset, goToWardrobe, goToPreference
       const look = await api.saveLook(resultPrefs, idsOf(outfit));
       setSaved((s) => ({ ...s, [outfit.rank]: look.id }));
       onLookSaved?.();
-      notify(`Saved "${look.name}" to your looks.`);
+      notify(`Saved "${look.name}" to your looks, ${first}!`);
     } catch (err) {
       notify(err.message);
     }
@@ -160,7 +162,7 @@ export default function Stylist({ anchorId, preset, goToWardrobe, goToPreference
     try {
       await api.wearOutfit(idsOf(outfit), resultPrefs.occasion);
       setWorn((w) => ({ ...w, [outfit.rank]: true }));
-      notify('Added to your outfit history. It counts in your wear stats.');
+      notify(`Lovely, ${first}! Added to your outfit history.`);
     } catch (err) {
       notify(err.message);
     }
@@ -192,7 +194,7 @@ export default function Stylist({ anchorId, preset, goToWardrobe, goToPreference
   const heading = (
     <Heading
       eyebrow="YOUR PERSONAL STYLE COMPANION"
-      title={<>Let's find your <em>kind of lovely.</em></>}
+      title={<>Let's find your <em>kind of lovely, {first}.</em></>}
       sub="Tell Adaa what you need, or pick the details yourself. Every look uses only pieces from your wardrobe."
     />
   );
@@ -307,6 +309,7 @@ export default function Stylist({ anchorId, preset, goToWardrobe, goToPreference
                     <OutfitCard
                       key={o.rank}
                       outfit={o}
+                      personal={personalLine(first, o.rank)}
                       onSwap={(piece) => setSwapping({ rank: o.rank, piece })}
                       notice={o.outdated ? "Couldn't re-check this look after your swap, so the reasons below may be outdated. Try another swap or Style me again." : null}
                       actions={<>

@@ -315,51 +315,6 @@ class WearStats(BaseModel):
 
 
 
-# ---------- Virtual try-on ----------
-
-class ProfileOut(BaseModel):
-    photo_url: str | None          # the user's own full-body photo
-    photo_updated_at: str | None
-    tryon_configured: bool         # a try-on server link + token are saved
-    tryon_url: str | None
-    tryon_quality: str = "standard"  # "standard" (30 steps, faster) or "high" (50 steps)
-    tryon_shoes: bool = False        # also try footwear on (experimental; usually rough)
-
-
-class TryOnSettings(BaseModel):
-    url: str = Field(default="", max_length=300)
-    token: str = Field(default="", max_length=200)
-    quality: str = Field(default="standard", pattern="^(high|standard)$")
-    try_shoes: bool = False
-
-    @field_validator("url")
-    @classmethod
-    def check_url(cls, value):
-        value = value.strip()
-        if value and not value.startswith(("https://", "http://")):
-            raise ValueError("The link should start with https://")
-        return value
-
-
-class TryOnStatus(BaseModel):
-    configured: bool
-    online: bool
-    message: str
-
-
-class TryOnRequest(BaseModel):
-    item_ids: ItemIds = Field(min_length=1, max_length=12)
-    cached_only: bool = False   # only return an image made earlier; never start a new one
-
-
-class TryOnOut(BaseModel):
-    url: str               # image of the user wearing the outfit
-    garments: list[str]    # pieces shown on the user
-    skipped: list[str]     # pieces the model can't put on a photo (jewellery, bags...)
-    notes: list[str] = []  # e.g. "Your black heels couldn't be added this time..."
-    cached: bool
-
-
 # ---------- Planning: what to buy next, and what to pack ----------
 
 class GapSuggestion(BaseModel):
@@ -468,3 +423,75 @@ class FestivalNow(BaseModel):
     tip: str
     occasion: str
     style: str | None
+
+
+# ---------- Accounts ----------
+
+import re as _re
+
+_EMAIL = _re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def _clean_phone(value: str) -> str:
+    """Keep a leading + and digits only; 10-15 digits (e.g. 9876543210 or +91 98765 43210)."""
+    value = (value or "").strip()
+    digits = _re.sub(r"\D", "", value)
+    if not 10 <= len(digits) <= 15:
+        raise ValueError("Please enter a valid phone number (10 to 15 digits).")
+    return ("+" if value.startswith("+") else "") + digits
+
+
+class AccountFields(BaseModel):
+    name: str = Field(min_length=1, max_length=60)
+    phone: str = Field(max_length=25)
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def clean_name(cls, value):
+        value = " ".join(str(value or "").split())
+        if not value:
+            raise ValueError("Please tell us your name.")
+        return value
+
+    @field_validator("phone", mode="before")
+    @classmethod
+    def clean_phone(cls, value):
+        return _clean_phone(str(value or ""))
+
+
+class SignupIn(AccountFields):
+    email: str = Field(max_length=120)
+    password: str = Field(min_length=8, max_length=128)
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def clean_email(cls, value):
+        value = str(value or "").strip().lower()
+        if not _EMAIL.match(value):
+            raise ValueError("Please enter a valid email address.")
+        return value
+
+
+class LoginIn(BaseModel):
+    email: str = Field(max_length=120)
+    password: str = Field(max_length=128)
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def clean_email(cls, value):
+        return str(value or "").strip().lower()
+
+
+class UserOut(BaseModel):
+    id: int
+    name: str
+    first_name: str           # what Adaa calls you: "Swarangi"
+    email: str
+    phone: str
+    created_at: str
+    moved_items: int = 0      # on sign-up: pieces from before accounts that moved into this account
+
+
+def user_out(user: dict, moved_items: int = 0) -> UserOut:
+    return UserOut(id=user["id"], name=user["name"], first_name=user["name"].split()[0], email=user["email"],
+                   phone=user["phone"], created_at=user["created_at"], moved_items=moved_items)

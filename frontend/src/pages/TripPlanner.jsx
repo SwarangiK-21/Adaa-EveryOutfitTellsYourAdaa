@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Luggage, Minus, Plus, RefreshCw } from 'lucide-react';
 import { api } from '../api.js';
 import Heading from '../components/Heading.jsx';
+import { useUser } from '../user.js';
 import PlanResult from '../components/PlanResult.jsx';
 
 const MAX_DAYS = 14;
@@ -12,6 +13,7 @@ const STYLES = ['', 'Traditional', 'Western', 'Indo-Western'];
   without wearing any garment twice (shoes, bags and jewellery are reused), plus a packing checklist.
 */
 export default function TripPlanner({ goToWardrobe }) {
+  const { first } = useUser();
   const [occasions, setOccasions] = useState([]);
   const [days, setDays] = useState(['Travel', 'Casual', 'Casual']);
   const [style, setStyle] = useState('');
@@ -45,7 +47,7 @@ export default function TripPlanner({ goToWardrobe }) {
     <>
       <Heading
         eyebrow="PACK LIGHT, LOOK GOOD"
-        title={<>Plan a <em>trip</em></>}
+        title={<>Plan a <em>trip, {first}</em></>}
         sub="Tell Adaa what each day looks like. It picks a different outfit for every day from your wardrobe (no garment worn twice), and reuses shoes, bags and jewellery to keep the suitcase light."
       />
       <div className="trip-layout">

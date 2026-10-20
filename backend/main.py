@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import database
 import storage
-from routes import items, looks, planner, recommendations, tryon
+from routes import auth as auth_routes, items, looks, planner, recommendations
 
 
 @asynccontextmanager
@@ -30,10 +30,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(auth_routes.router)
 app.include_router(items.router)
 app.include_router(recommendations.router)
 app.include_router(looks.router)
-app.include_router(tryon.router)
 app.include_router(planner.router)
 
 

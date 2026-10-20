@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Gem, Plus, X, RefreshCw, Sparkles } from 'lucide-react';
 import { api } from '../api.js';
 import Heading from '../components/Heading.jsx';
+import { useUser } from '../user.js';
 import PlanResult from '../components/PlanResult.jsx';
 
 const FULL_WEDDING = ['haldi', 'mehendi', 'sangeet', 'wedding', 'reception'];
@@ -13,6 +14,7 @@ const STYLES = ['', 'Traditional', 'Western', 'Indo-Western'];
   garment repeated; jewellery, shoes and bags are reused.
 */
 export default function WeddingPlanner({ goToWardrobe }) {
+  const { first } = useUser();
   const [functions, setFunctions] = useState(null);     // [{ key, label, dress_code, colours }]
   const [chosen, setChosen] = useState(FULL_WEDDING);
   const [style, setStyle] = useState('');
@@ -44,7 +46,7 @@ export default function WeddingPlanner({ goToWardrobe }) {
     <>
       <Heading
         eyebrow="SHAADI SEASON, SORTED"
-        title={<>Plan your <em>wedding looks</em></>}
+        title={<>Plan your <em>wedding looks, {first}</em></>}
         sub="Pick the functions you're attending. Adaa styles a different look for each from your wardrobe, following the usual dress code (yellow for haldi, green for mehendi...), without repeating a single garment."
       />
       <div className="trip-layout">

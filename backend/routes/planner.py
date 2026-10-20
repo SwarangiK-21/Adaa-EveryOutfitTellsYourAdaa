@@ -8,6 +8,7 @@ from datetime import date
 
 from fastapi import Query
 
+import auth
 import database
 import looks_db
 from recommender.events import function_list, plan_event
@@ -19,9 +20,9 @@ Db = Annotated[sqlite3.Connection, Depends(database.get_db)]
 
 
 @router.get("/insights/gaps", response_model=GapReport)
-def wardrobe_gaps(db: Db):
+def wardrobe_gaps(db: Db, user: auth.User):
     """The few purchases that would unlock the most new outfits from your wardrobe."""
-    report = find_gaps(database.list_items(db))
+    report = find_gaps(database.list_items(db, user["id"]))
     for s in report["suggestions"]:
         s["pairs_with"] = [item_out(i) for i in s["pairs_with"]]
     return report
@@ -38,27 +39,27 @@ def _plan_out(plan: dict) -> dict:
 
 
 @router.post("/trips/plan", response_model=TripPlan)
-def trip_plan(request: TripRequest, db: Db):
+def trip_plan(request: TripRequest, db: Db, user: auth.User):
     """An outfit for each day of a trip, no garment worn twice."""
-    return _plan_out(plan_trip(database.list_items(db), request.days, request.style))
+    return _plan_out(plan_trip(database.list_items(db, user["id"]), request.days, request.style))
 
 
 @router.get("/events/functions", response_model=list[EventFunction])
-def event_functions():
+def event_functions(user: auth.User):
     """Wedding functions Adaa can plan, with their usual dress codes."""
     return function_list()
 
 
 @router.post("/events/plan", response_model=TripPlan)
-def event_plan(request: EventRequest, db: Db):
+def event_plan(request: EventRequest, db: Db, user: auth.User):
     """A different look for each function (haldi, mehendi, sangeet...), following its dress code."""
-    return _plan_out(plan_event(database.list_items(db), request.functions, request.style))
+    return _plan_out(plan_event(database.list_items(db, user["id"]), request.functions, request.style))
 
 
 @router.get("/insights/wear", response_model=WearStats)
-def wardrobe_wear(db: Db, days: Annotated[int, Query(ge=7, le=365)] = 30):
+def wardrobe_wear(db: Db, user: auth.User, days: Annotated[int, Query(ge=7, le=365)] = 30):
     """How much each piece is worn: not worn in N days, most worn, and cost per wear."""
-    stats = wear_stats(database.list_items(db), looks_db.item_wear(db), date.today(), days)
+    stats = wear_stats(database.list_items(db, user["id"]), looks_db.item_wear(db, user["id"]), date.today(), days)
     for key in ("not_worn", "most_worn", "cost_per_wear"):   # a piece can appear in several lists
         stats[key] = [{**row, "item": item_out(row["item"])} for row in stats[key]]
     return stats

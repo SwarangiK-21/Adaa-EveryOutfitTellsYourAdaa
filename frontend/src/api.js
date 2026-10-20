@@ -17,6 +17,10 @@ async function request(path, options = {}) {
   if (res.status === 204) return null;
 
   const body = await res.json().catch(() => null);
+  // Signed out (session ended): let the app show the sign-in screen. Auth calls handle their own 401s.
+  if (res.status === 401 && !path.startsWith('/api/auth/')) {
+    window.dispatchEvent(new Event('adaa-signed-out'));
+  }
   if (!res.ok) {
     if (res.status >= 500 && !body) {
       throw new ApiError("Can't reach the Adaa server. Is the backend running?");
@@ -45,6 +49,13 @@ const postJson = (path, body, method = 'POST') =>
   request(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 
 export const api = {
+  // ---- Accounts ----
+  signup: (fields) => postJson('/api/auth/signup', fields),        // { name, email, phone, password }
+  login: (fields) => postJson('/api/auth/login', fields),          // { email, password }
+  logout: () => request('/api/auth/logout', { method: 'POST' }),
+  me: () => request('/api/auth/me'),
+  updateMe: (fields) => postJson('/api/auth/me', fields, 'PUT'),   // { name, phone }
+
   getOptions: () => request('/api/options'),
 
   listItems: ({ search = '', category = '' } = {}) => {
@@ -105,20 +116,6 @@ export const api = {
     return request(`/api/looks/${id}/photo`, { method: 'POST', body: data });
   },
   deleteLookPhoto: (id) => request(`/api/looks/${id}/photo`, { method: 'DELETE' }),
-
-  // ---- Your photo and virtual try-on ----
-  getProfile: () => request('/api/profile'),
-  uploadProfilePhoto: (photo) => {
-    const data = new FormData();
-    data.append('photo', photo);
-    return request('/api/profile/photo', { method: 'POST', body: data });
-  },
-  deleteProfilePhoto: () => request('/api/profile/photo', { method: 'DELETE' }),
-  // quality: 'high' | 'standard'; tryShoes: also try footwear on (experimental)
-  saveTryOnSettings: (url, token, quality, tryShoes) =>
-    postJson('/api/tryon/settings', { url, token, quality, try_shoes: tryShoes }, 'PUT'),
-  tryOnStatus: () => request('/api/tryon/status'),
-  tryOn: (itemIds, cachedOnly = false) => postJson('/api/tryon', { item_ids: itemIds, cached_only: cachedOnly }),
 
   // ---- Planning ----
   getGaps: () => request('/api/insights/gaps'),

@@ -1,4 +1,4 @@
-"""API routes for wardrobe items: list, view, add, edit, delete, and photos."""
+"""API routes for wardrobe items: list, view, add, edit, delete, and photos (your own only)."""
 import sqlite3
 from typing import Annotated
 
@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import ValidationError
 
+import auth
 import database
 import storage
 from schemas import ItemFields, ItemOut, item_out
@@ -29,8 +30,8 @@ def _parse_fields(**values) -> ItemFields:
         raise HTTPException(status_code=422, detail=messages) from None
 
 
-def _get_or_404(db, item_id: int) -> dict:
-    item = database.get_item(db, item_id)
+def _get_or_404(db, item_id: int, uid: int) -> dict:
+    item = database.get_item(db, item_id, uid)   # someone else's piece looks exactly like a missing one
     if item is None:
         raise HTTPException(status_code=404, detail="Wardrobe item not found.")
     return item
@@ -50,18 +51,18 @@ def get_options():
 
 
 @router.get("/items", response_model=list[ItemOut])
-def list_items(db: Db, search: str = "", category: str | None = None):
-    return [item_out(item) for item in database.list_items(db, search, category)]
+def list_items(db: Db, user: auth.User, search: str = "", category: str | None = None):
+    return [item_out(item) for item in database.list_items(db, user["id"], search, category)]
 
 
 @router.get("/items/{item_id}", response_model=ItemOut)
-def get_item(item_id: int, db: Db):
-    return item_out(_get_or_404(db, item_id))
+def get_item(item_id: int, db: Db, user: auth.User):
+    return item_out(_get_or_404(db, item_id, user["id"]))
 
 
 @router.get("/items/{item_id}/photo")
-def get_item_photo(item_id: int, db: Db):
-    item = _get_or_404(db, item_id)
+def get_item_photo(item_id: int, db: Db, user: auth.User):
+    item = _get_or_404(db, item_id, user["id"])
     path = storage.image_path(item["image_filename"])
     if path is None:
         raise HTTPException(status_code=404, detail="Photo file is missing.")
@@ -71,6 +72,7 @@ def get_item_photo(item_id: int, db: Db):
 @router.post("/items", response_model=ItemOut, status_code=201)
 def create_item(
     db: Db,
+    user: auth.User,
     photo: Annotated[UploadFile, File(description="JPEG, PNG or WebP, up to 5 MB")],
     name: Annotated[str, Form()],
     category: Annotated[str, Form()],
@@ -91,7 +93,7 @@ def create_item(
         raise HTTPException(status_code=400, detail=str(exc)) from None
 
     try:
-        item = database.create_item(db, fields, filename)
+        item = database.create_item(db, user["id"], fields, filename)
     except Exception:
         storage.delete_image(filename)  # don't leave an orphan photo behind
         raise
@@ -102,6 +104,7 @@ def create_item(
 def update_item(
     item_id: int,
     db: Db,
+    user: auth.User,
     name: Annotated[str, Form()],
     category: Annotated[str, Form()],
     item_type: Annotated[str, Form()],
@@ -113,7 +116,7 @@ def update_item(
     photo: Annotated[UploadFile | None, File(description="Optional new photo")] = None,
 ):
     """Replace an item's details. Send a new photo only if it should change."""
-    existing = _get_or_404(db, item_id)
+    existing = _get_or_404(db, item_id, user["id"])
     fields = _parse_fields(
         name=name, category=category, item_type=item_type, colour=colour,
         style=style, occasions=occasions, notes=notes, price=price,
@@ -143,8 +146,8 @@ def update_item(
 
 
 @router.delete("/items/{item_id}", status_code=204)
-def delete_item(item_id: int, db: Db):
-    item = _get_or_404(db, item_id)
+def delete_item(item_id: int, db: Db, user: auth.User):
+    item = _get_or_404(db, item_id, user["id"])
     database.delete_item(db, item_id)
     storage.delete_image(item["image_filename"])
     if item.get("cutout_filename"):
@@ -175,10 +178,11 @@ def cutout_model(name: str = "isnet"):
 def save_item_cutout(
     item_id: int,
     db: Db,
+    user: auth.User,
     cutout: Annotated[UploadFile, File(description="PNG with a transparent background")],
     version: Annotated[str, Form(max_length=8)] = "1",
 ):
-    _get_or_404(db, item_id)
+    _get_or_404(db, item_id, user["id"])
     try:
         filename = storage.save_cutout(cutout)
     except storage.InvalidImage as exc:
@@ -190,8 +194,8 @@ def save_item_cutout(
 
 
 @router.get("/items/{item_id}/cutout")
-def get_item_cutout(item_id: int, db: Db):
-    item = _get_or_404(db, item_id)
+def get_item_cutout(item_id: int, db: Db, user: auth.User):
+    item = _get_or_404(db, item_id, user["id"])
     path = storage.image_path(item["cutout_filename"]) if item.get("cutout_filename") else None
     if path is None:
         raise HTTPException(status_code=404, detail="No cut-out yet.")
@@ -199,8 +203,8 @@ def get_item_cutout(item_id: int, db: Db):
 
 
 @router.delete("/items/{item_id}/cutout", status_code=204)
-def delete_item_cutout(item_id: int, db: Db):
-    _get_or_404(db, item_id)
+def delete_item_cutout(item_id: int, db: Db, user: auth.User):
+    _get_or_404(db, item_id, user["id"])
     old = database.set_cutout(db, item_id, None)
     if old:
         storage.delete_image(old)

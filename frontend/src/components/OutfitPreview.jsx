@@ -1,15 +1,13 @@
-import React, { useContext, useEffect, useRef, useState } from 'react';
-import { BadgeCheck, Shirt, AlertTriangle, ImageOff, Sparkles, RefreshCw, LayoutGrid, Download } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { BadgeCheck, Shirt, AlertTriangle, ImageOff, Download } from 'lucide-react';
 import OutfitBoard, { needsCutouts } from './OutfitBoard.jsx';
-import { TryOnContext, requestTryOn } from '../tryon.js';
 import { subscribeCutouts } from '../cutoutQueue.js';
 import { downloadBoard } from '../boardImage.js';
 
 /*
   Full-body preview of an outfit. Best available first:
     1. Verified      - your own photo wearing this saved look, while the look is unchanged
-    2. Outfit board  - your real garments, background removed, arranged as if worn (default; instant)
-    3. AI try-on     - optional, only when you ask for it (needs your Colab try-on server)
+    2. Outfit board  - your real garments, background removed, arranged as if worn
   Each kind is labelled; nothing is presented as more accurate than it is.
 */
 
@@ -44,13 +42,8 @@ export function PieceImage({ item, className }) {
 const formatDate = (iso) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 
 export default function OutfitPreview({ pieces, photo, title }) {
-  const { profile } = useContext(TryOnContext);
   const [showOld, setShowOld] = useState(false);
   const [photoFailed, setPhotoFailed] = useState(false);
-  const [showTryOn, setShowTryOn] = useState(false);
-  const [attempt, setAttempt] = useState(0);
-  // status: 'idle' | 'loading' | 'ready' | 'failed'
-  const [tryOnState, setTryOnState] = useState({ status: 'idle' });
   const [cutouts, setCutouts] = useState({ running: false });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -59,22 +52,6 @@ export default function OutfitPreview({ pieces, photo, title }) {
 
   const verified = photo && photo.matches_current && !photoFailed;
   const outdated = photo && !photo.matches_current;
-  const canTryOn = Boolean(profile?.photo_url && profile?.tryon_configured);
-  const ids = pieces.map((p) => p.item.id);
-  const key = ids.join(',');
-
-  // A swap changes the pieces: go back to the instant board (try-on is only made when asked).
-  useEffect(() => { setShowTryOn(false); setTryOnState({ status: 'idle' }); }, [key]);
-
-  useEffect(() => {
-    if (!showTryOn || !canTryOn) return undefined;
-    let alive = true;
-    setTryOnState({ status: 'loading' });
-    requestTryOn(ids, { retry: attempt > 0 })
-      .then((result) => alive && setTryOnState({ status: 'ready', result }))
-      .catch((err) => alive && setTryOnState({ status: 'failed', message: err.message }));
-    return () => { alive = false; };
-  }, [showTryOn, key, attempt, canTryOn, profile?.photo_url]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 1. Verified photo
   if (verified) {
@@ -89,28 +66,7 @@ export default function OutfitPreview({ pieces, photo, title }) {
     );
   }
 
-  // 3. AI try-on, when asked for
-  if (showTryOn && tryOnState.status === 'ready' && !(outdated && showOld)) {
-    const r = tryOnState.result;
-    return (
-      <figure className="preview">
-        <div className="preview-frame">
-          <img className="preview-photo" src={r.url} alt="You wearing this outfit (AI)" />
-          <span className="preview-badge tryon"><Sparkles size={13} /> AI try-on · approximation</span>
-          <button type="button" className="preview-action" onClick={() => setShowTryOn(false)}>
-            <LayoutGrid size={14} /> Back to my pieces
-          </button>
-        </div>
-        <figcaption>
-          Made by your try-on server. AI can get details wrong.
-          {r.skipped.length > 0 && ` Not shown on you: ${r.skipped.join(', ')}.`}
-          {(r.notes || []).map((n) => <span key={n} className="preview-note"> {n}</span>)}
-        </figcaption>
-      </figure>
-    );
-  }
-
-  // 2. Outfit board (default)
+  // 2. Outfit board
   const preparing = needsCutouts(pieces) && cutouts.running;
   const saveImage = async () => {
     setSaving(true);
@@ -135,14 +91,6 @@ export default function OutfitPreview({ pieces, photo, title }) {
           <>
             <OutfitBoard pieces={pieces} />
             <span className="preview-badge"><Shirt size={13} /> Your pieces</span>
-            {showTryOn && tryOnState.status === 'loading' && (
-              <span className="preview-progress"><RefreshCw size={14} className="spin" /> Putting this look on you… (about 1 minute)</span>
-            )}
-            {canTryOn && !showTryOn && (
-              <button type="button" className="preview-action subtle" onClick={() => setShowTryOn(true)}>
-                <Sparkles size={13} /> Try on me (AI)
-              </button>
-            )}
           </>
         )}
       </div>
@@ -161,12 +109,6 @@ export default function OutfitPreview({ pieces, photo, title }) {
         {saveError && <span className="preview-note"> {saveError}</span>}
         {preparing && !(outdated && showOld) && (
           <span className="preview-hint"> Cleaning up photo backgrounds… ({cutouts.done + 1} of {cutouts.total})</span>
-        )}
-        {showTryOn && tryOnState.status === 'failed' && (
-          <span className="preview-note">
-            {' '}Couldn’t make your try-on: {tryOnState.message}{' '}
-            <button type="button" className="text-btn" onClick={() => setAttempt((a) => a + 1)}>Try again</button>
-          </span>
         )}
         {photoFailed && <span className="preview-note"> Your photo couldn’t be loaded.</span>}
         {outdated && (

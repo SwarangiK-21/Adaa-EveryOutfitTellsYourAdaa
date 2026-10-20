@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { RefreshCw, Sparkles, Info, BarChart3, IndianRupee, Coins } from 'lucide-react';
 import { api } from '../api.js';
 import Heading from '../components/Heading.jsx';
+import { useUser } from '../user.js';
 import { PieceImage } from '../components/OutfitPreview.jsx';
 
 const WINDOWS = [30, 60, 90];
@@ -14,6 +15,7 @@ const lastWorn = (r) => (r.days_since == null ? 'Not worn yet'
   and cost per wear for pieces with a price. Counts come from your outfit history.
 */
 export default function WearStats({ onStyle, goToWardrobe }) {
+  const { first } = useUser();
   const [days, setDays] = useState(30);
   const [stats, setStats] = useState(null);
   const [error, setError] = useState('');
@@ -29,7 +31,7 @@ export default function WearStats({ onStyle, goToWardrobe }) {
     <>
       <Heading
         eyebrow="WEAR MORE OF WHAT YOU OWN"
-        title={<>Your <em>wear stats</em></>}
+        title={<>{first}'s <em>wear stats</em></>}
         sub="Which pieces are waiting to be worn, what you reach for most, and what each piece really costs you per wear."
       />
       <div className="chips stat-window" role="group" aria-label="Time window">

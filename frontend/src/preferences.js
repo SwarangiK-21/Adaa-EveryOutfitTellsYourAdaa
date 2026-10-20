@@ -1,7 +1,9 @@
 // The user's saved style preferences, kept in this browser (localStorage).
 // They become the starting values of the Style me form.
 
-const KEY = 'adaa.preferences';
+import { storageKey } from './user.js';
+
+const KEY = 'adaa.preferences';   // stored per account: see storageKey
 
 export const PREFERENCE_CHOICES = {
   style: ['Traditional Indian', 'Minimal & elegant', 'Western', 'Indo-western', 'A little bit of everything'],
@@ -15,7 +17,7 @@ export const DEFAULT_PREFERENCES = {
 
 export function loadPreferences() {
   try {
-    const saved = JSON.parse(localStorage.getItem(KEY));
+    const saved = JSON.parse(localStorage.getItem(storageKey(KEY)));
     return saved ? { ...DEFAULT_PREFERENCES, ...saved } : null;
   } catch {
     return null; // storage blocked or unreadable: just use no preferences
@@ -24,7 +26,7 @@ export function loadPreferences() {
 
 export function savePreferences(prefs) {
   try {
-    localStorage.setItem(KEY, JSON.stringify(prefs));
+    localStorage.setItem(storageKey(KEY), JSON.stringify(prefs));
     return true;
   } catch {
     return false;

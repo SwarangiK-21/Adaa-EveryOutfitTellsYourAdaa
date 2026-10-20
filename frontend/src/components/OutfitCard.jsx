@@ -5,7 +5,7 @@ import OutfitPreview, { PieceImage } from './OutfitPreview.jsx';
 // One outfit: a large full-body preview first, then the individual pieces
 // (with swap buttons), why it works, anything to watch out for, and actions.
 // Optional: label/title override, photo (verified preview), onSwap(piece), actions, notice.
-export default function OutfitCard({ outfit, label, title, onSwap, actions, notice, photo }) {
+export default function OutfitCard({ outfit, label, title, onSwap, actions, notice, photo, personal }) {
   const clothing = outfit.pieces.filter((p) => p.item.category === 'Clothing');
   const extras = outfit.pieces.filter((p) => p.item.category !== 'Clothing');
   const heading = title || clothing.map((p) => p.item.name).join(' + ') || 'Your look';
@@ -30,6 +30,7 @@ export default function OutfitCard({ outfit, label, title, onSwap, actions, noti
       <header>
         <small>{label ?? `LOOK ${outfit.rank}`}</small>
         <h3>{heading}</h3>
+        {personal && <p className="personal-note">{personal}</p>}
       </header>
 
       <div className="outfit-layout">

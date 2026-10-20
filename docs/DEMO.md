@@ -15,10 +15,6 @@ About **10 minutes**, plus questions. Suggested words to say are in *italics*.
 4. Run the tests once: `python -m pytest` → **68 passed**.
 5. Optional: on one saved look, press the camera button and add a photo of yourself wearing it, to show a **Verified** preview.
 
-## 30 minutes before: try-on (optional but impressive)
-
-Start the try-on notebook on Colab and connect it (see [TRYON_SETUP.md](TRYON_SETUP.md)). Then ask for your demo outfits once, so the try-on images are **cached** and appear instantly during the demo. If Colab misbehaves, Adaa shows the drawn model, so the demo still works.
-
 ## 10 minutes before
 
 1. **Close other projects using port 8000**, e.g. EduFlow-ERP. (Or use the alternate-port tip in the README.)
@@ -95,8 +91,7 @@ Optionally open `docs/ARCHITECTURE.md` and show the diagram.
 |---|---|
 | *Why not use ChatGPT or another AI?* | Cost, privacy and honesty. An AI model can invent clothes; this engine can only pick from real records, explains its reasons, runs free and offline, and is fully testable. A free local model could later polish the chat, but the rules would still choose the clothes. |
 | *How does it decide what goes together?* | Garment pairing rules (kurta + salwar, top + jeans…), occasion tags, style compatibility (Indo-Western bridges Traditional and Western), colour harmony (neutrals, tonal, complementary, clashes), comfort, then it picks 4 *different* looks. |
-| *How does the 'on me' picture work?* | My full-length photo plus the garment photo go to an open-source try-on model (CatVTON) running on a free GPU in my own Google Colab. It's labelled 'AI try-on · approximation' because AI can get details wrong, and shoes and jewellery aren't drawn on me. Results are cached, so swapping back is instant. |
-| *Can it show the outfit on a real body (virtual try-on)?* | Not with free tools on this laptop: open-source try-on models need an NVIDIA GPU with 8 GB or more, and free online demos would upload my photos to someone else's server. So Adaa shows an honest drawn model in my pieces' real colours, and a **verified** preview when I add my own photo of a saved look. If I later get a suitable GPU, a try-on model could plug into the same preview slot. |
+| *Can it show the outfit on a real body (virtual try-on)?* | Not with free tools on this laptop: open-source try-on models need an NVIDIA GPU with 8 GB or more, and free online demos would upload my photos to someone else's server. I tried one on a free Colab GPU, but it took a minute per look and got shapes wrong, so I removed it. Adaa shows an outfit board made from my own garment photos, and a **verified** preview when I add my own photo of a saved look. If I later get a suitable GPU, a try-on model could plug into the same preview slot. |
 | *What if my wardrobe is small?* | It returns fewer looks and says why, e.g. "you haven't added any bags yet". |
 | *Does it recognise clothes from photos?* | Not yet: details are entered by hand. Automatic recognition was deliberately left out of the first version to keep it free and reliable. |
 | *Where is my data?* | In `backend/data` on this computer: the SQLite file plus photos. Git ignores it, so it's never pushed to GitHub. |

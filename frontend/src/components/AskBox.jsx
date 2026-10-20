@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Send, Mic, MicOff } from 'lucide-react';
+import { useUser } from '../user.js';
 
 // The browser's own speech-to-text (Chrome and Edge). Chrome sends the audio to Google's speech
 // service to turn it into text; nothing is recorded or kept by Adaa.
@@ -96,6 +97,7 @@ export default function AskBox({ items, chat, asking, onAsk, onPick }) {
 }
 
 function Understanding({ chat, onPick }) {
+  const { first } = useUser();
   const { parsed, refining, keptOccasion, picked } = chat;
   const understood = picked ? [...parsed.understood, `Building around your ${picked}`] : parsed.understood;
 
@@ -103,11 +105,11 @@ function Understanding({ chat, onPick }) {
     <>
       {understood.length > 0 ? (
         <p>
-          {refining ? `Keeping ${keptOccasion} and updating: ` : 'Here’s what I understood: '}
+          {refining ? `Sure, ${first}. Keeping ${keptOccasion} and updating: ` : `Here’s what I understood, ${first}: `}
           {understood.map((u) => <span className="tag" key={u}>{u}</span>)}
         </p>
       ) : (
-        <p>I couldn’t pick out any details from that. Try naming an occasion, a piece you own, a colour or a style.</p>
+        <p>Sorry {first}, I couldn’t pick out any details from that. Try naming an occasion, a piece you own, a colour or a style.</p>
       )}
 
       {parsed.not_found.map((piece) => (

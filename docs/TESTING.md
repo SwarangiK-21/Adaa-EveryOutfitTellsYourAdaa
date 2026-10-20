@@ -8,7 +8,7 @@ Run from `backend/` with the virtual environment active:
 python -m pytest
 ```
 
-Expected result: **148 passed**. Each test runs against a fresh temporary database and photo folder, so your real wardrobe is never touched.
+Expected result: **153 passed**. Each test runs against a fresh temporary database and photo folder, so your real wardrobe is never touched.
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -17,12 +17,12 @@ Expected result: **148 passed**. Each test runs against a fresh temporary databa
 | `test_parser.py` | 38 | Occasion words (sangeet, diwali, interview…); style, comfort and colour mood; *"Style my black crop top for a party"*; name vs type matching; typos; asking when ambiguous; reporting pieces you don't own; missing occasion |
 | `test_looks.py` | 13 | Save, list, rename, delete looks; no duplicates; numbered names; swap options stay wearable and tagged pieces rank first; evaluation cautions; swaps inside saved looks; wear history; history survives deleting a look; no future dates; deleting a wardrobe item keeps the look and flags it |
 | `test_look_photos.py` | 7 | Verified photo upload and serving; photo becomes outdated after a swap or a deleted piece; replacing/removing/deleting cleans up files; rejects non-images |
-| `test_tryon.py` | 17 | Your photo and server settings; status check; bottom-then-top order; dress in one pass; skipped accessories; caching and new image after a swap; new photo clears old try-ons; clear errors (nothing to try on, server offline, not set up, no photo); safe image names; link-only change keeps the token |
 | `test_cutouts.py` | 8 | Saving, serving and deleting garment cut-outs; method version stored; new photo clears the cut-out; model download route and unknown models |
 | `test_planner.py` | 12 | Shop Smart: missing bottoms and shoes suggested, things you own skipped (denim = blue), bags ranked after clothes, empty wardrobe; Trip Planner: no garment ever worn twice (shoes reused), a plan found where day-by-day picking would fail, an empty day instead of a repeat, only real items, API validation |
 | `test_festivals.py` | 8 | Republic Day prefers saffron, white and green and says so; a colour request shows only outfits in it (untagged pieces in colour allowed, with a caution); whole-outfit-in-colour ranks first; nothing in the colour is explained; Makar Sankranti prefers black or yellow; missing festival colours explained; today's / next festival by date; API validation |
 | `test_events.py` | 6 | Full wedding follows each dress code with no garment repeated; jewellery and shoes reused; missing colour explained; no all-white at the wedding; jeans a last resort at a reception; API |
 | `test_weather_wear.py` | 9 | Hot day: light pieces, no jacket; cold day: sweater, jeans, boots; rain caution; no weather = no change; weather validated; wear stats (not worn, most worn, cost per wear, totals); prices saved/cleared/validated; wearing an unsaved outfit counts |
+| `test_auth.py` | 23 | Sign-up keeps name, email and phone and gives a first name; bad name/email/phone/password rejected; duplicate email; log out and back in; wrong password; 5 failures pause logging in; passwords stored hashed; change name and phone; every data route needs logging in, public ones don't; two accounts never see each other's items, looks, history or photo; the first account receives the old wardrobe |
 | `test_workflow.py` | 1 | The whole journey: empty wardrobe → add 10 pieces → *"Style my green kurta for a traditional family function"* → outfits → swap → save → wear → history → delete a worn piece |
 
 ## Manual end-to-end pass (browser)
@@ -50,7 +50,7 @@ Done on 15 Oct 2026, starting from an **empty** data folder, using the real form
 
 ## Quick checklist before a demo
 
-1. `python -m pytest` → `148 passed`
+1. `python -m pytest` → `153 passed`
 2. Backend running: http://127.0.0.1:8000/api/health → `"status":"ok"`
 3. Frontend running: http://localhost:5173 → Overview shows your piece count
 4. AI Stylist → ask for one of your demo requests → outfits with photos appear
@@ -85,6 +85,8 @@ Fresh test wardrobe of 20 pieces; desktop (1280px) and phone (375px).
 | Phone: 314 × 523 px preview, no sideways scrolling | ✅ |
 
 ## Virtual try-on pass (17 Oct 2026)
+
+*Try-on was removed on 20 Oct 2026 (slow and inaccurate); this pass is kept as a record.*
 
 Run with a **stand-in try-on server**: same API, link and token as the Colab notebook, but it returns a coloured test image after 2 s instead of running the AI model. It used a copy of the real wardrobe. **The real CatVTON model has not been run in this environment** (no NVIDIA GPU); run `tryon/Adaa_TryOn_Colab.ipynb` on Colab to try it.
 
@@ -248,3 +250,27 @@ Reported: "Rakhi pe kuch gulabi", "15th aug" and "26th jan" gave black and grey 
 | Sidebar: horizontal logo (desktop and phone menu) | ✅ |
 | Re-theme: 105 browns/beiges shifted to plum/blush with the same lightness; accent exactly logo plum; small labels and italic headline words in gold; caution/error/success colours and garment swatches unchanged | ✅ checked Overview, AI Stylist, Wedding Planner, phone menu |
 | Downloaded outfit image uses plum lettering and the gold credit line | ✅ |
+
+## Accounts and "calls you by name" (20 Oct 2026)
+
+On a copy of the real wardrobe (32 pieces), backend on 8011 and frontend on 5181.
+
+| Check | Result |
+|---|---|
+| Sign up with name, email, phone, password | ✅ "Welcome to Adaa, Swarangi! Your 32 pieces are now safely in your account." |
+| Name across the app: greeting, hero, sidebar (initials, name, email), header avatar, page titles ("Swarangi's wardrobe") | ✅ |
+| AI Stylist: "Here's what I understood, Swarangi", a personal line on each look ("Swarangi, this one would look lovely on you."), save toast | ✅ |
+| Log out → log-in screen; log back in → "Welcome back, Swarangi!", saved look still there | ✅ |
+| Preferences: Your account (name, phone, read-only email, Save, Log out) | ✅ |
+| Short laptop screens (768 px tall): sidebar scrolls and hides the tip card so the profile and log-out stay visible | ✅ (fixed during this pass) |
+| Phone: log-in screen stacks (logo on top, form below); app greeting with name | ✅ |
+| Backend tests | ✅ 171 passed (153 after removing try-on below) |
+
+## Try-on removed (20 Oct 2026)
+
+| Check | Result |
+|---|---|
+| Preferences shows only Your account, Your city and the style choices (no Your photo, no Try-on server) | ✅ |
+| No first-run "add your photo" step; outfit cards show the outfit board with Download image | ✅ |
+| *Verified · your photo* on saved looks still works (separate feature) | ✅ unchanged |
+| Backend tests | ✅ 153 passed (17 try-on tests and one route check removed) |

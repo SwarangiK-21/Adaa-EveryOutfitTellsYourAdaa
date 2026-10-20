@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 import database
 from datetime import date
 
+import auth
 from recommender import festivals
 from recommender.engine import RecommendationError, recommend
 from recommender.parser import parse_request
@@ -21,9 +22,10 @@ router = APIRouter(prefix="/api", tags=["stylist"])
 def get_recommendations(
     request: RecommendationRequest,
     db: Annotated[sqlite3.Connection, Depends(database.get_db)],
+    user: auth.User,
 ):
-    """Suggest up to 4 distinct outfits using only items in the wardrobe."""
-    items = database.list_items(db)
+    """Suggest up to 4 distinct outfits using only items in your wardrobe."""
+    items = database.list_items(db, user["id"])
     try:
         result = recommend(items, request)
     except RecommendationError as exc:
@@ -39,9 +41,10 @@ def get_recommendations(
 def parse_stylist_message(
     message: StylistMessage,
     db: Annotated[sqlite3.Connection, Depends(database.get_db)],
+    user: auth.User,
 ):
     """Read a typed request like 'Style my black crop top for a party' into filters."""
-    return parse_request(message.text, database.list_items(db), date.today())
+    return parse_request(message.text, database.list_items(db, user["id"]), date.today())
 
 
 @router.get("/festivals/now", response_model=FestivalNow | None)

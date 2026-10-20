@@ -36,12 +36,26 @@ Each part has one job:
 
 Because the recommender is plain Python that takes a list of items and returns outfits, it's easy to test on its own: most engine tests never start a server.
 
+## Accounts (`auth.py`, `routes/auth.py`)
+
+- **Sign-up** asks for name, email, phone and a password (8+ characters). Email is stored lower-case and must be unique; phone keeps only digits (10 to 15) and a leading `+`.
+- **Passwords:** Python's built-in `hashlib.scrypt` (n=2^14, r=8, p=1) with a random 16-byte salt, checked with `hmac.compare_digest`. No extra packages needed.
+- **Sessions:** a random token in an HttpOnly, SameSite=Lax cookie (`adaa_session`, 30 days). The database keeps only its SHA-256, so a copied database can't be used to log in.
+- **Throttle:** 5 wrong passwords for one email within 15 minutes → 429 until the window passes.
+- **Every data route** takes `user: auth.User` (a FastAPI dependency that returns 401 when logged out) and passes `user["id"]` to every query, so one account can never read or change another's items, looks, history or photos.
+- **Upgrading:** `wardrobe_items`, `looks` and `wear_log` gain a `user_id` column on startup. The first account to sign up claims all rows without an owner.
+- **Frontend:** `Root.jsx` asks `/api/auth/me`; logged out → `AuthScreen`, else the app inside a `UserContext`. `useUser()` gives `first` (first name), used in greetings, page titles, toasts, the stylist's replies and a personal line on each look. Browser storage keys get a per-account suffix (`adaa.preferences.u3`). Any 401 shows the log-in screen again.
+
 ## Data model (SQLite)
 
 ```
+users: id, name, email (unique), phone, password_hash, created_at
+sessions: token_hash, user_id → users (CASCADE), expires_at
+
 wardrobe_items              looks                       wear_log
 ──────────────              ─────                       ────────
 id                          id                          id
+user_id → users             user_id → users             user_id → users
 name                        name                        look_id → looks (SET NULL on delete; NULL
 category                    prefs (JSON: occasion,                for outfits worn without saving)
 item_type                          style, colour,       look_name   (kept even if look is deleted)
@@ -125,12 +139,11 @@ An optional free local language model could later make the chat friendlier, but 
 |---|---|---|
 | 1 | **Verified:** the user's own photo wearing a saved look | Shown only while the look's pieces still match the photo (stored in `look_photos`). |
 | 2 | **Outfit board** ("Your pieces"): the user's own garment cut-outs, arranged as if worn | **The default.** Instant, offline, exact pieces (see *Outfit board* below). |
-| 3 | **AI try-on** on the user's own photo | Optional: only when the Colab server is connected and the user presses **Try on me (AI)** (see *Virtual try-on*). |
 
 *Earlier versions, dropped after testing with the real wardrobe:*
 - *Photos cut into garment shapes on a mannequin:* photo backgrounds and models' legs showed through.
 - *A drawn female model in colours read from the photos:* it looked generic, not like the actual pieces.
-- *Automatic AI try-on for every look:* too slow on a free GPU, and inaccurate (wrong shapes, smudged shoes).
+- *AI try-on on the user's own photo (CatVTON on a free Colab GPU):* about a minute per look, needed the notebook running, and got shapes and shoes wrong. Removed on 20 Oct 2026; the code is in git history.
 
 **Verified photos and staleness:**
 - `POST /api/looks/{id}/photo` saves the photo (with the same file checks as item photos) together with the look's `item_ids`.
@@ -233,42 +246,12 @@ When a photo is chosen in *Add a piece*, `analysePhoto()` (in `cutout.js`) runs 
 
 Trousers, shoes, bag, dupatta, belt, hat and sunglasses come straight from their labels, and blue trousers become jeans. The colour is the largest group of similar inner pixels (k-means in Lab), matched to the named colours the form suggests; for checks or prints, the most colourful sizeable group wins. Clothes must cover at least 10 % of the photo (6 % when worn), so jewellery isn't mistaken for clothing; then nothing is filled and the form says so. Only fields the user hasn't touched are filled, plus a name like "Denim jeans", and a note asks the user to check.
 
-## Virtual try-on (optional)
-
-```
-Adaa frontend ──POST /api/tryon {item_ids}──► Adaa backend (tryon.py)
-                                               │  1. plan: dress → "overall"; else bottom → "lower", then top → "upper"
-                                               │  2. cache hit? → return saved image instantly
-                                               │  3. else, one garment at a time (lock: one job on the GPU):
-                                               ▼
-                         https://xxxx.trycloudflare.com  (X-Adaa-Token header)
-                                               │
-                     Colab notebook: FastAPI → CatVTON (fp16, 768×1024, 30 steps) on a free T4 GPU
-```
-
-- **Your photo:** stored once in `user_profile` (single row). Replacing or removing it clears cached try-ons.
-- **Server settings:** the link and token live in `backend/data/tryon_settings.json`. It's local and git-ignored, and an empty link switches try-on off.
-- **Cache:** `backend/data/tryon/<sha1>.png`. The key is made from the exact photo files and cloth types, so a swap makes a new image, and swapping back reuses the old one.
-- **Accuracy steps in the notebook:**
-  - Garment photos are cleaned before try-on: if someone is wearing the garment, CatVTON's SCHP human parser keeps only that garment; otherwise `rembg` (isnet) removes the background. The garment is then centred on white.
-  - After generation, everything outside the mask is copied back from the user's photo (`Image.composite`), so face, hair and background stay identical.
-  - Quality is 50 steps ("high", default) or 30 steps ("standard").
-- **Shoes (experimental):** a final `shoes` pass masks the feet using the parser's shoe labels (LIP 18/19, ATR 9/10), dilated. If the feet aren't found, the clothes result is kept and a note is returned (stored next to the cached image).
-- **What can't be shown on you:** jewellery, watches, bags, dupattas and layers can't be rendered by the model. They're returned as `skipped`, and the caption names them.
-- **Frontend (`tryon.js`):** a queue sends one request at a time. Results are remembered per piece combination. If the server is found offline, other cards stop waiting for 30 s, but **Try again** always retries.
-- **Previews (`OutfitPreview.jsx`):** Stylist looks request try-on automatically; saved looks have a **Show it on me** button, to save GPU time.
-  - While generating: the drawing is shown with *"Putting this look on you…"*.
-  - After a swap: the previous try-on is shown faded with *"Updating for your swap…"*.
-  - On failure: the drawing is shown with the reason and **Try again**.
-- **Errors are actionable:** unreachable (Colab stopped or a new link), wrong token, person not detected in the photo, nothing to try on, or not set up yet. Each one tells the user what to do.
-- **Licence:** CatVTON is CC BY-NC-SA 4.0, non-commercial. The original `runwayml/stable-diffusion-inpainting` base was removed from Hugging Face, so the notebook uses the mirror `booksforcharlie/stable-diffusion-inpainting`.
-
 ## Frontend notes
 
 - `App.jsx` holds the layout and navigation. Each main page is its own file in `pages/`.
 - The Style me form is the single source of truth: typed requests, the ✦ "Style this" button and saved preferences all just fill in the form, then call `/api/recommendations`.
 - Swapping a piece calls `/api/outfits/alternatives`, then `/api/outfits/evaluate`, so the reasons always match the current pieces.
-- Preferences are a per-browser convenience (`localStorage`), used as the form's starting values.
+- Preferences are a per-browser convenience (`localStorage`, one set per account), used as the form's starting values.
 - Every page has loading, empty and "server unreachable" states.
 
 ## Notable bugs found and fixed during development
