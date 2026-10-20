@@ -249,6 +249,7 @@ Trousers, shoes, bag, dupatta, belt, hat and sunglasses come straight from their
 ## Frontend notes
 
 - `App.jsx` holds the layout and navigation. Each main page is its own file in `pages/`.
+- **Opening animation (`Splash.jsx`):** `Root.jsx` shows it once per tab (`sessionStorage` `adaa.splashSeen`) while it checks who is logged in, always in the same place so it never restarts. `assets/adaa-splash.svg` is the plum logo with each part in its own group (`s-mark`, `s-shine`, `s-name`, `s-thread`, `s-dot`, `s-tag`), imported with `?raw` so CSS can animate the parts: focus-in (scale + blur), a gold glint clipped to the A, `clip-path` reveals for the name and tagline, the thread scaling out from the centre. After about 6 s (or a tap / key) it slides up in 0.9 s. With `prefers-reduced-motion` it's a still logo that fades out. Pure CSS, no libraries.
 - The Style me form is the single source of truth: typed requests, the ✦ "Style this" button and saved preferences all just fill in the form, then call `/api/recommendations`.
 - Swapping a piece calls `/api/outfits/alternatives`, then `/api/outfits/evaluate`, so the reasons always match the current pieces.
 - Preferences are a per-browser convenience (`localStorage`, one set per account), used as the form's starting values.

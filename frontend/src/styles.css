@@ -407,3 +407,30 @@
 @media(max-width:820px){.auth{grid-template-columns:1fr}.auth-brand{padding:32px 24px;gap:18px}.auth-brand ul{display:none}.auth-card{margin:24px 0}}
 .sidebar{overflow-y:auto}
 @media(max-height:860px){.sidebar .note{display:none}.sidebar .brand{padding-bottom:18px}}
+/* Opening animation (Splash.jsx), about 6 s, once per visit */
+.splash{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;overflow:hidden;background:radial-gradient(circle at 50% 42%,#7a3158 0%,#5b1f3f 52%,#43142d 100%);transition:transform .9s cubic-bezier(.7,0,.3,1),border-radius .9s ease}
+.splash.leaving{transform:translateY(-100%);border-radius:0 0 50% 50%/0 0 14% 14%}
+.splash-inner{width:min(380px,82vw)}
+.splash-logo{display:block;width:100%;height:auto;overflow:visible}
+.splash .s-mark{transform-box:fill-box;transform-origin:50% 60%;animation:s-focus 1.6s cubic-bezier(.2,.8,.2,1) both}
+.splash .s-shine{transform:translateX(0) skewX(-18deg);animation:s-shine 1.2s ease-in-out 1.3s both}
+.splash .s-name{clip-path:inset(0 100% 0 0);animation:s-write 1.8s cubic-bezier(.45,0,.35,1) 1.8s forwards}
+.splash .s-thread{transform-box:fill-box;transform-origin:center;transform:scaleX(0);animation:s-thread 1s ease-out 3.4s forwards}
+.splash .s-dot{transform-box:fill-box;transform-origin:center;transform:scale(0);animation:s-pop .5s cubic-bezier(.3,1.6,.5,1) 4.2s forwards}
+.splash .s-tag{clip-path:inset(0 100% 0 0);opacity:0;animation:s-write 1.4s ease-out 3.9s forwards,s-fade 1.4s ease-out 3.9s forwards}
+.splash-hello{margin:0;min-height:24px;font:italic 500 18px 'Playfair Display',serif;color:#e8c98a;letter-spacing:.3px;opacity:0;animation:s-rise .9s ease-out 4.9s forwards}
+.splash-speck{position:absolute;width:4px;height:4px;border-radius:50%;background:#e8c98a;box-shadow:0 0 8px 2px #c9a45c66;opacity:0;animation:s-twinkle 3.2s ease-in-out both}
+@keyframes s-focus{from{opacity:0;transform:scale(.8);filter:blur(8px)}to{opacity:1;transform:scale(1);filter:blur(0)}}
+@keyframes s-shine{from{transform:translateX(0) skewX(-18deg)}to{transform:translateX(250px) skewX(-18deg)}}
+@keyframes s-write{to{clip-path:inset(0 0 0 0)}}
+@keyframes s-thread{to{transform:scaleX(1)}}
+@keyframes s-pop{to{transform:scale(1)}}
+@keyframes s-fade{to{opacity:1}}
+@keyframes s-rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes s-twinkle{0%,100%{opacity:0;transform:scale(.4)}50%{opacity:.9;transform:scale(1)}}
+.splash.calm,.splash.calm *{animation:none!important}
+.splash.calm .s-name,.splash.calm .s-tag{clip-path:none;opacity:1}
+.splash.calm .s-thread,.splash.calm .s-dot{transform:none}
+.splash.calm .splash-hello{opacity:1}
+.splash.calm .splash-speck{display:none}
+.splash.calm.leaving{transform:none;border-radius:0;opacity:0;transition:opacity .3s}

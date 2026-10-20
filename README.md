@@ -23,6 +23,7 @@ It runs entirely on your own computer with free, open-source tools: no paid APIs
 | **What to buy next:** the few pieces that would unlock the most new outfits with what you own (ideas only, Adaa never shops) | **Shop Smart** |
 | **Weather:** add your city once; the stylist shows today's forecast and dresses you for it (light pieces on hot days, warm layers when it's cold, a caution about heels in the rain). Can be switched off per request | **Preferences**, **AI Stylist** |
 | **Wear stats:** pieces not worn in 30/60/90 days (with *Style it*), most worn, and **cost per wear** from the optional price on each piece; *Wore it today* on any stylist outfit; a nudge on Overview | **Wear Stats** |
+| **Opening animation** (about 6 seconds, once per visit): the ribbon A comes into focus with a gold glint, *Adaa* writes itself, the gold thread draws and the tagline appears, then it lifts away like a curtain with *"Hi, Swarangi"*. Tap or press any key to skip; a still version is shown if your device has "reduce motion" on | When you open Adaa |
 | Save your usual style, comfort and colour preferences | **Preferences** |
 | **Accounts:** sign up with your name, email, phone and a password. Each person gets their own wardrobe, looks and history, and Adaa **calls you by your name** everywhere (*"Swarangi, this one would look lovely on you."*). Change your name or phone, or log out, in Preferences | Sign-up screen, **Preferences** |
 
@@ -201,7 +202,8 @@ Adaa/
 ├─ frontend/
 │  ├─ vite.config.js        Dev server; forwards /api to the backend
 │  └─ src/
-│     ├─ Root.jsx           Shows the sign-up / log-in screen or the app
+│     ├─ Root.jsx           Opening animation, then the sign-up / log-in screen or the app
+│     ├─ assets/adaa-splash.svg   The plum logo split into parts for the opening animation
 │     ├─ user.js            The logged-in user, per-account browser storage, personal lines
 │     ├─ App.jsx            Layout, navigation, Overview, Preferences
 │     ├─ api.js             All calls to the backend
@@ -209,7 +211,7 @@ Adaa/
 │     ├─ pages/             Wardrobe, Stylist, SavedLooks, WeddingPlanner, TripPlanner, WearStats, ShopSmart
 │     ├─ weather.js         Today's forecast from Open-Meteo for your saved city
 │     ├─ boardImage.js       Saves an outfit board as a PNG (Download image)
-│     ├─ components/        AuthScreen, AccountSettings, ItemForm, CutoutEditor, EraseCutout, WeatherSettings, PlanResult, OutfitCard, OutfitPreview, OutfitBoard, SwapPanel, AskBox, Heading
+│     ├─ components/        Splash, AuthScreen, AccountSettings, ItemForm, CutoutEditor, EraseCutout, WeatherSettings, PlanResult, OutfitCard, OutfitPreview, OutfitBoard, SwapPanel, AskBox, Heading
 │     ├─ cutout.js, cutout.worker.js, cutoutQueue.js   Background removal for garment pictures (in the browser)
 │     └─ styles.css
 └─ docs/                    ARCHITECTURE.md, TESTING.md, DEMO.md

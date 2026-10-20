@@ -274,3 +274,13 @@ On a copy of the real wardrobe (32 pieces), backend on 8011 and frontend on 5181
 | No first-run "add your photo" step; outfit cards show the outfit board with Download image | ✅ |
 | *Verified · your photo* on saved looks still works (separate feature) | ✅ unchanged |
 | Backend tests | ✅ 153 passed (17 try-on tests and one route check removed) |
+
+## Opening animation (20 Oct 2026)
+
+| Check | Result |
+|---|---|
+| Frames stepped at 0.3 / 0.8 / 1.15 / 1.7 / 2.2 s: A focuses in → *Adaa* writing → thread and dot → tagline → "Hi, Swarangi" | ✅ |
+| Ends and shows the app underneath (Overview greeting) with no console errors | ✅ |
+| Refresh in the same tab: no replay | ✅ |
+| Key press skips it: gone within 0.8 s | ✅ |
+| Slowed to about 6 s after trying it (A 0–1.6 s, glint 1.3–2.5 s, *Adaa* 1.8–3.6 s, thread 3.4–4.7 s, tagline 3.9–5.3 s, "Hi" 4.9–5.8 s, lift at 6.2 s) | ✅ frames checked |
