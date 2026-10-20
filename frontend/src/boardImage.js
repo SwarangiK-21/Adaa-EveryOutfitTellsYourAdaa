@@ -25,9 +25,9 @@ export async function downloadBoard(frame, title) {
 
   // Background: the same soft cream as the board.
   const bg = ctx.createRadialGradient(W / 2, H * 0.3, 0, W / 2, H * 0.3, H * 0.85);
-  bg.addColorStop(0, '#fffdf9');
-  bg.addColorStop(0.6, '#f6efe7');
-  bg.addColorStop(1, '#ece2d6');
+  bg.addColorStop(0, '#fff9fc');
+  bg.addColorStop(0.6, '#f6e7ef');
+  bg.addColorStop(1, '#ecd6e2');
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
@@ -49,13 +49,13 @@ export async function downloadBoard(frame, title) {
   }
 
   // The look's name, small, at the bottom.
-  ctx.fillStyle = '#8b6955';
+  ctx.fillStyle = '#5B1F3F';   // logo plum
   ctx.textAlign = 'center';
   ctx.font = `600 ${Math.round(W * 0.03)}px "Playfair Display", Georgia, serif`;
   // Capitalised, as shown on screen.
   const name = (title || 'My look').replace(/(^|\s)(\p{L})/gu, (m, space, letter) => space + letter.toUpperCase());
   ctx.fillText(name, W / 2, H - W * 0.075);
-  ctx.fillStyle = '#a99482';
+  ctx.fillStyle = '#94712F';   // brand gold
   ctx.font = `${Math.round(W * 0.019)}px "DM Sans", Arial, sans-serif`;
   ctx.fillText('Styled from my own wardrobe · Adaa', W / 2, H - W * 0.04);
 

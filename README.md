@@ -1,6 +1,8 @@
+<p align="center"><img src="brand/adaa-logo-cream.svg" alt="Adaa — every outfit tells your adaa" width="260"></p>
+
 # Adaa
 
-**Your wardrobe. Your world. Your Adaa.**
+**Every outfit tells your Adaa.**
 
 Adaa is a personal wardrobe stylist. You photograph and register your own clothes, jewellery, footwear and bags; Adaa then suggests complete, coordinated outfits for an occasion, using **only pieces you actually own**. It supports Indian traditional, Western and Indo-Western styling.
 
@@ -64,6 +66,10 @@ Each look opens with a large preview, always labelled:
 | + | Wedding planner, festival colour of the day, Hinglish and voice requests | Done |
 
 148 automated backend tests pass. A full manual browser pass is recorded in [docs/TESTING.md](docs/TESTING.md).
+
+## Brand
+
+The plum ribbon-"A" logo, its versions (stacked, horizontal, dark, app icon), PNGs, colours (plum `#5B1F3F`, blush, gold `#C9A45C`) and fonts are in [`brand/`](brand/README.md). The app uses the same palette, the horizontal logo in the sidebar, and the app icon as the browser-tab and home-screen icon.
 
 ## Tech
 

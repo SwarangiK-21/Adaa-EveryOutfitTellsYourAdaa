@@ -238,3 +238,13 @@ Reported: "Rakhi pe kuch gulabi", "15th aug" and "26th jan" gave black and grey 
 | style me for ganesh chaturti | Red Saree; bottle green saree; green gown; yellow ruffle top + skirt |
 | style me for makar sankranti | black gown; bottle green saree; all-black crop top + skirt; green gown |
 | Backend tests | ✅ 148 passed |
+
+## Brand and re-theme (20 Oct 2026)
+
+| Check | Result |
+|---|---|
+| Logo files: 8 SVGs (lettering outlined, so no fonts needed) and high-res PNGs in `brand/`; centred; fold is a real cut-out (works on any background) | ✅ |
+| Browser tab: app icon and title "Adaa — Every outfit tells your Adaa"; phone theme colour plum | ✅ |
+| Sidebar: horizontal logo (desktop and phone menu) | ✅ |
+| Re-theme: 105 browns/beiges shifted to plum/blush with the same lightness; accent exactly logo plum; small labels and italic headline words in gold; caution/error/success colours and garment swatches unchanged | ✅ checked Overview, AI Stylist, Wedding Planner, phone menu |
+| Downloaded outfit image uses plum lettering and the gold credit line | ✅ |
