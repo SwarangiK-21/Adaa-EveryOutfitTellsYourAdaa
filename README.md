@@ -25,7 +25,7 @@ It runs entirely on your own computer with free, open-source tools: no paid APIs
 | **Wear stats:** pieces not worn in 30/60/90 days (with *Style it*), most worn, and **cost per wear** from the optional price on each piece; *Wore it today* on any stylist outfit; a nudge on Overview | **Wear Stats** |
 | **Opening animation** (about 6 seconds, once per visit): the ribbon A comes into focus with a gold glint, *Adaa* writes itself, the gold thread draws and the tagline appears, then it lifts away like a curtain with *"Hi, Swarangi"*. Tap or press any key to skip; a still version is shown if your device has "reduce motion" on | When you open Adaa |
 | Save your usual style, comfort and colour preferences | **Preferences** |
-| **Accounts:** sign up with your name, email, phone and a password. Each person gets their own wardrobe, looks and history, and Adaa **calls you by your name** everywhere (*"Swarangi, this one would look lovely on you."*). Change your name or phone, or log out, in Preferences | Sign-up screen, **Preferences** |
+| **Accounts:** sign up with your name, email, phone and a password. Each person gets their own wardrobe, looks and history, and Adaa **calls you by your name** everywhere (*"Swarangi, this one would look lovely on you."*). Change your name, phone or password, log out, or **delete your account**, in Preferences. **Forgot password?** emails a one-time link. A plain-language **privacy note**, agreed to at sign-up (18+) | Sign-up screen, **Preferences** |
 
 **The core rule:** Adaa never invents a piece. If something is missing (no bag, nothing tagged for a wedding, "my green kurta" when you don't have one), it says so and shows the best real combination instead.
 
@@ -67,7 +67,7 @@ Each look opens with a large preview, always labelled:
 | + | Wedding planner, festival colour of the day, Hinglish and voice requests | Done |
 | + | Accounts (email + password), a separate wardrobe per person, the app calls you by name | Done |
 
-153 automated backend tests pass. A full manual browser pass is recorded in [docs/TESTING.md](docs/TESTING.md).
+171 automated backend tests pass. A full manual browser pass is recorded in [docs/TESTING.md](docs/TESTING.md).
 
 ## Brand
 
@@ -125,6 +125,48 @@ Stop either one with `Ctrl + C`.
 | Backend says *port 8000 is already in use* (e.g. another FastAPI project is running) | Run the backend on another port: `uvicorn main:app --reload --port 8001`, and start the frontend with `$env:ADAA_API_URL="http://127.0.0.1:8001"; npm run dev` |
 | iPhone photo refused | HEIC isn't supported; export or share the photo as JPEG |
 
+## Let friends try Adaa (home Wi-Fi)
+
+Friends on the **same Wi-Fi** can open Adaa on their phones and make their own accounts. Each person gets a separate wardrobe. Nothing goes on the internet: it runs on your laptop, so keep the laptop on and awake while they use it.
+
+1. Start the backend as usual (Terminal 1).
+2. In Terminal 2, instead of `npm run dev`:
+   ```powershell
+   cd frontend
+   npm run share
+   ```
+   It builds a fast version of Adaa and prints two addresses. Share the **Network** one, e.g. `http://192.168.31.127:4173`.
+3. The first time, Windows asks whether Node.js may use the network: tick **Private networks** and press **Allow**.
+4. Friends open that address on their phone, tap **Create an account**, and add their clothes with their phone camera.
+5. Press `Ctrl+C` in Terminal 2 to stop sharing.
+
+Good to know:
+- **Can't connect?** Check that the phone is on the same Wi-Fi, and that Windows calls this Wi-Fi a *Private* network (Settings → Network & internet → Wi-Fi → your network). The address can change after a restart, so read it again from Terminal 2.
+- **Phones skip the automatic background clean-up** (its 200 MB model can freeze a phone), so pieces added on a phone show their normal photo on the outfit board. They get a clean cut-out the next time that person opens Adaa on a computer.
+- **Voice requests need `https`**, so the microphone button is hidden on the Wi-Fi address. Typing works the same.
+- Your own `npm run dev` on http://localhost:5173 keeps working as before.
+
+## Install Adaa on a phone (like an app)
+
+Adaa can sit on the home screen with its plum **A** icon and open full-screen.
+
+- **iPhone (Safari):** open the Wi-Fi address → **Share** → **Add to Home Screen** → **Add**. It opens full-screen, without the browser bar.
+- **Android (Chrome):** open the Wi-Fi address → **⋮** → **Add to Home screen**. Chrome gives the full app look (no browser bar) only on `https`, so over home Wi-Fi it may open with the address bar; everything else works the same.
+- **On your laptop (Chrome or Edge):** open http://localhost:5173 → the install icon at the right end of the address bar (or **⋮ → Cast, save and share → Install page as app**). Adaa then opens in its own window and appears in the Start menu.
+
+## Settings for running Adaa for other people
+
+All optional: without them Adaa behaves as on your laptop. Set them as environment variables before starting the backend (e.g. `$env:ADAA_CONTACT_EMAIL = "you@example.com"` in PowerShell).
+
+| Setting | What it does | Default |
+|---|---|---|
+| `ADAA_PUBLIC_URL` | The address people open Adaa at; used in password-reset emails | `http://localhost:5173` |
+| `ADAA_CONTACT_EMAIL` | Shown in the privacy note as whom to ask about your data | *(none: "the person who runs this Adaa")* |
+| `ADAA_SECURE_COOKIES` | `1` once Adaa is on `https`, so the sign-in cookie is only sent encrypted | off |
+| `ADAA_MAX_ITEMS` / `ADAA_MAX_LOOKS` | Most pieces / saved looks per person | 300 / 200 |
+| `ADAA_MAX_USERS` | Most accounts in total (`0` = no cap) | 0 |
+| `ADAA_SMTP_HOST`, `ADAA_SMTP_PORT`, `ADAA_SMTP_USER`, `ADAA_SMTP_PASSWORD`, `ADAA_MAIL_FROM` | Email service for "forgot password", e.g. Gmail (`smtp.gmail.com`, 587, your address and a Google **app password**) or Brevo's free plan | none: the email is **printed in the backend terminal** instead, handy for testing |
+
 ## Your data
 
 Everything lives in `backend/data/`:
@@ -135,7 +177,7 @@ Git ignores this folder, so your photos are never pushed to GitHub. To **back up
 
 **Accounts:** passwords are never stored, only a salted scrypt hash. Logging in sets a private session cookie that lasts 30 days. After 5 wrong passwords for an email, logging in pauses for 15 minutes. The **first account** you create receives everything that was in Adaa before accounts existed, so your wardrobe is kept. Your name, email and phone stay in `adaa.db` on this computer; nothing is sent anywhere.
 
-**Voice requests:** the microphone button uses the browser's built-in speech-to-text. In Chrome, the audio is sent to Google's speech service to turn it into text; Adaa itself never records or stores it. Typing works the same without it.
+**Voice requests:** the microphone button uses the browser's built-in speech-to-text. In Chrome, the audio is sent to Google's speech service to turn it into text; Adaa itself never records or stores it. Typing works the same without it. Browsers allow the microphone only on `https` or `localhost`, so the button is hidden on the Wi-Fi address.
 
 **Weather:** if you add a city for the weather, your browser asks [Open-Meteo](https://open-meteo.com) (free, no account, no key) for that city's forecast, sending only its coordinates (and the name you type when searching). Nothing about your wardrobe is sent. Remove the city in Preferences to turn this off.
 
@@ -148,7 +190,7 @@ python -m pip install -r requirements-dev.txt   # first time only
 python -m pytest
 ```
 
-Expected: `153 passed`. Tests use a temporary folder, so they never touch your real wardrobe.
+Expected: `171 passed`. Tests use a temporary folder, so they never touch your real wardrobe.
 
 ## API
 
@@ -159,7 +201,10 @@ Interactive docs: http://127.0.0.1:8000/docs (while the backend is running). Eve
 | GET | `/api/health` | Server status |
 | POST | `/api/auth/signup` | Create an account (`name`, `email`, `phone`, `password`) and log in |
 | POST | `/api/auth/login`, `/api/auth/logout` | Log in (sets the session cookie) / log out |
-| GET / PUT | `/api/auth/me` | Who is logged in / change your name or phone |
+| GET / PUT / DELETE | `/api/auth/me` | Who is logged in / change your name or phone / delete your account (`{"password": ...}`) |
+| PUT | `/api/auth/password` | Change your password (`current_password`, `new_password`); other devices are signed out |
+| POST | `/api/auth/forgot`, `/api/auth/reset` | Email a one-time link (same reply whether or not the email has an account) / set a new password with it |
+| GET | `/api/auth/about` | Contact email and limits, for the privacy note |
 | GET | `/api/options` | Allowed categories, styles, occasions, moods, comfort levels |
 | GET / POST | `/api/items` | List or search (`?search=&category=`) / add (form fields + `photo`) |
 | GET / PUT / DELETE | `/api/items/{id}` | One item / edit (photo optional) / delete |
@@ -194,13 +239,15 @@ Adaa/
 │  ├─ schemas.py            Request/response shapes and validation (Pydantic)
 │  ├─ database.py           SQLite connection, tables, wardrobe item queries
 │  ├─ looks_db.py           Saved looks and outfit history queries
-│  ├─ auth.py               Password hashing, sessions, login throttle, the logged-in-user dependency
+│  ├─ auth.py               Password hashing, sessions, login throttle, reset links, the logged-in-user dependency
+│  ├─ mailer.py             Sends the password-reset email (any SMTP service), or prints it when none is set
 │  ├─ storage.py            Photo checks (real file type, size) and saving/deleting
 │  ├─ routes/               API routes: auth, items, recommendations (+ parse), looks, planner
 │  ├─ recommender/          colours.py, garments.py, engine.py, parser.py, planner.py (gaps, trips, wear stats), events.py (wedding functions), festivals.py (festival colours and dates), weather.py
-│  └─ tests/                153 pytest tests
+│  └─ tests/                171 pytest tests
 ├─ frontend/
 │  ├─ vite.config.js        Dev server; forwards /api to the backend
+│  ├─ public/               Icons, logo files, manifest.webmanifest (home-screen app name, colours, icons)
 │  └─ src/
 │     ├─ Root.jsx           Opening animation, then the sign-up / log-in screen or the app
 │     ├─ assets/adaa-splash.svg   The plum logo split into parts for the opening animation
@@ -211,7 +258,7 @@ Adaa/
 │     ├─ pages/             Wardrobe, Stylist, SavedLooks, WeddingPlanner, TripPlanner, WearStats, ShopSmart
 │     ├─ weather.js         Today's forecast from Open-Meteo for your saved city
 │     ├─ boardImage.js       Saves an outfit board as a PNG (Download image)
-│     ├─ components/        Splash, AuthScreen, AccountSettings, ItemForm, CutoutEditor, EraseCutout, WeatherSettings, PlanResult, OutfitCard, OutfitPreview, OutfitBoard, SwapPanel, AskBox, Heading
+│     ├─ components/        Splash, AuthScreen, AccountSettings, PrivacyNote, ItemForm, CutoutEditor, EraseCutout, WeatherSettings, PlanResult, OutfitCard, OutfitPreview, OutfitBoard, SwapPanel, AskBox, Heading
 │     ├─ cutout.js, cutout.worker.js, cutoutQueue.js   Background removal for garment pictures (in the browser)
 │     └─ styles.css
 └─ docs/                    ARCHITECTURE.md, TESTING.md, DEMO.md
@@ -219,7 +266,7 @@ Adaa/
 
 ## Limitations and future ideas
 
-- Accounts work on one computer (or your home network); there's no cloud sync, and no "forgot password" email yet.
+- Accounts work on one computer, or your home Wi-Fi with `npm run share`; there's no cloud sync, and "forgot password" needs an email service set up (see *Settings for running Adaa for other people*). Over Wi-Fi it's plain `http`, so voice is off and Android may show the browser bar.
 - Recommendations follow hand-written rules. They're explainable and predictable, but not "learning".
 - Requests are understood by keyword rules: clear sentences work best; unusual phrasing may only be partly understood (Adaa shows what it understood).
 - Auto-fill recognises clothes, shoes and bags (not jewellery or watches) and is a suggestion: on a test with 28 real photos it got the category right every time, the type about 9 times in 10 and the colour about 3 times in 4 (pale, very dark and checked colours are the hardest).

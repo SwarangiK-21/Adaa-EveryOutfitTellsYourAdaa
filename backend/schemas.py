@@ -462,6 +462,14 @@ class AccountFields(BaseModel):
 class SignupIn(AccountFields):
     email: str = Field(max_length=120)
     password: str = Field(min_length=8, max_length=128)
+    accept_privacy: bool = False   # "I'm 18 or older and agree to the privacy note"
+
+    @field_validator("accept_privacy")
+    @classmethod
+    def must_accept(cls, value):
+        if not value:
+            raise ValueError("Please confirm you're 18 or older and agree to the privacy note.")
+        return value
 
     @field_validator("email", mode="before")
     @classmethod
@@ -480,6 +488,36 @@ class LoginIn(BaseModel):
     @classmethod
     def clean_email(cls, value):
         return str(value or "").strip().lower()
+
+
+class ForgotIn(BaseModel):
+    email: str = Field(max_length=120)
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def clean_email(cls, value):
+        return str(value or "").strip().lower()
+
+
+class ResetIn(BaseModel):
+    token: str = Field(min_length=10, max_length=100)
+    password: str = Field(min_length=8, max_length=128)
+
+
+class PasswordChange(BaseModel):
+    current_password: str = Field(max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class DeleteAccountIn(BaseModel):
+    password: str = Field(max_length=128)
+
+
+class AboutOut(BaseModel):
+    """What the sign-up screen and privacy note need to know about this Adaa."""
+    contact_email: str      # whom to ask about your data ("" = the person who runs this Adaa)
+    max_items: int
+    max_looks: int
 
 
 class UserOut(BaseModel):

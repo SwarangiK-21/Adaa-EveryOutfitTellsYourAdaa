@@ -434,3 +434,25 @@
 .splash.calm .splash-hello{opacity:1}
 .splash.calm .splash-speck{display:none}
 .splash.calm.leaving{transform:none;border-radius:0;opacity:0;transition:opacity .3s}
+/* Accounts: consent, forgot / reset password, privacy note, change password, delete account */
+.form-success{margin:0;background:#eef3e9;color:#4f6b45;border-radius:8px;padding:10px 12px;font-size:11px}
+.auth-sent{display:flex;gap:10px;align-items:flex-start;margin:4px 0;background:#f4e9ef;color:#5b1f3f;border-radius:10px;padding:14px;font-size:12px;line-height:1.6}
+.auth-sent svg{flex:none;color:#9c7630;margin-top:1px}
+.consent{display:flex;gap:9px;align-items:flex-start;font-size:12px;color:#624a57;line-height:1.5;cursor:pointer}
+.consent input{margin:2px 0 0;accent-color:#5b1f3f;width:15px;height:15px;flex:none}
+.consent .text-btn,.auth-switch .text-btn{font-size:12px;padding:0;text-decoration:underline}
+.forgot-link{justify-self:end;margin-top:-6px;font-size:11px;padding:0}
+.privacy{width:min(620px,100%)}
+.privacy-body{padding:4px 22px 0;font-size:12px;line-height:1.7;color:#624a57}
+.privacy-body h3{font:600 15px 'Playfair Display',serif;color:#31292d;margin:16px 0 4px}
+.privacy-body ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.privacy-body a{color:#5b1f3f}
+.account-settings h4{display:flex;align-items:center;gap:7px;font:600 13px 'DM Sans',sans-serif;color:#5b1f3f;margin:22px 0 10px;padding-top:16px;border-top:1px solid var(--line)}
+.account-settings .account-wide{grid-column:1/-1}
+.account-footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.prefs .account-settings .account-footer button{display:inline-flex;align-items:center;gap:6px;border:0;background:none;padding:0;font-size:11px;font-weight:700;color:#934d72}
+.prefs .account-settings .account-footer .danger-link{color:#a2524f}
+.danger-zone{margin-top:14px;padding:16px;border:1px solid #efc9c6;background:#fcf2f1;border-radius:10px;display:grid;gap:12px}
+.danger-zone p{margin:0;font-size:12px;line-height:1.6;color:#6e3a37}
+.prefs .account-settings .danger-zone .account-actions .danger{background:#a2443f;color:white;border:0}
+.prefs .account-settings .danger-zone .account-actions .danger:disabled{opacity:.5}

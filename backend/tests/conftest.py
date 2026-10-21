@@ -10,7 +10,8 @@ import auth  # noqa: E402
 import config  # noqa: E402
 from main import app  # noqa: E402
 
-TEST_USER = {"name": "Test User", "email": "test@example.com", "phone": "9876543210", "password": "a-good-password"}
+TEST_USER = {"name": "Test User", "email": "test@example.com", "phone": "9876543210", "password": "a-good-password",
+             "accept_privacy": True}
 
 
 @pytest.fixture()
@@ -20,6 +21,7 @@ def data_dir(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "DB_PATH", tmp_path / "test.db")
     monkeypatch.setattr(config, "UPLOAD_DIR", tmp_path / "uploads")
     auth._failures.clear()
+    auth._reset_emails.clear()
     return tmp_path
 
 

@@ -27,7 +27,7 @@ async function request(path, options = {}) {
     }
     const detail = body?.detail;
     const message = Array.isArray(detail)
-      ? detail.map((d) => (typeof d === 'string' ? d : d.msg)).join(' · ')
+      ? detail.map((d) => (typeof d === 'string' ? d : String(d.msg).replace(/^Value error, /, ''))).join(' · ')
       : detail || `Something went wrong (error ${res.status}).`;
     throw new ApiError(message, res.status);
   }
@@ -50,11 +50,16 @@ const postJson = (path, body, method = 'POST') =>
 
 export const api = {
   // ---- Accounts ----
-  signup: (fields) => postJson('/api/auth/signup', fields),        // { name, email, phone, password }
+  signup: (fields) => postJson('/api/auth/signup', fields),        // { name, email, phone, password, accept_privacy }
   login: (fields) => postJson('/api/auth/login', fields),          // { email, password }
   logout: () => request('/api/auth/logout', { method: 'POST' }),
   me: () => request('/api/auth/me'),
   updateMe: (fields) => postJson('/api/auth/me', fields, 'PUT'),   // { name, phone }
+  about: () => request('/api/auth/about'),                          // { contact_email, max_items, max_looks }
+  changePassword: (current, next) => postJson('/api/auth/password', { current_password: current, new_password: next }, 'PUT'),
+  forgotPassword: (email) => postJson('/api/auth/forgot', { email }),
+  resetPassword: (token, password) => postJson('/api/auth/reset', { token, password }),
+  deleteAccount: (password) => postJson('/api/auth/me', { password }, 'DELETE'),
 
   getOptions: () => request('/api/options'),
 

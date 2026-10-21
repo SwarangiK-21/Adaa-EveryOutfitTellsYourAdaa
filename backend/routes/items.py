@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 from pydantic import ValidationError
 
 import auth
+import config
 import database
 import storage
 from schemas import ItemFields, ItemOut, item_out
@@ -87,6 +88,9 @@ def create_item(
         name=name, category=category, item_type=item_type, colour=colour,
         style=style, occasions=occasions, notes=notes, price=price,
     )
+    if database.count_owned(db, "wardrobe_items", user["id"]) >= config.MAX_ITEMS_PER_USER:
+        raise HTTPException(status_code=403, detail=f"Your wardrobe is full ({config.MAX_ITEMS_PER_USER} pieces). "
+                            "Delete a few pieces you no longer wear to add new ones.")
     try:
         filename = storage.save_image(photo)
     except storage.InvalidImage as exc:

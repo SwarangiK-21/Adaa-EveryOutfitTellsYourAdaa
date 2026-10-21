@@ -6,6 +6,9 @@
   scripts can't read it). The database stores only a SHA-256 hash of the token, so a copied
   database can't be used to sign in. Sessions last 30 days, or until you log out.
 - After 5 wrong passwords for an email within 15 minutes, further tries wait (429).
+- "Forgot password" emails a one-use link that works for 30 minutes (at most 3 emails per
+  address per hour). Only a hash of the link's token is stored.
+- With ADAA_SECURE_COOKIES=1 (when served over https) the cookie is only ever sent encrypted.
 """
 import base64
 import hashlib
@@ -19,15 +22,19 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request, Response
 
+import config
 import database
 
 COOKIE = "adaa_session"
 SESSION_DAYS = 30
 _SCRYPT = {"n": 2 ** 14, "r": 8, "p": 1}
 MAX_FAILURES, FAILURE_WINDOW = 5, 15 * 60
+RESET_MINUTES = 30
+MAX_RESET_EMAILS, RESET_EMAIL_WINDOW = 3, 60 * 60
 
 _failures: dict[str, list[float]] = {}
 _failures_lock = threading.Lock()
+_reset_emails: dict[str, list[float]] = {}
 
 
 # ---------- passwords ----------
@@ -70,6 +77,18 @@ def clear_failures(email: str) -> None:
         _failures.pop(email, None)
 
 
+def may_send_reset(email: str) -> bool:
+    """At most 3 reset emails per address per hour, so nobody can flood someone's inbox."""
+    now = time.monotonic()
+    with _failures_lock:
+        recent = [t for t in _reset_emails.get(email, []) if now - t < RESET_EMAIL_WINDOW]
+        if len(recent) >= MAX_RESET_EMAILS:
+            _reset_emails[email] = recent
+            return False
+        _reset_emails[email] = recent + [now]
+        return True
+
+
 # ---------- sessions ----------
 
 def _token_hash(token: str) -> str:
@@ -83,8 +102,9 @@ def start_session(conn: sqlite3.Connection, response: Response, uid: int) -> Non
         conn.execute("DELETE FROM sessions WHERE expires_at < ?", (now.isoformat(),))   # tidy up old ones
         conn.execute("INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
                      (_token_hash(token), uid, now.isoformat(), (now + timedelta(days=SESSION_DAYS)).isoformat()))
-    # Secure is off because the local app runs on plain http://localhost; turn it on behind https.
-    response.set_cookie(COOKIE, token, max_age=SESSION_DAYS * 24 * 3600, httponly=True, samesite="lax", path="/")
+    # Secure stays off for plain http (your laptop, home Wi-Fi); ADAA_SECURE_COOKIES=1 behind https.
+    response.set_cookie(COOKIE, token, max_age=SESSION_DAYS * 24 * 3600, httponly=True, samesite="lax", path="/",
+                        secure=config.SECURE_COOKIES)
 
 
 def end_session(conn: sqlite3.Connection, request: Request, response: Response) -> None:
@@ -92,7 +112,31 @@ def end_session(conn: sqlite3.Connection, request: Request, response: Response) 
     if token:
         with conn:
             conn.execute("DELETE FROM sessions WHERE token_hash = ?", (_token_hash(token),))
-    response.delete_cookie(COOKIE, path="/")
+    response.delete_cookie(COOKIE, path="/", secure=config.SECURE_COOKIES, httponly=True, samesite="lax")
+
+
+# ---------- "forgot password" links ----------
+
+def new_reset_token(conn: sqlite3.Connection, uid: int) -> str:
+    token = secrets.token_urlsafe(32)
+    now = datetime.now(timezone.utc)
+    with conn:
+        conn.execute("DELETE FROM password_resets WHERE expires_at < ?", (now.isoformat(),))
+        conn.execute("INSERT INTO password_resets (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
+                     (_token_hash(token), uid, now.isoformat(), (now + timedelta(minutes=RESET_MINUTES)).isoformat()))
+    return token
+
+
+def use_reset_token(conn: sqlite3.Connection, token: str) -> int | None:
+    """The account a valid, unused, unexpired link belongs to (and mark it used), else None."""
+    now = datetime.now(timezone.utc).isoformat()
+    with conn:
+        row = conn.execute("SELECT user_id FROM password_resets WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?",
+                           (_token_hash(token), now)).fetchone()
+        if not row:
+            return None
+        conn.execute("UPDATE password_resets SET used_at = ? WHERE token_hash = ?", (now, _token_hash(token)))
+    return row["user_id"]
 
 
 def current_user(request: Request, db: Annotated[sqlite3.Connection, Depends(database.get_db)]) -> dict:

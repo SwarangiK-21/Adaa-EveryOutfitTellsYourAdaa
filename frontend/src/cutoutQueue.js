@@ -59,8 +59,14 @@ export function subscribeCutouts(fn) {
   return () => listeners.delete(fn);
 }
 
+// Phones skip the automatic cut-outs: the 200 MB model can freeze them. Pieces show their own
+// photo on the board instead, and get a clean cut-out the next time Adaa is opened on a computer.
+const ON_PHONE = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches
+  && Math.min(window.screen.width, window.screen.height) < 768;
+
 // Called after items load, and after an item is added or its photo changes.
 export function queueMissingCutouts(items) {
+  if (ON_PHONE) return;
   const fresh = items.filter((i) => !isCurrent(i) && !made.has(i.id) && !queued.has(i.id));
   if (!fresh.length) return;
   fresh.forEach((i) => queued.add(i.id));

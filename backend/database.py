@@ -90,6 +90,15 @@ CREATE TABLE IF NOT EXISTS sessions (
     expires_at TEXT NOT NULL
 );
 
+-- "Forgot password" links: one use, 30 minutes. Only a hash of the link's token is stored.
+CREATE TABLE IF NOT EXISTS password_resets (
+    token_hash TEXT PRIMARY KEY,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    used_at    TEXT
+);
+
 """
 OWNED_TABLES = ("wardrobe_items", "looks", "wear_log")   # each row belongs to one user
 
@@ -117,6 +126,9 @@ def init_db() -> None:
             conn.execute("ALTER TABLE wardrobe_items ADD COLUMN cutout_version TEXT")
         if "price" not in columns:
             conn.execute("ALTER TABLE wardrobe_items ADD COLUMN price REAL")
+        user_columns = {r["name"] for r in conn.execute("PRAGMA table_info(users)")}
+        if "privacy_accepted_at" not in user_columns:   # when they agreed to the privacy note (sign-up)
+            conn.execute("ALTER TABLE users ADD COLUMN privacy_accepted_at TEXT")
         for table in OWNED_TABLES:   # accounts: older rows get an owner when the first user signs up
             if "user_id" not in {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}:
                 conn.execute(f"ALTER TABLE {table} ADD COLUMN user_id INTEGER REFERENCES users(id)")
@@ -222,11 +234,46 @@ def delete_item(conn, item_id: int) -> None:
 # ---------- accounts ----------
 
 def create_user(conn, name: str, email: str, phone: str, password_hash: str) -> dict:
+    now = _now()
     with conn:
         cur = conn.execute(
-            "INSERT INTO users (name, email, phone, password_hash, created_at) VALUES (?, ?, ?, ?, ?)",
-            (name, email, phone, password_hash, _now()))
+            "INSERT INTO users (name, email, phone, password_hash, created_at, privacy_accepted_at)"
+            " VALUES (?, ?, ?, ?, ?, ?)", (name, email, phone, password_hash, now, now))
     return get_user(conn, cur.lastrowid)
+
+
+def count_users(conn) -> int:
+    return conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+
+
+def count_owned(conn, table: str, uid: int) -> int:
+    assert table in OWNED_TABLES
+    return conn.execute(f"SELECT COUNT(*) FROM {table} WHERE user_id = ?", (uid,)).fetchone()[0]
+
+
+def set_password(conn, uid: int, password_hash: str) -> None:
+    """New password: every signed-in browser and every unused reset link stops working."""
+    with conn:
+        conn.execute("UPDATE users SET password_hash = ? WHERE id = ?", (password_hash, uid))
+        conn.execute("DELETE FROM sessions WHERE user_id = ?", (uid,))
+        conn.execute("DELETE FROM password_resets WHERE user_id = ?", (uid,))
+
+
+def delete_user(conn, uid: int) -> list[str]:
+    """Erase an account and everything in it, in one transaction.
+    Returns the photo files to delete from disk (after the database change succeeded)."""
+    files = [r[0] for r in conn.execute(
+        "SELECT image_filename FROM wardrobe_items WHERE user_id = ?"
+        " UNION ALL SELECT cutout_filename FROM wardrobe_items WHERE user_id = ? AND cutout_filename IS NOT NULL"
+        " UNION ALL SELECT p.image_filename FROM look_photos p JOIN looks l ON l.id = p.look_id WHERE l.user_id = ?",
+        (uid, uid, uid))]
+    with conn:
+        conn.execute("DELETE FROM looks WHERE user_id = ?", (uid,))            # look items and photos go with them
+        conn.execute("DELETE FROM wear_log WHERE user_id = ?", (uid,))         # and the pieces worn each day
+        conn.execute("DELETE FROM look_items WHERE item_id IN (SELECT id FROM wardrobe_items WHERE user_id = ?)", (uid,))
+        conn.execute("DELETE FROM wardrobe_items WHERE user_id = ?", (uid,))
+        conn.execute("DELETE FROM users WHERE id = ?", (uid,))                 # sessions and reset links cascade
+    return files
 
 
 def get_user(conn, uid: int) -> dict | None:

@@ -8,7 +8,7 @@ Run from `backend/` with the virtual environment active:
 python -m pytest
 ```
 
-Expected result: **153 passed**. Each test runs against a fresh temporary database and photo folder, so your real wardrobe is never touched.
+Expected result: **171 passed**. Each test runs against a fresh temporary database and photo folder, so your real wardrobe is never touched.
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -22,6 +22,7 @@ Expected result: **153 passed**. Each test runs against a fresh temporary databa
 | `test_festivals.py` | 8 | Republic Day prefers saffron, white and green and says so; a colour request shows only outfits in it (untagged pieces in colour allowed, with a caution); whole-outfit-in-colour ranks first; nothing in the colour is explained; Makar Sankranti prefers black or yellow; missing festival colours explained; today's / next festival by date; API validation |
 | `test_events.py` | 6 | Full wedding follows each dress code with no garment repeated; jewellery and shoes reused; missing colour explained; no all-white at the wedding; jeans a last resort at a reception; API |
 | `test_weather_wear.py` | 9 | Hot day: light pieces, no jacket; cold day: sweater, jeans, boots; rain caution; no weather = no change; weather validated; wear stats (not worn, most worn, cost per wear, totals); prices saved/cleared/validated; wearing an unsaved outfit counts |
+| `test_account.py` | 18 | Sign-up needs privacy consent and records it; change password (wrong current password refused, other devices signed out); forgot password: email with link, reset, link works once, expires, same reply for unknown emails, max 3 emails an hour, signs out everywhere, cancelled by a later change; delete account erases items, photos, looks, history, sessions (and only yours), needs the password, email can sign up again; piece, look and account limits; Secure cookie setting |
 | `test_auth.py` | 23 | Sign-up keeps name, email and phone and gives a first name; bad name/email/phone/password rejected; duplicate email; log out and back in; wrong password; 5 failures pause logging in; passwords stored hashed; change name and phone; every data route needs logging in, public ones don't; two accounts never see each other's items, looks, history or photo; the first account receives the old wardrobe |
 | `test_workflow.py` | 1 | The whole journey: empty wardrobe → add 10 pieces → *"Style my green kurta for a traditional family function"* → outfits → swap → save → wear → history → delete a worn piece |
 
@@ -50,7 +51,7 @@ Done on 15 Oct 2026, starting from an **empty** data folder, using the real form
 
 ## Quick checklist before a demo
 
-1. `python -m pytest` → `153 passed`
+1. `python -m pytest` → `171 passed`
 2. Backend running: http://127.0.0.1:8000/api/health → `"status":"ok"`
 3. Frontend running: http://localhost:5173 → Overview shows your piece count
 4. AI Stylist → ask for one of your demo requests → outfits with photos appear
@@ -284,3 +285,30 @@ On a copy of the real wardrobe (32 pieces), backend on 8011 and frontend on 5181
 | Refresh in the same tab: no replay | ✅ |
 | Key press skips it: gone within 0.8 s | ✅ |
 | Slowed to about 6 s after trying it (A 0–1.6 s, glint 1.3–2.5 s, *Adaa* 1.8–3.6 s, thread 3.4–4.7 s, tagline 3.9–5.3 s, "Hi" 4.9–5.8 s, lift at 6.2 s) | ✅ frames checked |
+
+## Wi-Fi sharing and home-screen app (20 Oct 2026)
+
+`npm run share` on a test backend, opened through the laptop's network address (http://192.168.31.127), as a friend's phone would.
+
+| Check | Result |
+|---|---|
+| `npm run share` builds and prints Local + Network addresses | ✅ |
+| Over the network address (not secure, plain http): sign up a second person, stay logged in (cookie works), greeting uses her name | ✅ "Good evening, Riya." |
+| Manifest loads (Adaa, standalone) and all 3 icons return 200; Apple full-screen tags present | ✅ |
+| Phone size (375 px, touch): add a piece → no model download, no cut-out started | ✅ |
+| Phone over Wi-Fi: microphone button hidden, ask box works | ✅ |
+| Not tested here: a real phone on the Wi-Fi, the Windows firewall prompt, Add to Home Screen | ⏳ to try with friends |
+
+## Public-ready accounts (20 Oct 2026)
+
+On a fresh test database (ports 8011/5181), no email service set up.
+
+| Check | Result |
+|---|---|
+| Sign-up without ticking "I'm 18 or older and agree to the privacy note" → friendly error; after ticking → signed in | ✅ |
+| Privacy note opens from sign-up (6 short sections, contact falls back to "the person who runs this Adaa") | ✅ |
+| Forgot password → same "if an account uses that email…" reply; the email with the link is printed in the backend terminal | ✅ |
+| Opening the link → "Choose a new password" → saved, link removed from the address bar, back on log-in with a note; new password logs in | ✅ |
+| Preferences → Change password: wrong current password refused; right one → "Password changed, Swarangi. Other devices are signed out." | ✅ |
+| Preferences → Delete my account → asks for the password → erased, back on the sign-up screen, the old password no longer works, saved preferences for that account cleared | ✅ |
+| Backend tests | ✅ 171 passed |

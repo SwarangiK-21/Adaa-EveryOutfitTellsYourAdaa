@@ -4,7 +4,8 @@ import { useUser } from '../user.js';
 
 // The browser's own speech-to-text (Chrome and Edge). Chrome sends the audio to Google's speech
 // service to turn it into text; nothing is recorded or kept by Adaa.
-const SpeechRecognition = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
+// Browsers only allow the microphone on https or this computer (localhost), so it's hidden on a Wi-Fi address.
+const SpeechRecognition = typeof window !== 'undefined' && window.isSecureContext && (window.SpeechRecognition || window.webkitSpeechRecognition);
 
 // Type (or say) a request in your own words, in English or Hinglish; Adaa shows what it understood.
 export default function AskBox({ items, chat, asking, onAsk, onPick }) {

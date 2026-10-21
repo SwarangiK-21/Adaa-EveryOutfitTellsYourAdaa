@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
 import auth
+import config
 import database
 import looks_db
 import storage
@@ -101,6 +102,9 @@ def list_looks(db: Db, user: auth.User):
 @router.post("/looks", response_model=LookOut, status_code=201)
 def save_look(body: LookCreate, db: Db, user: auth.User):
     items = _check_items(db, user["id"], body.item_ids)
+    if database.count_owned(db, "looks", user["id"]) >= config.MAX_LOOKS_PER_USER:
+        raise HTTPException(status_code=403, detail=f"You've saved {config.MAX_LOOKS_PER_USER} looks, the most Adaa keeps. "
+                            "Delete a few old ones to save new ones.")
     prefs = body.prefs.model_dump()
     if looks_db.find_same_look(db, user["id"], body.item_ids, prefs["occasion"]):
         raise HTTPException(status_code=409, detail="You've already saved this look.")
