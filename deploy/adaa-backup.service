@@ -1,0 +1,16 @@
+# One backup of Adaa's database and photos (started each night by adaa-backup.timer).
+[Unit]
+Description=Back up Adaa's database and photos
+
+[Service]
+Type=oneshot
+User=adaa
+Group=adaa
+WorkingDirectory=/opt/adaa/backend
+EnvironmentFile=/etc/adaa.env
+ExecStart=/opt/adaa/backend/.venv/bin/python backup.py
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/adaa /var/backups/adaa

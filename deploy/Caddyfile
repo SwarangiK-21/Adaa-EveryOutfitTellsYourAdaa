@@ -1,0 +1,15 @@
+# https for Adaa. Caddy gets a free Let's Encrypt certificate for this address and renews it by itself.
+YOUR-DOMAIN {
+	encode zstd gzip
+	request_body {
+		max_size 12MB
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "DENY"
+		Permissions-Policy "camera=(), geolocation=(), microphone=(self)"
+	}
+	reverse_proxy 127.0.0.1:8000
+}

@@ -274,3 +274,20 @@ Trousers, shoes, bag, dupatta, belt, hat and sunglasses come straight from their
 | *"my green kurta"* matched a kurti | Typo tolerance too loose | Stricter similarity threshold |
 | Quick occasion taps lost selections | The form used a stale copy of its state | State updates read the latest value |
 | Outfit card headings looked like the page's top bar | A global `header{}` style | Scoped reset for `.outfit header` |
+
+## Running on a server (`deploy/`, `backup.py`, docs/DEPLOY.md)
+
+```
+browser ──https──► Caddy (Let's Encrypt, security headers, 12 MB body limit)
+                     └──► uvicorn main:app on 127.0.0.1:8000 (systemd service "adaa", user "adaa", 1 worker)
+                             ├─ /api/*        the API
+                             └─ everything else: frontend/dist (index.html for app screens)
+data: /var/lib/adaa (ADAA_DATA_DIR)      settings: /etc/adaa.env      backups: /var/backups/adaa (timer, 03:30)
+```
+
+- **One program:** when `frontend/dist/index.html` exists (`ADAA_FRONTEND_DIR`), `main.py`'s last route serves the build: real files directly (`assets/*` cached for a year because their names carry a content hash; everything else `no-cache`), any other non-API address gets `index.html`. Paths are resolved and must stay inside the build folder. In development the folder doesn't exist and Vite serves the app as before.
+- **One worker on purpose:** SQLite and the in-memory login/reset throttles assume a single process. Plenty for friends and family.
+- **Backups (`backup.py`):** SQLite's online backup API copies the database consistently while Adaa runs; it and `uploads/` go into one `adaa-YYYYMMDD-HHMMSS.tar.gz`, written as `.part` and renamed when complete; the newest `ADAA_BACKUP_KEEP` (7) are kept. Restore extracts with `tarfile`'s `data` filter (no paths outside the folder, no links), keeps the replaced data as `*.before-restore`, and refuses to overwrite without `--force`. The AI models aren't backed up; they download again.
+- **Hardening:** the service may only write to its data and backup folders (`ProtectSystem=strict`), runs as its own user without a login shell, and the backend only listens on localhost. `install.sh` opens ports 80/443 in the server's own iptables (Oracle's Ubuntu images block them) and adds swap on 1 GB machines so the build fits.
+- **Deploy files keep LF line endings** (`.gitattributes`), so scripts edited on Windows still run on Linux.
+

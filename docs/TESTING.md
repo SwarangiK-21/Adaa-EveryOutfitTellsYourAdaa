@@ -8,7 +8,7 @@ Run from `backend/` with the virtual environment active:
 python -m pytest
 ```
 
-Expected result: **171 passed**. Each test runs against a fresh temporary database and photo folder, so your real wardrobe is never touched.
+Expected result: **180 passed**. Each test runs against a fresh temporary database and photo folder, so your real wardrobe is never touched.
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -22,6 +22,7 @@ Expected result: **171 passed**. Each test runs against a fresh temporary databa
 | `test_festivals.py` | 8 | Republic Day prefers saffron, white and green and says so; a colour request shows only outfits in it (untagged pieces in colour allowed, with a caution); whole-outfit-in-colour ranks first; nothing in the colour is explained; Makar Sankranti prefers black or yellow; missing festival colours explained; today's / next festival by date; API validation |
 | `test_events.py` | 6 | Full wedding follows each dress code with no garment repeated; jewellery and shoes reused; missing colour explained; no all-white at the wedding; jeans a last resort at a reception; API |
 | `test_weather_wear.py` | 9 | Hot day: light pieces, no jacket; cold day: sweater, jeans, boots; rain caution; no weather = no change; weather validated; wear stats (not worn, most worn, cost per wear, totals); prices saved/cleared/validated; wearing an unsaved outfit counts |
+| `test_server.py` | 9 | The backend serves the built app: index page, hashed files cached for a year, `.wasm` and manifest types, other addresses open the app, unknown `/api` stays a JSON 404, nothing outside the build folder; without a build `/` just says the API runs. Backups hold the database and every photo, keep only the newest 7 (other files untouched); restore needs `--force`, keeps the replaced data, rejects other archives |
 | `test_account.py` | 18 | Sign-up needs privacy consent and records it; change password (wrong current password refused, other devices signed out); forgot password: email with link, reset, link works once, expires, same reply for unknown emails, max 3 emails an hour, signs out everywhere, cancelled by a later change; delete account erases items, photos, looks, history, sessions (and only yours), needs the password, email can sign up again; piece, look and account limits; Secure cookie setting |
 | `test_auth.py` | 23 | Sign-up keeps name, email and phone and gives a first name; bad name/email/phone/password rejected; duplicate email; log out and back in; wrong password; 5 failures pause logging in; passwords stored hashed; change name and phone; every data route needs logging in, public ones don't; two accounts never see each other's items, looks, history or photo; the first account receives the old wardrobe |
 | `test_workflow.py` | 1 | The whole journey: empty wardrobe → add 10 pieces → *"Style my green kurta for a traditional family function"* → outfits → swap → save → wear → history → delete a worn piece |
@@ -51,7 +52,7 @@ Done on 15 Oct 2026, starting from an **empty** data folder, using the real form
 
 ## Quick checklist before a demo
 
-1. `python -m pytest` → `171 passed`
+1. `python -m pytest` → `180 passed`
 2. Backend running: http://127.0.0.1:8000/api/health → `"status":"ok"`
 3. Frontend running: http://localhost:5173 → Overview shows your piece count
 4. AI Stylist → ask for one of your demo requests → outfits with photos appear
@@ -312,3 +313,14 @@ On a fresh test database (ports 8011/5181), no email service set up.
 | Preferences → Change password: wrong current password refused; right one → "Password changed, Swarangi. Other devices are signed out." | ✅ |
 | Preferences → Delete my account → asks for the password → erased, back on the sign-up screen, the old password no longer works, saved preferences for that account cleared | ✅ |
 | Backend tests | ✅ 171 passed |
+
+## Server-ready: one program, backups (21 Oct 2026)
+
+| Check | Result |
+|---|---|
+| `npm run build`, then only the backend (port 8011, no Vite): app opens, sign up, add a piece, photo loads, greeting by name | ✅ |
+| Hashed JS cached for a year; `.wasm` served as `application/wasm`; manifest as `application/manifest+json`; a deep link like `/some/screen` opens the app | ✅ |
+| `python backup.py` while the server runs → one `.tar.gz` with `adaa.db` and the photo | ✅ |
+| Restore that backup into an empty folder ("new server"), start there, log in with the same password: piece and photo there | ✅ |
+| `install.sh` / `update.sh` syntax check (`bash -n`) | ✅ (not yet run on a real server) |
+| Backend tests | ✅ 180 passed |

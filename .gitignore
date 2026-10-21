@@ -9,3 +9,6 @@ __pycache__/
 
 # Local app data: database and uploaded photos
 backend/data/
+
+# Backups made by backend/backup.py on your laptop
+backend/backups/

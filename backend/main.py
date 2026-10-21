@@ -1,9 +1,12 @@
+import mimetypes
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
+import config
 import database
 import storage
 from routes import auth as auth_routes, items, looks, planner, recommendations
@@ -19,7 +22,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Adaa API",
-    description="Local-first backend for Adaa, the personal wardrobe stylist.",
+    description="Backend for Adaa, the personal wardrobe stylist. Also serves the built app when frontend/dist exists.",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -47,6 +50,27 @@ def health_check():
     }
 
 
-@app.get("/")
-def root():
-    return {"message": "Adaa API is running.", "docs": "/docs", "health": "/api/health"}
+# ---------- one server: the built app (frontend/dist) is served from here too ----------
+# In development Vite serves the app on :5173 instead, and "/" here just says the API is running.
+
+mimetypes.add_type("application/wasm", ".wasm")                      # the in-browser cut-out model runtime
+mimetypes.add_type("application/manifest+json", ".webmanifest")      # home-screen app details
+
+
+@app.get("/{path:path}", include_in_schema=False)
+def frontend(path: str):
+    if path == "api" or path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="Not Found")      # unknown API address: a plain 404
+    dist = config.FRONTEND_DIR.resolve()
+    index = dist / "index.html"
+    if not index.is_file():
+        if path:
+            raise HTTPException(status_code=404, detail="Not Found")
+        return {"message": "Adaa API is running.", "docs": "/docs", "health": "/api/health"}
+    file = (dist / path).resolve()
+    if path and file.is_file() and file.is_relative_to(dist):
+        # Built files have a content hash in their name, so browsers may keep them for a year.
+        cache = "public, max-age=31536000, immutable" if path.startswith("assets/") else "no-cache"
+        return FileResponse(file, headers={"Cache-Control": cache})
+    # Any other address is a screen of the app: let the app show it.
+    return FileResponse(index, headers={"Cache-Control": "no-cache"})

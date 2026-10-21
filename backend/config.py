@@ -16,6 +16,12 @@ UPLOAD_DIR = DATA_DIR / "uploads"
 
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MB per photo
 
+# The built app (npm run build). When it exists, the backend serves it too, so a server runs one program.
+FRONTEND_DIR = Path(os.environ.get("ADAA_FRONTEND_DIR", BASE_DIR.parent / "frontend" / "dist"))
+
+# Daily copies of the database and photos (backup.py). The newest BACKUP_KEEP are kept.
+BACKUP_DIR = Path(os.environ.get("ADAA_BACKUP_DIR", BASE_DIR / "backups"))
+
 # ---------- Running Adaa for other people (all optional; the defaults suit your own laptop) ----------
 
 def _int(name: str, default: int) -> int:
@@ -36,6 +42,7 @@ SECURE_COOKIES = os.environ.get("ADAA_SECURE_COOKIES") == "1"
 MAX_ITEMS_PER_USER = _int("ADAA_MAX_ITEMS", 300)
 MAX_LOOKS_PER_USER = _int("ADAA_MAX_LOOKS", 200)
 MAX_USERS = _int("ADAA_MAX_USERS", 0)
+BACKUP_KEEP = _int("ADAA_BACKUP_KEEP", 7)
 
 # Email for "forgot password" (any SMTP service: Gmail with an app password, Brevo, ...).
 # Without SMTP_HOST, the reset link is printed in the backend terminal instead.

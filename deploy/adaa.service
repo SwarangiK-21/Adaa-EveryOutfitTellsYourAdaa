@@ -1,0 +1,24 @@
+# Runs Adaa (the backend, which also serves the app) and restarts it if it stops.
+[Unit]
+Description=Adaa wardrobe stylist
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=adaa
+Group=adaa
+WorkingDirectory=/opt/adaa/backend
+EnvironmentFile=/etc/adaa.env
+# One worker: the database is SQLite and login throttling is kept in memory.
+ExecStart=/opt/adaa/backend/.venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000 --proxy-headers --forwarded-allow-ips 127.0.0.1
+Restart=on-failure
+RestartSec=3
+# Adaa may only write to its data and backup folders.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/adaa /var/backups/adaa
+
+[Install]
+WantedBy=multi-user.target

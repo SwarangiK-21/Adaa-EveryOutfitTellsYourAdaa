@@ -1,0 +1,11 @@
+# Back up Adaa every night at about 3:30 (server time). Missed runs happen at the next start.
+[Unit]
+Description=Nightly Adaa backup
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+RandomizedDelaySec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

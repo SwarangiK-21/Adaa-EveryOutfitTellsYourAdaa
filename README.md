@@ -67,7 +67,7 @@ Each look opens with a large preview, always labelled:
 | + | Wedding planner, festival colour of the day, Hinglish and voice requests | Done |
 | + | Accounts (email + password), a separate wardrobe per person, the app calls you by name | Done |
 
-171 automated backend tests pass. A full manual browser pass is recorded in [docs/TESTING.md](docs/TESTING.md).
+180 automated backend tests pass. A full manual browser pass is recorded in [docs/TESTING.md](docs/TESTING.md).
 
 ## Brand
 
@@ -154,6 +154,10 @@ Adaa can sit on the home screen with its plum **A** icon and open full-screen.
 - **Android (Chrome):** open the Wi-Fi address → **⋮** → **Add to Home screen**. Chrome gives the full app look (no browser bar) only on `https`, so over home Wi-Fi it may open with the address bar; everything else works the same.
 - **On your laptop (Chrome or Edge):** open http://localhost:5173 → the install icon at the right end of the address bar (or **⋮ → Cast, save and share → Install page as app**). Adaa then opens in its own window and appears in the Start menu.
 
+## Put Adaa online
+
+[docs/DEPLOY.md](docs/DEPLOY.md) walks through putting Adaa on a **free Oracle Cloud server** with a free `https://your-name.duckdns.org` address, step by step: one install command (`deploy/install.sh`), https from Caddy, nightly backups, moving your laptop wardrobe over, and updating with `deploy/update.sh`. On a server the backend also serves the built app, so only one program runs.
+
 ## Settings for running Adaa for other people
 
 All optional: without them Adaa behaves as on your laptop. Set them as environment variables before starting the backend (e.g. `$env:ADAA_CONTACT_EMAIL = "you@example.com"` in PowerShell).
@@ -173,7 +177,7 @@ Everything lives in `backend/data/`:
 - `adaa.db`: the SQLite database (accounts, wardrobe, saved looks, history)
 - `uploads/`: your photos
 
-Git ignores this folder, so your photos are never pushed to GitHub. To **back up**, copy the whole `backend/data` folder somewhere safe while the backend is stopped. Preferences (and your weather city) are saved in your browser, separately for each account.
+Git ignores this folder, so your photos are never pushed to GitHub. To **back up**, run `python backup.py` in `backend` (with the venv active): it saves one file, `backend/backups/adaa-<date>.tar.gz`, with the database and every photo, keeping the newest 7. `python backup.py --restore <file> --force` puts one back (stop the backend first). Preferences (and your weather city) are saved in your browser, separately for each account.
 
 **Accounts:** passwords are never stored, only a salted scrypt hash. Logging in sets a private session cookie that lasts 30 days. After 5 wrong passwords for an email, logging in pauses for 15 minutes. The **first account** you create receives everything that was in Adaa before accounts existed, so your wardrobe is kept. Your name, email and phone stay in `adaa.db` on this computer; nothing is sent anywhere.
 
@@ -190,7 +194,7 @@ python -m pip install -r requirements-dev.txt   # first time only
 python -m pytest
 ```
 
-Expected: `171 passed`. Tests use a temporary folder, so they never touch your real wardrobe.
+Expected: `180 passed`. Tests use a temporary folder, so they never touch your real wardrobe.
 
 ## API
 
@@ -240,11 +244,12 @@ Adaa/
 │  ├─ database.py           SQLite connection, tables, wardrobe item queries
 │  ├─ looks_db.py           Saved looks and outfit history queries
 │  ├─ auth.py               Password hashing, sessions, login throttle, reset links, the logged-in-user dependency
+│  ├─ backup.py             Back up / restore the database and photos (one .tar.gz, newest 7 kept)
 │  ├─ mailer.py             Sends the password-reset email (any SMTP service), or prints it when none is set
 │  ├─ storage.py            Photo checks (real file type, size) and saving/deleting
 │  ├─ routes/               API routes: auth, items, recommendations (+ parse), looks, planner
 │  ├─ recommender/          colours.py, garments.py, engine.py, parser.py, planner.py (gaps, trips, wear stats), events.py (wedding functions), festivals.py (festival colours and dates), weather.py
-│  └─ tests/                171 pytest tests
+│  └─ tests/                180 pytest tests
 ├─ frontend/
 │  ├─ vite.config.js        Dev server; forwards /api to the backend
 │  ├─ public/               Icons, logo files, manifest.webmanifest (home-screen app name, colours, icons)
@@ -261,7 +266,8 @@ Adaa/
 │     ├─ components/        Splash, AuthScreen, AccountSettings, PrivacyNote, ItemForm, CutoutEditor, EraseCutout, WeatherSettings, PlanResult, OutfitCard, OutfitPreview, OutfitBoard, SwapPanel, AskBox, Heading
 │     ├─ cutout.js, cutout.worker.js, cutoutQueue.js   Background removal for garment pictures (in the browser)
 │     └─ styles.css
-└─ docs/                    ARCHITECTURE.md, TESTING.md, DEMO.md
+├─ deploy/                  Server setup: install.sh, update.sh, systemd services, nightly backup timer, Caddyfile (https), settings example
+└─ docs/                    ARCHITECTURE.md, TESTING.md, DEMO.md, DEPLOY.md
 ```
 
 ## Limitations and future ideas
