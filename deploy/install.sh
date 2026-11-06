@@ -52,7 +52,7 @@ chmod 750 "$DATA" "$BACKUPS"
 step "Installing Adaa's Python packages"
 [ -d "$APP/backend/.venv" ] || python3 -m venv "$APP/backend/.venv"
 "$APP/backend/.venv/bin/pip" install --upgrade pip -q
-"$APP/backend/.venv/bin/pip" install -r "$APP/backend/requirements.txt" -q
+"$APP/backend/.venv/bin/pip" install -r "$APP/backend/requirements.txt" -c "$APP/backend/requirements.lock" -q
 
 step "Building the app (a few minutes on a small server)"
 cd "$APP/frontend"
@@ -68,6 +68,11 @@ else
 fi
 chown root:adaa /etc/adaa.env
 chmod 640 /etc/adaa.env
+
+step "Keeping server logs for 30 days at most (as the privacy note says)"
+mkdir -p /etc/systemd/journald.conf.d
+printf '%s\n' '[Journal]' 'MaxRetentionSec=30day' > /etc/systemd/journald.conf.d/adaa.conf
+systemctl restart systemd-journald
 
 step "Starting Adaa and the nightly backup"
 cp "$APP/deploy/adaa.service" "$APP/deploy/adaa-backup.service" "$APP/deploy/adaa-backup.timer" /etc/systemd/system/

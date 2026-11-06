@@ -10,7 +10,8 @@ import database
 import mailer
 import storage
 from schemas import (
-    AboutOut, AccountFields, DeleteAccountIn, ForgotIn, LoginIn, PasswordChange, ResetIn, SignupIn, UserOut, user_out,
+    AboutOut, AccountFields, DeleteAccountIn, ForgotIn, LoginIn, PasswordChange, ResetIn, SignupIn, UserOut, VerifyIn,
+    user_out,
 )
 
 router = APIRouter(prefix="/api/auth", tags=["account"])
@@ -26,8 +27,18 @@ def about():
                     max_looks=config.MAX_LOOKS_PER_USER)
 
 
+def _send_verification(db, user: dict, tasks: BackgroundTasks) -> None:
+    token = auth.new_verify_token(db, user["id"])
+    first = user["name"].split()[0]
+    link = f"{config.PUBLIC_URL}/#verify={token}"   # after "#": never reaches the server's access logs
+    tasks.add_task(
+        mailer.send_email, user["email"], "Confirm your email for Adaa",
+        f"Hi {first},\n\nWelcome to Adaa! Please confirm this is your email address:\n\n{link}\n\n"
+        f"The link works for {auth.VERIFY_HOURS} hours. If you didn't sign up for Adaa, ignore this email.\n\nAdaa\n")
+
+
 @router.post("/signup", response_model=UserOut, status_code=201)
-def signup(body: SignupIn, db: Db, response: Response):
+def signup(body: SignupIn, db: Db, response: Response, tasks: BackgroundTasks):
     """Create an account and sign in. The very first account also receives the wardrobe made
     before accounts existed."""
     if database.find_user_by_email(db, body.email):
@@ -38,7 +49,30 @@ def signup(body: SignupIn, db: Db, response: Response):
     user = database.create_user(db, body.name, body.email, body.phone, auth.hash_password(body.password))
     moved = database.claim_unowned(db, user["id"]) if users == 0 else 0
     auth.start_session(db, response, user["id"])
+    auth.may_send_email(user["email"], "verify")      # counts towards the 3-an-hour limit
+    _send_verification(db, user, tasks)
     return user_out(user, moved)
+
+@router.post("/verify", status_code=204)
+def verify_email(body: VerifyIn, db: Db):
+    """Confirm an email address from the emailed link (works without being logged in)."""
+    uid = auth.use_verify_token(db, body.token)
+    if uid is None:
+        raise HTTPException(status_code=400, detail="This confirmation link has expired or was already used. "
+                            "Log in and ask for a new one from the banner at the top.")
+    database.mark_email_verified(db, uid)
+
+
+@router.post("/verify/resend", status_code=202)
+def resend_verification(user: auth.User, db: Db, tasks: BackgroundTasks):
+    """Email a new confirmation link (at most 3 an hour)."""
+    if user.get("email_verified_at"):
+        return {"detail": "Your email is already confirmed."}
+    if not auth.may_send_email(user["email"], "verify"):
+        raise HTTPException(status_code=429, detail="We've sent a few links already. Please check your inbox "
+                            "(and spam), or try again in an hour.")
+    _send_verification(db, user, tasks)
+    return {"detail": f"We've sent a new link to {user['email']}. It works for {auth.VERIFY_HOURS} hours."}
 
 
 @router.post("/login", response_model=UserOut)
@@ -95,7 +129,8 @@ def forgot_password(body: ForgotIn, db: Db, tasks: BackgroundTasks):
     user = database.find_user_by_email(db, body.email)
     if user and auth.may_send_reset(body.email):
         token = auth.new_reset_token(db, user["id"])
-        link = f"{config.PUBLIC_URL}/?reset={token}"
+        # After "#", so browsers never send the token to the server and it can't end up in access logs.
+        link = f"{config.PUBLIC_URL}/#reset={token}"
         first = user["name"].split()[0]
         tasks.add_task(
             mailer.send_email, user["email"], "Choose a new password for Adaa",

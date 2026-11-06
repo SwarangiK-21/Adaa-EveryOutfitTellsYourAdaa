@@ -6,8 +6,8 @@
   scripts can't read it). The database stores only a SHA-256 hash of the token, so a copied
   database can't be used to sign in. Sessions last 30 days, or until you log out.
 - After 5 wrong passwords for an email within 15 minutes, further tries wait (429).
-- "Forgot password" emails a one-use link that works for 30 minutes (at most 3 emails per
-  address per hour). Only a hash of the link's token is stored.
+- "Forgot password" emails a one-use link that works for 30 minutes; "confirm your email" links
+  work for 24 hours. At most 3 of each kind of email per address per hour. Only hashes are stored.
 - With ADAA_SECURE_COOKIES=1 (when served over https) the cookie is only ever sent encrypted.
 """
 import base64
@@ -30,6 +30,7 @@ SESSION_DAYS = 30
 _SCRYPT = {"n": 2 ** 14, "r": 8, "p": 1}
 MAX_FAILURES, FAILURE_WINDOW = 5, 15 * 60
 RESET_MINUTES = 30
+VERIFY_HOURS = 24
 MAX_RESET_EMAILS, RESET_EMAIL_WINDOW = 3, 60 * 60
 
 _failures: dict[str, list[float]] = {}
@@ -77,16 +78,21 @@ def clear_failures(email: str) -> None:
         _failures.pop(email, None)
 
 
-def may_send_reset(email: str) -> bool:
-    """At most 3 reset emails per address per hour, so nobody can flood someone's inbox."""
+def may_send_email(email: str, kind: str = "reset") -> bool:
+    """At most 3 emails of each kind per address per hour, so nobody can flood someone's inbox."""
     now = time.monotonic()
+    key = f"{kind}:{email}"
     with _failures_lock:
-        recent = [t for t in _reset_emails.get(email, []) if now - t < RESET_EMAIL_WINDOW]
+        recent = [t for t in _reset_emails.get(key, []) if now - t < RESET_EMAIL_WINDOW]
         if len(recent) >= MAX_RESET_EMAILS:
-            _reset_emails[email] = recent
+            _reset_emails[key] = recent
             return False
-        _reset_emails[email] = recent + [now]
+        _reset_emails[key] = recent + [now]
         return True
+
+
+def may_send_reset(email: str) -> bool:
+    return may_send_email(email, "reset")
 
 
 # ---------- sessions ----------
@@ -125,6 +131,28 @@ def new_reset_token(conn: sqlite3.Connection, uid: int) -> str:
         conn.execute("INSERT INTO password_resets (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
                      (_token_hash(token), uid, now.isoformat(), (now + timedelta(minutes=RESET_MINUTES)).isoformat()))
     return token
+
+
+def new_verify_token(conn: sqlite3.Connection, uid: int) -> str:
+    token = secrets.token_urlsafe(32)
+    now = datetime.now(timezone.utc)
+    with conn:
+        conn.execute("DELETE FROM email_verifications WHERE expires_at < ?", (now.isoformat(),))
+        conn.execute("INSERT INTO email_verifications (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
+                     (_token_hash(token), uid, now.isoformat(), (now + timedelta(hours=VERIFY_HOURS)).isoformat()))
+    return token
+
+
+def use_verify_token(conn: sqlite3.Connection, token: str) -> int | None:
+    """The account a valid, unused, unexpired confirmation link belongs to (and mark it used), else None."""
+    now = datetime.now(timezone.utc).isoformat()
+    with conn:
+        row = conn.execute("SELECT user_id FROM email_verifications WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?",
+                           (_token_hash(token), now)).fetchone()
+        if not row:
+            return None
+        conn.execute("UPDATE email_verifications SET used_at = ? WHERE token_hash = ?", (now, _token_hash(token)))
+    return row["user_id"]
 
 
 def use_reset_token(conn: sqlite3.Connection, token: str) -> int | None:

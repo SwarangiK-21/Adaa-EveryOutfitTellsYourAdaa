@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Check, LogOut, RefreshCw, KeyRound, Trash2, ShieldCheck } from 'lucide-react';
+import { Check, LogOut, RefreshCw, KeyRound, Trash2, ShieldCheck, FileText } from 'lucide-react';
 import { api } from '../api.js';
 import { useUser } from '../user.js';
 import PrivacyNote from './PrivacyNote.jsx';
+import TermsNote from './TermsNote.jsx';
 
 // Forget this account's browser storage (preferences, city, ...) once the account is deleted.
 function forgetLocalData(uid) {
@@ -26,6 +27,7 @@ export default function AccountSettings({ notify }) {
   const [deletePw, setDeletePw] = useState('');
   const [deleteError, setDeleteError] = useState('');
   const [privacy, setPrivacy] = useState(false);
+  const [terms, setTerms] = useState(false);
   const changed = name.trim() !== user.name || phone.trim() !== user.phone;
 
   const save = async (e) => {
@@ -110,7 +112,10 @@ export default function AccountSettings({ notify }) {
       </form>
 
       <div className="account-footer">
-        <button type="button" className="text-btn" onClick={() => setPrivacy(true)}><ShieldCheck size={13} /> Privacy note</button>
+        <span className="legal-links">
+          <button type="button" className="text-btn" onClick={() => setPrivacy(true)}><ShieldCheck size={13} /> Privacy note</button>
+          <button type="button" className="text-btn" onClick={() => setTerms(true)}><FileText size={13} /> Terms of use</button>
+        </span>
         {!deleting && (
           <button type="button" className="text-btn danger-link" onClick={() => setDeleting(true)}><Trash2 size={13} /> Delete my account</button>
         )}
@@ -132,6 +137,7 @@ export default function AccountSettings({ notify }) {
         </form>
       )}
       {privacy && <PrivacyNote onClose={() => setPrivacy(false)} />}
+      {terms && <TermsNote onClose={() => setTerms(false)} />}
     </section>
   );
 }

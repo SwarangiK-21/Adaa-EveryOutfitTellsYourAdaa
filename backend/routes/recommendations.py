@@ -27,7 +27,7 @@ def get_recommendations(
     """Suggest up to 4 distinct outfits using only items in your wardrobe."""
     items = database.list_items(db, user["id"])
     try:
-        result = recommend(items, request)
+        result = recommend(items, request, database.get_style_profile(db, user["id"]))
     except RecommendationError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from None
 

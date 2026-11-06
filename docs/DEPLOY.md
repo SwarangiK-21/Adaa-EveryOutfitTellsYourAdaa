@@ -110,7 +110,7 @@ Choose one:
 
 ## 8. Email for "Forgot password?" (and your contact email)
 
-Until this is set, reset emails only go to the server log (`sudo journalctl -u adaa`).
+Until this is set, password-reset and email-confirmation emails only go to the server log (`sudo journalctl -u adaa`), so people can't confirm their email or reset passwords. **Set this up before inviting people.**
 
 With Gmail (free):
 1. Google Account → **Security** → turn on **2-Step Verification** → **App passwords** → create one called `Adaa`. Copy the 16 letters.
@@ -127,6 +127,38 @@ With Gmail (free):
 3. `sudo systemctl restart adaa`, then try **Forgot password?** on the log-in screen.
 
 Gmail allows about 500 emails a day, plenty for password resets. (Brevo's free plan works the same way with its SMTP details.)
+
+## 9. Off-site backups (Cloudflare R2, free)
+
+The nightly backup is on the server's own disk. If the server is lost (or Oracle reclaims it), so are those backups. R2 keeps a copy elsewhere: 10 GB free, no download fees.
+
+1. Sign up at [dash.cloudflare.com](https://dash.cloudflare.com) → **R2 Object Storage** (it may ask for a card even for the free tier).
+2. **Create bucket** → name `adaa-backups` → location Automatic → Create.
+3. In the bucket → **Settings → Object lifecycle rules → Add rule**: delete objects **14 days** after upload (keeps two weeks).
+4. **R2 → Manage API tokens → Create API token** → permission **Object Read & Write**, limited to the `adaa-backups` bucket → Create. Copy the **Access Key ID**, **Secret Access Key** and the **endpoint** (`https://<account-id>.r2.cloudflarestorage.com`).
+5. On the server: `sudo nano /etc/adaa.env` and fill in:
+   ```
+   ADAA_BACKUP_S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+   ADAA_BACKUP_S3_BUCKET=adaa-backups
+   ADAA_BACKUP_S3_KEY_ID=...
+   ADAA_BACKUP_S3_SECRET=...
+   ```
+6. Test it: `sudo systemctl start adaa-backup && sudo journalctl -u adaa-backup -n 5` should end with **Copied off-site**. The file also appears in the bucket in the Cloudflare dashboard.
+
+## 10. Get told when Adaa is down (UptimeRobot, free)
+
+1. Sign up at [uptimerobot.com](https://uptimerobot.com) (free plan).
+2. **New monitor** → type **HTTP(s)** → URL `https://adaa-swarangi.duckdns.org/api/health` → every 5 minutes → alert to your email.
+3. If Adaa (or the server) stops, you get an email within minutes.
+
+## Before you invite people
+
+- [ ] Opens on `https://` with the padlock, on a phone and a laptop
+- [ ] Email settings work: sign up a test account and receive the confirmation email; try **Forgot password?**
+- [ ] `ADAA_CONTACT_EMAIL` set (it's shown in the privacy note and terms)
+- [ ] `sudo systemctl start adaa-backup` → "Copied off-site"
+- [ ] UptimeRobot monitor is green
+- [ ] Delete any test accounts (Preferences → Delete my account)
 
 ---
 

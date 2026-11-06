@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import CutoutEditor from './CutoutEditor.jsx';
 import { forgetCutout, queueMissingCutouts } from '../cutoutQueue.js';
 
-const MAX_PHOTO_MB = 5;
+import { MAX_ORIGINAL_MB as MAX_PHOTO_MB } from '../photo.js';   // big phone photos are shrunk before upload
 const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const COLOUR_SUGGESTIONS = [
   'Black', 'White', 'Ivory', 'Cream', 'Beige', 'Brown', 'Tan', 'Grey', 'Navy', 'Blue',
@@ -173,7 +173,7 @@ export default function ItemForm({ options, item, onClose, onSaved, notify }) {
           <div className="photo-col">
             <label className="photo-pick">
               {preview ? <img src={preview} alt="Selected piece" /> : (
-                <span><ImagePlus size={26} /><b>Add a photo</b><small>JPEG, PNG or WebP · up to {MAX_PHOTO_MB} MB</small></span>
+                <span><ImagePlus size={26} /><b>Add a photo</b><small>JPEG, PNG or WebP · big photos are shrunk for you</small></span>
               )}
               {preview && <em>Change photo</em>}
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={choosePhoto} />

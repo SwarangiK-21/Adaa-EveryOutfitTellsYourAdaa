@@ -5,12 +5,18 @@ from pathlib import Path
 from fastapi import UploadFile
 
 import config
+from image_meta import strip_metadata
 
 # The first bytes of a file reveal its real type, whatever its name says.
 _SIGNATURES = [
     (b"\xff\xd8\xff", ".jpg"),
     (b"\x89PNG\r\n\x1a\n", ".png"),
 ]
+
+
+# Photo addresses carry a version (?v=...), so a replaced photo gets a new address: browsers may keep
+# each one for a month. "private": only the owner's browser, never a shared cache.
+PHOTO_CACHE = "private, max-age=2592000, immutable"
 
 
 class InvalidImage(ValueError):
@@ -39,7 +45,7 @@ def save_cutout(upload: UploadFile) -> str:
         raise InvalidImage("A cut-out must be a PNG image.")
     filename = f"{uuid.uuid4().hex}.png"
     ensure_upload_dir()
-    (config.UPLOAD_DIR / filename).write_bytes(data)
+    (config.UPLOAD_DIR / filename).write_bytes(strip_metadata(data))
     return filename
 
 
@@ -59,7 +65,8 @@ def save_image(upload: UploadFile) -> str:
     # Never reuse the user's file name: a random name avoids clashes and path tricks.
     filename = f"{uuid.uuid4().hex}{ext}"
     ensure_upload_dir()
-    (config.UPLOAD_DIR / filename).write_bytes(data)
+    # Hidden metadata (camera, GPS location of where the photo was taken) is removed before saving.
+    (config.UPLOAD_DIR / filename).write_bytes(strip_metadata(data))
     return filename
 
 

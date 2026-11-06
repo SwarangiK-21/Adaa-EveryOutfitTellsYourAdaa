@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import auth  # noqa: E402
+import ratelimit  # noqa: E402
 import config  # noqa: E402
 from main import app  # noqa: E402
 
@@ -22,6 +23,7 @@ def data_dir(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "UPLOAD_DIR", tmp_path / "uploads")
     auth._failures.clear()
     auth._reset_emails.clear()
+    ratelimit.clear()
     return tmp_path
 
 

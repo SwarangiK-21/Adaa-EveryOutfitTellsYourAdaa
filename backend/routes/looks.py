@@ -39,10 +39,15 @@ def _check_items(db, uid: int, item_ids: list[int]) -> list[dict]:
     return items
 
 
-def _look_out(db, look: dict, items: list[dict] | None = None) -> dict:
+_UNSET = object()
+
+
+def _look_out(db, look: dict, items: list[dict] | None = None, profile=_UNSET) -> dict:
     items = items if items is not None else database.list_items(db, look["user_id"])
+    if profile is _UNSET:
+        profile = database.get_style_profile(db, look["user_id"])
     prefs = StylePrefs(**look["prefs"])
-    out = {**look, **_with_items(evaluate(items, look["item_ids"], prefs))}
+    out = {**look, **_with_items(evaluate(items, look["item_ids"], prefs, profile))}
     out["photo"] = _photo_out(look, items)
     return out
 
@@ -75,7 +80,7 @@ def _get_look_or_404(db, look_id: int, uid: int) -> dict:
 def evaluate_outfit(body: OutfitCheck, db: Db, user: auth.User):
     """Reasons and cautions for an outfit, e.g. after swapping a piece."""
     items = _check_items(db, user["id"], body.item_ids)
-    return _with_items(evaluate(items, body.item_ids, body.prefs))
+    return _with_items(evaluate(items, body.item_ids, body.prefs, database.get_style_profile(db, user["id"])))
 
 
 @router.post("/outfits/alternatives", response_model=list[SwapOption])
@@ -96,7 +101,8 @@ def swap_options(body: SwapRequest, db: Db, user: auth.User):
 @router.get("/looks", response_model=list[LookOut])
 def list_looks(db: Db, user: auth.User):
     items = database.list_items(db, user["id"])
-    return [_look_out(db, look, items) for look in looks_db.list_looks(db, user["id"])]
+    profile = database.get_style_profile(db, user["id"])
+    return [_look_out(db, look, items, profile) for look in looks_db.list_looks(db, user["id"])]
 
 
 @router.post("/looks", response_model=LookOut, status_code=201)
@@ -228,7 +234,7 @@ def get_look_photo(look_id: int, db: Db, user: auth.User):
     path = storage.image_path(photo["image_filename"]) if photo else None
     if path is None:
         raise HTTPException(status_code=404, detail="This look has no photo.")
-    return FileResponse(path)
+    return FileResponse(path, headers={"Cache-Control": storage.PHOTO_CACHE})
 
 
 @router.delete("/looks/{look_id}/photo", status_code=204)

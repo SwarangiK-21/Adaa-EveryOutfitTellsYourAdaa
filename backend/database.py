@@ -90,6 +90,34 @@ CREATE TABLE IF NOT EXISTS sessions (
     expires_at TEXT NOT NULL
 );
 
+-- Optional style profile: everything may be empty. Used only to rank and explain outfits.
+-- Lists are JSON arrays. Deleted with the account.
+CREATE TABLE IF NOT EXISTS style_profiles (
+    user_id       INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    height_cm     INTEGER CHECK (height_cm IS NULL OR height_cm BETWEEN 120 AND 220),
+    body_shape    TEXT CHECK (body_shape IS NULL OR body_shape IN ('hourglass', 'pear', 'apple', 'rectangle', 'inverted_triangle')),
+    fit           TEXT CHECK (fit IS NULL OR fit IN ('fitted', 'regular', 'relaxed')),
+    undertone     TEXT CHECK (undertone IS NULL OR undertone IN ('warm', 'cool', 'neutral')),
+    gender        TEXT CHECK (gender IS NULL OR gender IN ('woman', 'man', 'non_binary')),
+    avoid         TEXT NOT NULL DEFAULT '[]',   -- e.g. ["sleeveless", "short_hemlines"]
+    love_colours  TEXT NOT NULL DEFAULT '[]',
+    avoid_colours TEXT NOT NULL DEFAULT '[]',
+    style         TEXT,                          -- usual style, comfort and colour mood (the Style me defaults)
+    comfort       TEXT,
+    colour_mood   TEXT,
+    onboarded     INTEGER NOT NULL DEFAULT 0,   -- 1 once the sign-up questions were answered or skipped
+    updated_at    TEXT NOT NULL
+);
+
+-- "Confirm your email" links: one use, 24 hours. Only a hash of the link's token is stored.
+CREATE TABLE IF NOT EXISTS email_verifications (
+    token_hash TEXT PRIMARY KEY,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    used_at    TEXT
+);
+
 -- "Forgot password" links: one use, 30 minutes. Only a hash of the link's token is stored.
 CREATE TABLE IF NOT EXISTS password_resets (
     token_hash TEXT PRIMARY KEY,
@@ -116,6 +144,8 @@ def init_db() -> None:
     config.DATA_DIR.mkdir(parents=True, exist_ok=True)
     conn = connect()
     try:
+        # WAL: reading while someone else is saving no longer waits (good for many users at once).
+        conn.execute("PRAGMA journal_mode=WAL")
         conn.executescript(SCHEMA)
         # Added after the first release: older databases get the column on startup.
         columns = {r["name"] for r in conn.execute("PRAGMA table_info(wardrobe_items)")}
@@ -129,6 +159,8 @@ def init_db() -> None:
         user_columns = {r["name"] for r in conn.execute("PRAGMA table_info(users)")}
         if "privacy_accepted_at" not in user_columns:   # when they agreed to the privacy note (sign-up)
             conn.execute("ALTER TABLE users ADD COLUMN privacy_accepted_at TEXT")
+        if "email_verified_at" not in user_columns:     # when they clicked the "confirm your email" link
+            conn.execute("ALTER TABLE users ADD COLUMN email_verified_at TEXT")
         for table in OWNED_TABLES:   # accounts: older rows get an owner when the first user signs up
             if "user_id" not in {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}:
                 conn.execute(f"ALTER TABLE {table} ADD COLUMN user_id INTEGER REFERENCES users(id)")
@@ -284,6 +316,44 @@ def get_user(conn, uid: int) -> dict | None:
 def find_user_by_email(conn, email: str) -> dict | None:
     row = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
     return dict(row) if row else None
+
+
+# ---------- optional style profile ----------
+
+_PROFILE_LISTS = ("avoid", "love_colours", "avoid_colours")
+
+
+def get_style_profile(conn, uid: int) -> dict | None:
+    """The user's style profile (lists decoded), or None if they've never saved one."""
+    row = conn.execute("SELECT * FROM style_profiles WHERE user_id = ?", (uid,)).fetchone()
+    if not row:
+        return None
+    profile = dict(row)
+    for key in _PROFILE_LISTS:
+        profile[key] = json.loads(profile[key] or "[]")
+    profile["onboarded"] = bool(profile["onboarded"])
+    return profile
+
+
+def save_style_profile(conn, uid: int, fields: dict) -> dict:
+    """Store the complete profile (every field optional). The route merges changes in first."""
+    values = {k: (json.dumps(v) if k in _PROFILE_LISTS else v) for k, v in fields.items()}
+    values["onboarded"] = int(bool(fields.get("onboarded")))
+    columns = list(values)
+    with conn:
+        conn.execute(
+            f"INSERT INTO style_profiles (user_id, {', '.join(columns)}, updated_at)"
+            f" VALUES (?, {', '.join('?' for _ in columns)}, ?)"
+            f" ON CONFLICT(user_id) DO UPDATE SET {', '.join(f'{c} = excluded.{c}' for c in columns)},"
+            " updated_at = excluded.updated_at",
+            (uid, *values.values(), _now()))
+    return get_style_profile(conn, uid)
+
+
+def mark_email_verified(conn, uid: int) -> None:
+    with conn:
+        conn.execute("UPDATE users SET email_verified_at = COALESCE(email_verified_at, ?) WHERE id = ?", (_now(), uid))
+        conn.execute("DELETE FROM email_verifications WHERE user_id = ?", (uid,))
 
 
 def update_user(conn, uid: int, name: str, phone: str) -> dict:

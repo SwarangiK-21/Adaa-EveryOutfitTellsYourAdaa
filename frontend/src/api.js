@@ -1,3 +1,4 @@
+import { preparePhoto } from './photo.js';
 // Small helpers for talking to the Adaa backend (proxied by Vite to port 8000).
 
 export class ApiError extends Error {
@@ -55,9 +56,13 @@ export const api = {
   logout: () => request('/api/auth/logout', { method: 'POST' }),
   me: () => request('/api/auth/me'),
   updateMe: (fields) => postJson('/api/auth/me', fields, 'PUT'),   // { name, phone }
-  about: () => request('/api/auth/about'),                          // { contact_email, max_items, max_looks }
+  about: () => request('/api/auth/about'),
+  getStyleProfile: () => request('/api/profile/style'),
+  saveStyleProfile: (changes) => postJson('/api/profile/style', changes, 'PATCH'),   // only the fields sent change                          // { contact_email, max_items, max_looks }
   changePassword: (current, next) => postJson('/api/auth/password', { current_password: current, new_password: next }, 'PUT'),
   forgotPassword: (email) => postJson('/api/auth/forgot', { email }),
+  verifyEmail: (token) => postJson('/api/auth/verify', { token }),
+  resendVerification: () => request('/api/auth/verify/resend', { method: 'POST' }),
   resetPassword: (token, password) => postJson('/api/auth/reset', { token, password }),
   deleteAccount: (password) => postJson('/api/auth/me', { password }, 'DELETE'),
 
@@ -71,11 +76,12 @@ export const api = {
     return request(`/api/items${query ? `?${query}` : ''}`);
   },
 
-  createItem: (fields, photo) =>
-    request('/api/items', { method: 'POST', body: toFormData(fields, photo) }),
+  // Photos are shrunk and cleaned of hidden metadata (e.g. GPS location) before they leave the browser.
+  createItem: async (fields, photo) =>
+    request('/api/items', { method: 'POST', body: toFormData(fields, photo && await preparePhoto(photo)) }),
 
-  updateItem: (id, fields, photo) =>
-    request(`/api/items/${id}`, { method: 'PUT', body: toFormData(fields, photo) }),
+  updateItem: async (id, fields, photo) =>
+    request(`/api/items/${id}`, { method: 'PUT', body: toFormData(fields, photo && await preparePhoto(photo)) }),
 
   deleteItem: (id) => request(`/api/items/${id}`, { method: 'DELETE' }),
 
@@ -115,9 +121,9 @@ export const api = {
   deleteLook: (id) => request(`/api/looks/${id}`, { method: 'DELETE' }),
   wearLook: (id) => postJson(`/api/looks/${id}/wear`, {}),
 
-  uploadLookPhoto: (id, photo) => {
+  uploadLookPhoto: async (id, photo) => {
     const data = new FormData();
-    data.append('photo', photo);
+    data.append('photo', await preparePhoto(photo));
     return request(`/api/looks/${id}/photo`, { method: 'POST', body: data });
   },
   deleteLookPhoto: (id) => request(`/api/looks/${id}/photo`, { method: 'DELETE' }),

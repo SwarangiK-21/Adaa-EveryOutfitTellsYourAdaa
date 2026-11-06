@@ -22,7 +22,7 @@ Db = Annotated[sqlite3.Connection, Depends(database.get_db)]
 @router.get("/insights/gaps", response_model=GapReport)
 def wardrobe_gaps(db: Db, user: auth.User):
     """The few purchases that would unlock the most new outfits from your wardrobe."""
-    report = find_gaps(database.list_items(db, user["id"]))
+    report = find_gaps(database.list_items(db, user["id"]), profile=database.get_style_profile(db, user["id"]))
     for s in report["suggestions"]:
         s["pairs_with"] = [item_out(i) for i in s["pairs_with"]]
     return report

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Sparkles, RefreshCw, Check, Pencil, Trash2, X, Camera } from 'lucide-react';
 import { api } from '../api.js';
+import { MAX_ORIGINAL_MB } from '../photo.js';
 import Heading from '../components/Heading.jsx';
 import { useUser } from '../user.js';
 import OutfitCard from '../components/OutfitCard.jsx';
@@ -71,8 +72,8 @@ export default function SavedLooks({ notify, goToStylist, onCountChange }) {
     const file = e.target.files[0];
     const look = photoFor.current;
     if (!file || !look) return;
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
-      notify('Please choose a JPEG, PNG or WebP photo up to 5 MB.');
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > MAX_ORIGINAL_MB * 1024 * 1024) {
+      notify(`Please choose a JPEG, PNG or WebP photo up to ${MAX_ORIGINAL_MB} MB.`);
       return;
     }
     act(async () => replaceLook(await api.uploadLookPhoto(look.id, file)), 'Photo added. It now shows as a verified preview.');

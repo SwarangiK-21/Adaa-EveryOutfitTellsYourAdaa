@@ -1,15 +1,19 @@
+import logging
 import mimetypes
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel, Field
 
 import config
 import database
+import ratelimit
+import security
 import storage
-from routes import auth as auth_routes, items, looks, planner, recommendations
+from routes import auth as auth_routes, items, looks, planner, profile, recommendations
 
 
 @asynccontextmanager
@@ -33,11 +37,38 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.middleware("http")(ratelimit.middleware)
+app.middleware("http")(security.origin_check)
 app.include_router(auth_routes.router)
 app.include_router(items.router)
 app.include_router(recommendations.router)
 app.include_router(looks.router)
 app.include_router(planner.router)
+app.include_router(profile.router)
+
+
+log = logging.getLogger("adaa")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+
+
+@app.exception_handler(Exception)
+async def unexpected_error(request: Request, exc: Exception):
+    """Anything unexpected: log the full details for the admin, give the person a calm message."""
+    log.exception("Unexpected error on %s %s", request.method, request.url.path)
+    return JSONResponse({"detail": "Something went wrong on our side. Please try again in a moment."}, status_code=500)
+
+
+class ClientError(BaseModel):
+    message: str = Field(max_length=500)
+    where: str = Field(default="", max_length=2000)
+    page: str = Field(default="", max_length=200)
+
+
+@app.post("/api/client-error", status_code=204, include_in_schema=False)
+def client_error(report: ClientError):
+    """A screen crashed in someone's browser: note it in the server log (no personal data is sent)."""
+    where = " ".join(report.where.split())[:600]   # one line in the log
+    log.warning("Browser error on %s: %s | %s", report.page, report.message, where)
 
 
 @app.get("/api/health")
@@ -71,6 +102,9 @@ def frontend(path: str):
     if path and file.is_file() and file.is_relative_to(dist):
         # Built files have a content hash in their name, so browsers may keep them for a year.
         cache = "public, max-age=31536000, immutable" if path.startswith("assets/") else "no-cache"
-        return FileResponse(file, headers={"Cache-Control": cache})
+        headers = {"Cache-Control": cache}
+        if file.suffix == ".html":
+            headers["Content-Security-Policy"] = security.CSP
+        return FileResponse(file, headers=headers)
     # Any other address is a screen of the app: let the app show it.
-    return FileResponse(index, headers={"Cache-Control": "no-cache"})
+    return FileResponse(index, headers={"Cache-Control": "no-cache", "Content-Security-Policy": security.CSP})

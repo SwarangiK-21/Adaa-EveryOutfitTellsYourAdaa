@@ -17,7 +17,7 @@ step "Getting the newest version"
 git -C "$APP" pull --ff-only
 
 step "Updating Python packages"
-"$APP/backend/.venv/bin/pip" install -r "$APP/backend/requirements.txt" -q
+"$APP/backend/.venv/bin/pip" install -r "$APP/backend/requirements.txt" -c "$APP/backend/requirements.lock" -q
 
 step "Rebuilding the app"
 cd "$APP/frontend"

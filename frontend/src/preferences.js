@@ -1,4 +1,5 @@
-// The user's saved style preferences, kept in this browser (localStorage).
+// The user's saved style preferences: kept with their account (style profile), with a copy in this
+// browser (localStorage) so the Style me form can start from them straight away.
 // They become the starting values of the Style me form.
 
 import { storageKey } from './user.js';
@@ -44,3 +45,22 @@ export function toStylistDefaults(prefs) {
     colour_mood: prefs.colour === 'No preference' ? '' : prefs.colour,
   };
 }
+
+// ---- keeping them with the account, so they follow you to other devices ----
+
+export const toAccount = (prefs) => ({ style: prefs.style, comfort: prefs.comfort, colour_mood: prefs.colour });
+
+// On start: the account's copy wins; a browser that has preferences the account doesn't yet uploads them once.
+export function syncPreferences(profile, api) {
+  const local = loadPreferences();
+  if (profile && (profile.style || profile.comfort || profile.colour_mood)) {
+    savePreferences({
+      style: profile.style || DEFAULT_PREFERENCES.style,
+      comfort: profile.comfort || DEFAULT_PREFERENCES.comfort,
+      colour: profile.colour_mood || DEFAULT_PREFERENCES.colour,
+    });
+  } else if (local) {
+    api.saveStyleProfile(toAccount(local)).catch(() => {});
+  }
+}
+

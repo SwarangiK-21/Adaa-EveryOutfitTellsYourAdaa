@@ -1,6 +1,6 @@
 """Back up (or restore) Adaa's database and photos.
 
-    python backup.py                  make a backup, keep the newest 7 (ADAA_BACKUP_KEEP)
+    python backup.py                  make a backup, keep the newest 7 (ADAA_BACKUP_KEEP), copy it off-site if set up
     python backup.py --restore FILE   put a backup back (stop the backend first)
 
 A backup is one file, adaa-YYYYMMDD-HHMMSS.tar.gz, in ADAA_BACKUP_DIR (backend/backups on your
@@ -19,6 +19,7 @@ from datetime import datetime
 from pathlib import Path
 
 import config
+import offsite
 
 NAME = re.compile(r"^adaa-\d{8}-\d{6}(-\d+)?\.tar\.gz$")
 
@@ -67,7 +68,9 @@ def restore_backup(archive: Path, force: bool = False) -> None:
             raise SystemExit("There is already a database here. Stop the backend, then run again with --force "
                              "(the current one is kept as adaa.db.before-restore).")
         config.DATA_DIR.mkdir(parents=True, exist_ok=True)
-        for current in (config.DB_PATH, config.UPLOAD_DIR):
+        # The -wal/-shm side files belong to the old database: move them aside too, never mix them with the new one.
+        wal, shm = (config.DB_PATH.with_name(config.DB_PATH.name + s) for s in ("-wal", "-shm"))
+        for current in (config.DB_PATH, wal, shm, config.UPLOAD_DIR):
             if current.exists():
                 kept = current.with_name(current.name + ".before-restore")
                 if kept.is_dir():
@@ -95,6 +98,16 @@ def main(argv=None) -> None:
     else:
         path = make_backup()
         print(f"Backup saved: {path} ({path.stat().st_size / 1_048_576:.1f} MB)")
+        if offsite.enabled():
+            try:
+                print(f"Copied off-site: {offsite.upload(path)}")
+            except offsite.OffsiteError as exc:
+                # The local backup is still there; failing loudly makes the systemd timer show "failed".
+                print(f"Off-site copy FAILED: {exc}", file=sys.stderr)
+                return 1
+        else:
+            print("Off-site copy: not set up (see docs/DEPLOY.md). Only this server has the backup.")
+    return 0
 
 
 if __name__ == "__main__":

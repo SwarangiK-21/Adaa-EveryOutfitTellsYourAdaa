@@ -28,7 +28,7 @@ def outbox(monkeypatch):
 
 
 def reset_token(email):
-    return email["body"].split("?reset=")[1].split()[0]
+    return email["body"].split("#reset=")[1].split()[0]
 
 
 # ---------- privacy consent ----------
@@ -82,7 +82,7 @@ def test_forgot_and_reset_password(client, outbox, monkeypatch):
     res = client.post("/api/auth/forgot", json={"email": " TEST@example.com "})
     assert res.status_code == 202
     assert len(outbox) == 1 and outbox[0]["to"] == TEST_USER["email"]
-    assert "Hi Test," in outbox[0]["body"] and "https://adaa.example/?reset=" in outbox[0]["body"]
+    assert "Hi Test," in outbox[0]["body"] and "https://adaa.example/#reset=" in outbox[0]["body"]
 
     token = reset_token(outbox[0])
     assert client.post("/api/auth/reset", json={"token": token, "password": "brand-new-password"}).status_code == 204
@@ -100,7 +100,8 @@ def test_forgot_reply_is_the_same_for_unknown_emails(anon, outbox):
     b = anon.post("/api/auth/forgot", json={"email": "nobody@example.com"})
     assert known.status_code == 201
     assert (a.status_code, a.json()) == (b.status_code, b.json())
-    assert [m["to"] for m in outbox] == [TEST_USER["email"]]   # nothing is sent to unknown addresses
+    resets = [m["to"] for m in outbox if "new password" in m["subject"]]
+    assert resets == [TEST_USER["email"]]   # nothing is sent to unknown addresses
 
 
 def test_reset_signs_out_everywhere(client, outbox):

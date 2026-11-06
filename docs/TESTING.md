@@ -8,7 +8,7 @@ Run from `backend/` with the virtual environment active:
 python -m pytest
 ```
 
-Expected result: **180 passed**. Each test runs against a fresh temporary database and photo folder, so your real wardrobe is never touched.
+Expected result: **257 passed**. Each test runs against a fresh temporary database and photo folder, so your real wardrobe is never touched.
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -23,6 +23,13 @@ Expected result: **180 passed**. Each test runs against a fresh temporary databa
 | `test_events.py` | 6 | Full wedding follows each dress code with no garment repeated; jewellery and shoes reused; missing colour explained; no all-white at the wedding; jeans a last resort at a reception; API |
 | `test_weather_wear.py` | 9 | Hot day: light pieces, no jacket; cold day: sweater, jeans, boots; rain caution; no weather = no change; weather validated; wear stats (not worn, most worn, cost per wear, totals); prices saved/cleared/validated; wearing an unsaved outfit counts |
 | `test_server.py` | 9 | The backend serves the built app: index page, hashed files cached for a year, `.wasm` and manifest types, other addresses open the app, unknown `/api` stays a JSON 404, nothing outside the build folder; without a build `/` just says the API runs. Backups hold the database and every photo, keep only the newest 7 (other files untouched); restore needs `--force`, keeps the replaced data, rejects other archives |
+| `test_style_profile.py` | 36 | Profile empty until saved; save/read back (repeats removed, colour names tidied); only sent fields change; skipping is fine; validation (height, shape, fit, undertone, gender, avoid, unknown/too many colours); needs login; private per account; deleted with the account; database CHECKs; reading a piece's cut (palazzo, skin fit, bodycon, crop, anarkali, high waist, cami; a sling *bag* isn't sleeveless); no profile = no change; pear prefers flowing bottoms; preferred fit; avoided styles rank lower with a caution but are never hidden; undertone only adds notes; loved/avoided colours; petite and tall notes; jewellery metal; swaps explain too; the API uses the saved profile; Shop Smart and gender |
+| `test_ratelimit.py` | 14 | Sign-ups, log-ins (across emails) and reset requests limited per address; limits are per address; normal use isn't limited; can be switched off; which rule applies to which address |
+| `test_verify_email.py` | 7 | Sign-up emails a link; it confirms once (without login); expires; resend limited to 3/h; nothing sent once confirmed; resend needs login; bad tokens |
+| `test_security.py` | 6 | Changes from another website blocked (403); from Adaa itself or its public address allowed; reading never blocked; app page has a CSP without Google Fonts; model download needs login |
+| `test_offsite.py` | 6 | Request signing matches Amazon's published example; upload is a signed PUT; refused upload raises; backup command copies off-site, fails loudly (keeping the local copy) when it can't, says so when not set up |
+| `test_image_meta.py` | 5 | JPEG loses EXIF/GPS, XMP and comments but keeps the picture and colour profile; PNG loses text/EXIF chunks; WebP loses EXIF/XMP and stays valid; unreadable files left alone; uploaded photos are saved and served without location |
+| `test_errors.py` | 3 | Unexpected errors: calm message, no internals, logged; browser crash reports logged; size-limited |
 | `test_account.py` | 18 | Sign-up needs privacy consent and records it; change password (wrong current password refused, other devices signed out); forgot password: email with link, reset, link works once, expires, same reply for unknown emails, max 3 emails an hour, signs out everywhere, cancelled by a later change; delete account erases items, photos, looks, history, sessions (and only yours), needs the password, email can sign up again; piece, look and account limits; Secure cookie setting |
 | `test_auth.py` | 23 | Sign-up keeps name, email and phone and gives a first name; bad name/email/phone/password rejected; duplicate email; log out and back in; wrong password; 5 failures pause logging in; passwords stored hashed; change name and phone; every data route needs logging in, public ones don't; two accounts never see each other's items, looks, history or photo; the first account receives the old wardrobe |
 | `test_workflow.py` | 1 | The whole journey: empty wardrobe → add 10 pieces → *"Style my green kurta for a traditional family function"* → outfits → swap → save → wear → history → delete a worn piece |
@@ -52,7 +59,7 @@ Done on 15 Oct 2026, starting from an **empty** data folder, using the real form
 
 ## Quick checklist before a demo
 
-1. `python -m pytest` → `180 passed`
+1. `python -m pytest` → `257 passed`
 2. Backend running: http://127.0.0.1:8000/api/health → `"status":"ok"`
 3. Frontend running: http://localhost:5173 → Overview shows your piece count
 4. AI Stylist → ask for one of your demo requests → outfits with photos appear
@@ -324,3 +331,23 @@ On a fresh test database (ports 8011/5181), no email service set up.
 | Restore that backup into an empty folder ("new server"), start there, log in with the same password: piece and photo there | ✅ |
 | `install.sh` / `update.sh` syntax check (`bash -n`) | ✅ (not yet run on a real server) |
 | Backend tests | ✅ 180 passed |
+
+## Launch pass (6 Nov 2026)
+
+On a copy of the real wardrobe (backend 8011, Vite 5181), then the built app served by the backend alone (one-server mode, with the CSP on).
+
+| Check | Result |
+|---|---|
+| Existing account: style-profile card appears once; height 152, pear, relaxed, warm, skips sleeveless, loves mustard → saved; mustard leaves the "avoid" list | ✅ |
+| AI Stylist "something for college": every look has **Why it suits you, Swarangi** (e.g. "Black baggy jeans: a flowing cut past the hips balances a pear shape", "Yellow near your face tends to glow on warm undertones") | ✅ |
+| Preferences → style profile shows the saved answers; feet/inches: 152 cm shows 5 ft 0 in, 5 ft 4 in → 163 cm | ✅ (rounding bug found and fixed) |
+| New account on a phone (375 px): card fits, no sideways scroll; **Skip for now** → not shown again after reload | ✅ |
+| Sign-up email printed in the backend log; opening `#verify=` link → "Your email is confirmed", banner gone, link removed from the address bar | ✅ |
+| Forgot password → `#reset=` link → new password → logs in; access log (36 requests) contains no reset/verify token | ✅ |
+| Upload through the app code: 3000×4000 JPEG → stored 1200×1600, 122 KB; cached privately; another account's photo → 404 | ✅ |
+| One-server mode with CSP: page loads, fonts are self-hosted (0 requests to Google), weather API allowed, **in-browser cut-out made in ~38 s** (worker + WebAssembly + logged-in model download), no CSP violations in the console | ✅ |
+| Basic accessibility on Overview, Preferences, AI Stylist: no unnamed buttons, unlabelled inputs or images without alt; one h1; `lang="en"` | ✅ (shape cards got labels during the pass) |
+| Phone: email banner fits | ✅ (wording fixed for accounts created before confirmation existed) |
+| `npm audit` | ✅ 0 vulnerabilities |
+| Backend tests | ✅ 257 passed |
+| Not tested here: a real Linux server (install.sh / update.sh only syntax-checked), real SMTP delivery, a real R2 bucket, a full axe audit (loading outside scripts was blocked) | ⏳ during deployment |

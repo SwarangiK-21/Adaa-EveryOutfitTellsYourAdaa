@@ -1,6 +1,7 @@
 import React from 'react';
-import { Check, AlertTriangle, Repeat } from 'lucide-react';
+import { Check, AlertTriangle, Repeat, Heart } from 'lucide-react';
 import OutfitPreview, { PieceImage } from './OutfitPreview.jsx';
+import { useUser } from '../user.js';
 
 // One outfit: a large full-body preview first, then the individual pieces
 // (with swap buttons), why it works, anything to watch out for, and actions.
@@ -9,6 +10,8 @@ export default function OutfitCard({ outfit, label, title, onSwap, actions, noti
   const clothing = outfit.pieces.filter((p) => p.item.category === 'Clothing');
   const extras = outfit.pieces.filter((p) => p.item.category !== 'Clothing');
   const heading = title || clothing.map((p) => p.item.name).join(' + ') || 'Your look';
+  const { first } = useUser();
+  const forYou = outfit.personal || [];   // from the style profile: why this suits you
 
   const piece = (p) => (
     <figure key={p.item.id}>
@@ -47,6 +50,12 @@ export default function OutfitCard({ outfit, label, title, onSwap, actions, noti
             </div>
           )}
 
+          {forYou.length > 0 && (
+            <div className="for-you">
+              <small>WHY IT SUITS YOU{first ? `, ${first.toUpperCase()}` : ''}</small>
+              <ul>{forYou.map((r) => <li key={r}><Heart size={13} />{r}</li>)}</ul>
+            </div>
+          )}
           <ul className="reasons">
             {outfit.reasons.map((r) => <li key={r}><Check size={14} />{r}</li>)}
           </ul>

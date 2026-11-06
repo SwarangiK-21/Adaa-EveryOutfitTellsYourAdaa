@@ -1,5 +1,6 @@
 """Shapes of the data going in and out of the API, with validation."""
 from datetime import date
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -165,6 +166,7 @@ class OutfitOut(BaseModel):
     pieces: list[OutfitPiece]
     reasons: list[str]
     cautions: list[str]
+    personal: list[str] = []   # why it suits *you*, from your style profile
 
 
 class RecommendationResponse(BaseModel):
@@ -228,6 +230,7 @@ class OutfitEvaluation(BaseModel):
     pieces: list[OutfitPiece]
     reasons: list[str]
     cautions: list[str]
+    personal: list[str] = []
 
 
 class LookCreate(OutfitCheck):
@@ -468,7 +471,7 @@ class SignupIn(AccountFields):
     @classmethod
     def must_accept(cls, value):
         if not value:
-            raise ValueError("Please confirm you're 18 or older and agree to the privacy note.")
+            raise ValueError("Please confirm you're 18 or older and agree to the terms of use and privacy note.")
         return value
 
     @field_validator("email", mode="before")
@@ -497,6 +500,10 @@ class ForgotIn(BaseModel):
     @classmethod
     def clean_email(cls, value):
         return str(value or "").strip().lower()
+
+
+class VerifyIn(BaseModel):
+    token: str = Field(min_length=10, max_length=100)
 
 
 class ResetIn(BaseModel):
@@ -528,8 +535,57 @@ class UserOut(BaseModel):
     phone: str
     created_at: str
     moved_items: int = 0      # on sign-up: pieces from before accounts that moved into this account
+    email_verified: bool = False
 
 
 def user_out(user: dict, moved_items: int = 0) -> UserOut:
     return UserOut(id=user["id"], name=user["name"], first_name=user["name"].split()[0], email=user["email"],
-                   phone=user["phone"], created_at=user["created_at"], moved_items=moved_items)
+                   phone=user["phone"], created_at=user["created_at"], moved_items=moved_items,
+                   email_verified=bool(user.get("email_verified_at")))
+
+
+# ---------- Optional style profile ----------
+
+BodyShape = Literal["hourglass", "pear", "apple", "rectangle", "inverted_triangle"]
+Fit = Literal["fitted", "regular", "relaxed"]
+Undertone = Literal["warm", "cool", "neutral"]
+Gender = Literal["woman", "man", "non_binary"]
+AvoidStyle = Literal["sleeveless", "short_hemlines", "bodycon", "crop_tops"]
+
+
+class StyleProfile(BaseModel):
+    """Everything is optional: skip any question and Adaa still works."""
+    height_cm: int | None = Field(default=None, ge=120, le=220)
+    body_shape: BodyShape | None = None     # chosen by the person, never guessed
+    fit: Fit | None = None
+    undertone: Undertone | None = None      # only nudges colour suggestions, never limits choices
+    gender: Gender | None = None            # only hides shop ideas you'd never wear
+    avoid: list[AvoidStyle] = Field(default=[], max_length=4)
+    love_colours: list[str] = Field(default=[], max_length=8)
+    avoid_colours: list[str] = Field(default=[], max_length=8)
+    style: str | None = Field(default=None, max_length=40)
+    comfort: str | None = Field(default=None, max_length=40)
+    colour_mood: str | None = Field(default=None, max_length=40)
+    onboarded: bool = False
+
+    @field_validator("avoid")
+    @classmethod
+    def no_repeats(cls, value):
+        return list(dict.fromkeys(value))
+
+    @field_validator("love_colours", "avoid_colours")
+    @classmethod
+    def known_colours(cls, value):
+        from recommender import colours
+        names = []
+        for text in value:
+            colour = colours.parse(str(text)[:40], fuzzy=False)
+            if colour is None:
+                raise ValueError(f"Adaa doesn't know the colour '{str(text)[:40]}'.")
+            names.append(colour.name)
+        return list(dict.fromkeys(names))
+
+
+class StyleProfileOut(StyleProfile):
+    updated_at: str | None = None
+

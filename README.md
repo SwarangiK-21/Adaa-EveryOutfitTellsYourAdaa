@@ -26,6 +26,8 @@ It runs entirely on your own computer with free, open-source tools: no paid APIs
 | **Opening animation** (about 6 seconds, once per visit): the ribbon A comes into focus with a gold glint, *Adaa* writes itself, the gold thread draws and the tagline appears, then it lifts away like a curtain with *"Hi, Swarangi"*. Tap or press any key to skip; a still version is shown if your device has "reduce motion" on | When you open Adaa |
 | Save your usual style, comfort and colour preferences | **Preferences** |
 | **Accounts:** sign up with your name, email, phone and a password. Each person gets their own wardrobe, looks and history, and Adaa **calls you by your name** everywhere (*"Swarangi, this one would look lovely on you."*). Change your name, phone or password, log out, or **delete your account**, in Preferences. **Forgot password?** emails a one-time link. A plain-language **privacy note**, agreed to at sign-up (18+) | Sign-up screen, **Preferences** |
+| **Style profile** (all optional, skippable at sign-up, editable in Preferences): height, body shape *you* choose (or "not sure"), preferred fit, skin undertone, styles you usually skip, colours you love or avoid. Each look then says **"Why it suits you"** (*"Black palazzo: a flowing cut past the hips balances a pear shape"*, *"Mustard near your face tends to glow on warm undertones"*). It only nudges and explains; it never hides your clothes. Weight isn't asked: it doesn't help styling | Sign-up, **Preferences**, every look |
+| **Email confirmation** (a gentle banner until confirmed, nothing blocked), **Terms of use**, photos shrunk and cleaned of hidden location data before saving | Everywhere |
 
 **The core rule:** Adaa never invents a piece. If something is missing (no bag, nothing tagged for a wedding, "my green kurta" when you don't have one), it says so and shows the best real combination instead.
 
@@ -67,7 +69,7 @@ Each look opens with a large preview, always labelled:
 | + | Wedding planner, festival colour of the day, Hinglish and voice requests | Done |
 | + | Accounts (email + password), a separate wardrobe per person, the app calls you by name | Done |
 
-180 automated backend tests pass. A full manual browser pass is recorded in [docs/TESTING.md](docs/TESTING.md).
+257 automated backend tests pass. A full manual browser pass is recorded in [docs/TESTING.md](docs/TESTING.md).
 
 ## Brand
 
@@ -169,6 +171,8 @@ All optional: without them Adaa behaves as on your laptop. Set them as environme
 | `ADAA_SECURE_COOKIES` | `1` once Adaa is on `https`, so the sign-in cookie is only sent encrypted | off |
 | `ADAA_MAX_ITEMS` / `ADAA_MAX_LOOKS` | Most pieces / saved looks per person | 300 / 200 |
 | `ADAA_MAX_USERS` | Most accounts in total (`0` = no cap) | 0 |
+| `ADAA_BACKUP_S3_ENDPOINT`, `ADAA_BACKUP_S3_BUCKET`, `ADAA_BACKUP_S3_KEY_ID`, `ADAA_BACKUP_S3_SECRET` | Off-site copy of each nightly backup (Cloudflare R2, 10 GB free; docs/DEPLOY.md step 9) | none: backups stay on the server only |
+| `ADAA_RATE_LIMITS` | `0` switches the per-address request limits off (never on a public server) | on |
 | `ADAA_SMTP_HOST`, `ADAA_SMTP_PORT`, `ADAA_SMTP_USER`, `ADAA_SMTP_PASSWORD`, `ADAA_MAIL_FROM` | Email service for "forgot password", e.g. Gmail (`smtp.gmail.com`, 587, your address and a Google **app password**) or Brevo's free plan | none: the email is **printed in the backend terminal** instead, handy for testing |
 
 ## Your data
@@ -194,7 +198,7 @@ python -m pip install -r requirements-dev.txt   # first time only
 python -m pytest
 ```
 
-Expected: `180 passed`. Tests use a temporary folder, so they never touch your real wardrobe.
+Expected: `257 passed`. Tests use a temporary folder, so they never touch your real wardrobe.
 
 ## API
 
@@ -205,6 +209,8 @@ Interactive docs: http://127.0.0.1:8000/docs (while the backend is running). Eve
 | GET | `/api/health` | Server status |
 | POST | `/api/auth/signup` | Create an account (`name`, `email`, `phone`, `password`) and log in |
 | POST | `/api/auth/login`, `/api/auth/logout` | Log in (sets the session cookie) / log out |
+| GET / PATCH | `/api/profile/style` | Your optional style profile (only the fields you send change) |
+| POST | `/api/auth/verify`, `/api/auth/verify/resend` | Confirm your email with the emailed link / email a new link |
 | GET / PUT / DELETE | `/api/auth/me` | Who is logged in / change your name or phone / delete your account (`{"password": ...}`) |
 | PUT | `/api/auth/password` | Change your password (`current_password`, `new_password`); other devices are signed out |
 | POST | `/api/auth/forgot`, `/api/auth/reset` | Email a one-time link (same reply whether or not the email has an account) / set a new password with it |
@@ -244,18 +250,24 @@ Adaa/
 │  ├─ database.py           SQLite connection, tables, wardrobe item queries
 │  ├─ looks_db.py           Saved looks and outfit history queries
 │  ├─ auth.py               Password hashing, sessions, login throttle, reset links, the logged-in-user dependency
+│  ├─ ratelimit.py          Per-address request limits (sign-ups, log-ins, reset emails, uploads...)
+│  ├─ security.py           Cross-site request check and the app page's Content Security Policy
+│  ├─ image_meta.py         Removes hidden metadata (GPS location, camera details) from uploaded photos
+│  ├─ offsite.py            Copies each nightly backup to Cloudflare R2 (S3-compatible, signed requests)
+│  ├─ requirements.lock     Exact package versions the tests passed with (used on the server)
 │  ├─ backup.py             Back up / restore the database and photos (one .tar.gz, newest 7 kept)
-│  ├─ mailer.py             Sends the password-reset email (any SMTP service), or prints it when none is set
+│  ├─ mailer.py             Sends password-reset and email-confirmation emails (any SMTP service), or prints it when none is set
 │  ├─ storage.py            Photo checks (real file type, size) and saving/deleting
 │  ├─ routes/               API routes: auth, items, recommendations (+ parse), looks, planner
 │  ├─ recommender/          colours.py, garments.py, engine.py, parser.py, planner.py (gaps, trips, wear stats), events.py (wedding functions), festivals.py (festival colours and dates), weather.py
-│  └─ tests/                180 pytest tests
+│  └─ tests/                257 pytest tests
 ├─ frontend/
 │  ├─ vite.config.js        Dev server; forwards /api to the backend
 │  ├─ public/               Icons, logo files, manifest.webmanifest (home-screen app name, colours, icons)
 │  └─ src/
 │     ├─ Root.jsx           Opening animation, then the sign-up / log-in screen or the app
 │     ├─ assets/adaa-splash.svg   The plum logo split into parts for the opening animation
+│     ├─ photo.js           Shrinks photos (max 1600 px) and drops their hidden data before upload
 │     ├─ user.js            The logged-in user, per-account browser storage, personal lines
 │     ├─ App.jsx            Layout, navigation, Overview, Preferences
 │     ├─ api.js             All calls to the backend
@@ -263,7 +275,7 @@ Adaa/
 │     ├─ pages/             Wardrobe, Stylist, SavedLooks, WeddingPlanner, TripPlanner, WearStats, ShopSmart
 │     ├─ weather.js         Today's forecast from Open-Meteo for your saved city
 │     ├─ boardImage.js       Saves an outfit board as a PNG (Download image)
-│     ├─ components/        Splash, AuthScreen, AccountSettings, PrivacyNote, ItemForm, CutoutEditor, EraseCutout, WeatherSettings, PlanResult, OutfitCard, OutfitPreview, OutfitBoard, SwapPanel, AskBox, Heading
+│     ├─ components/        Splash, AuthScreen, AccountSettings, StyleProfile, PrivacyNote, TermsNote, LegalDialog, ErrorBoundary, ItemForm, CutoutEditor, EraseCutout, WeatherSettings, PlanResult, OutfitCard, OutfitPreview, OutfitBoard, SwapPanel, AskBox, Heading
 │     ├─ cutout.js, cutout.worker.js, cutoutQueue.js   Background removal for garment pictures (in the browser)
 │     └─ styles.css
 ├─ deploy/                  Server setup: install.sh, update.sh, systemd services, nightly backup timer, Caddyfile (https), settings example

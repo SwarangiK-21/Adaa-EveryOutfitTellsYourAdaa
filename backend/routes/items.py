@@ -67,7 +67,7 @@ def get_item_photo(item_id: int, db: Db, user: auth.User):
     path = storage.image_path(item["image_filename"])
     if path is None:
         raise HTTPException(status_code=404, detail="Photo file is missing.")
-    return FileResponse(path)
+    return FileResponse(path, headers={"Cache-Control": storage.PHOTO_CACHE})
 
 
 @router.post("/items", response_model=ItemOut, status_code=201)
@@ -162,8 +162,9 @@ def delete_item(item_id: int, db: Db, user: auth.User):
 
 @router.get("/cutout-model")
 @router.get("/models/{name}")
-def cutout_model(name: str = "isnet"):
-    """AI models for garment cut-outs, downloaded once: 'isnet' (background) and 'clothes' (garment parser)."""
+def cutout_model(user: auth.User, name: str = "isnet"):
+    """AI models for garment cut-outs, downloaded once: 'isnet' (background) and 'clothes' (garment parser).
+    Signed-in people only, so strangers can't use up the server's bandwidth."""
     import cutout_model as cm
     if name not in cm.MODELS:
         raise HTTPException(status_code=404, detail="Unknown model.")
@@ -172,7 +173,7 @@ def cutout_model(name: str = "isnet"):
     except cm.ModelUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from None
     return FileResponse(path, media_type="application/octet-stream",
-                        headers={"Cache-Control": "public, max-age=31536000, immutable"})
+                        headers={"Cache-Control": "private, max-age=31536000, immutable"})
 
 
 
@@ -203,7 +204,7 @@ def get_item_cutout(item_id: int, db: Db, user: auth.User):
     path = storage.image_path(item["cutout_filename"]) if item.get("cutout_filename") else None
     if path is None:
         raise HTTPException(status_code=404, detail="No cut-out yet.")
-    return FileResponse(path, media_type="image/png")
+    return FileResponse(path, media_type="image/png", headers={"Cache-Control": storage.PHOTO_CACHE})
 
 
 @router.delete("/items/{item_id}/cutout", status_code=204)

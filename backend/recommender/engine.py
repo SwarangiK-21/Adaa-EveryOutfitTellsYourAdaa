@@ -12,7 +12,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from itertools import combinations
 
-from recommender import colours, festivals, garments as g, weather as wx
+from recommender import colours, festivals, garments as g, profile_fit, weather as wx
 
 STYLE_CLASH = {frozenset({"Traditional", "Western"})}
 MINIMAL_OCCASIONS = {"Casual", "College", "Office", "Travel"}
@@ -55,6 +55,7 @@ class Outfit:
     score: float = 0.0
     reasons: list[tuple[float, str]] = field(default_factory=list)
     cautions: list[str] = field(default_factory=list)
+    personal: list[tuple[float, str]] = field(default_factory=list)   # from the style profile
 
     def add(self, points: float, reason: str | None = None) -> None:
         self.score += points
@@ -64,7 +65,7 @@ class Outfit:
             self.cautions.append(reason)
 
     def copy(self) -> "Outfit":
-        return Outfit(list(self.pieces), self.score, list(self.reasons), list(self.cautions))
+        return Outfit(list(self.pieces), self.score, list(self.reasons), list(self.cautions), list(self.personal))
 
     @property
     def ids(self) -> frozenset[int]:
@@ -317,8 +318,9 @@ def _complete(base: Outfit, wardrobe: list[Piece], req, usage: Counter, anchor: 
     return outfit
 
 
-def recommend(items: list[dict], req) -> dict:
-    """Return up to req.count distinct outfits using only these wardrobe items."""
+def recommend(items: list[dict], req, profile: dict | None = None) -> dict:
+    """Return up to req.count distinct outfits using only these wardrobe items.
+    `profile` (optional style profile) adds 'why it suits you' notes and nudges the ranking."""
     wardrobe = [_prepare(item, req.occasion) for item in items]
     notes: list[str] = []
 
@@ -383,6 +385,9 @@ def recommend(items: list[dict], req) -> dict:
             notes.insert(0, f"Nothing in your wardrobe is {wanted_text}, so these are the closest matches. "
                             f"Add a {wanted_text.split(' and ')[0].split(', ')[0]} piece to see it here.")
 
+    for base in bases:
+        profile_fit.apply(base, profile)
+
     # Pick outfits one at a time, preferring ones that differ from those already chosen.
     chosen: list[Outfit] = []
     usage: Counter = Counter()
@@ -397,6 +402,7 @@ def recommend(items: list[dict], req) -> dict:
                 best_pick = (total, base, outfit)
         _, base, outfit = best_pick
         remaining.remove(base)
+        profile_fit.apply_jewellery(outfit, profile)
         chosen.append(outfit)
         usage.update(outfit.ids)
 
@@ -414,6 +420,7 @@ def recommend(items: list[dict], req) -> dict:
                 "pieces": [{"role": p.role, "item": p.item} for p in o.pieces],
                 "reasons": [r for _, r in sorted(o.reasons, key=lambda r: -r[0])][:4],
                 "cautions": list(dict.fromkeys(o.cautions)),
+                "personal": profile_fit.personal_notes(o),
             }
             for rank, o in enumerate(chosen, start=1)
         ],
@@ -456,7 +463,7 @@ def _missing_slot_notes(wardrobe: list[Piece], chosen: list[Outfit], occasion: s
 _CORE_ROLES = (g.ONE_PIECE, g.TOP, g.BOTTOM, g.BLOUSE)
 
 
-def evaluate(items: list[dict], item_ids: list[int], req) -> dict:
+def evaluate(items: list[dict], item_ids: list[int], req, profile: dict | None = None) -> dict:
     """Score and explain an outfit made of these wardrobe items (e.g. after a swap)."""
     by_id = {i["id"]: i for i in items}
     pieces = [_prepare(by_id[i], req.occasion) for i in item_ids if i in by_id]
@@ -476,6 +483,8 @@ def evaluate(items: list[dict], item_ids: list[int], req) -> dict:
     for p in others:
         outfit.score += _addition_points(p, outfit, req, Counter()) * 0.5
         outfit.pieces.append(p)
+    profile_fit.apply(outfit, profile)
+    profile_fit.apply_jewellery(outfit, profile)
     reasons, weather_cautions = wx.notes(outfit.pieces, getattr(req, "weather", None))
     outfit.reasons.extend(reasons)
     outfit.cautions.extend(weather_cautions)
@@ -500,6 +509,7 @@ def evaluate(items: list[dict], item_ids: list[int], req) -> dict:
         "pieces": [{"role": p.role or "Piece", "item": p.item} for p in outfit.pieces],
         "reasons": [r for _, r in sorted(outfit.reasons, key=lambda r: -r[0])][:4],
         "cautions": list(dict.fromkeys(cautions)),
+        "personal": profile_fit.personal_notes(outfit),
     }
 
 

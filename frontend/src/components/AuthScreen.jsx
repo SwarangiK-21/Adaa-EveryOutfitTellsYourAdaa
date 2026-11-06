@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Eye, EyeOff, RefreshCw, Sparkles, Heart, Lock, MailCheck } from 'lucide-react';
 import { api } from '../api.js';
 import PrivacyNote from './PrivacyNote.jsx';
+import TermsNote from './TermsNote.jsx';
 
 const HAS_ACCOUNT = 'adaa.hasAccount';   // this browser has signed in before: start on "Log in"
 const hadAccount = () => { try { return localStorage.getItem(HAS_ACCOUNT) === '1'; } catch { return false; } };
@@ -17,18 +18,20 @@ const TEXT = {
   Sign up (name, email, phone, password, privacy consent), log in, ask for a reset link, or choose a
   new password from an emailed link (resetToken). On sign-in, onSignedIn(user, mode) is called.
 */
-export default function AuthScreen({ onSignedIn, resetToken, onResetDone }) {
+export default function AuthScreen({ onSignedIn, resetToken, onResetDone, initialNotice = '' }) {
   const [mode, setMode] = useState(resetToken ? 'reset' : hadAccount() ? 'login' : 'signup');
   const [fields, setFields] = useState({ name: '', email: '', phone: '', password: '' });
   const [agreed, setAgreed] = useState(false);
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState(initialNotice);
   const [sent, setSent] = useState('');
   const [privacy, setPrivacy] = useState(false);
+  const [terms, setTerms] = useState(false);
   const first = useRef(null);
   useEffect(() => { first.current?.focus(); setError(''); }, [mode]);
+  useEffect(() => { if (initialNotice) setNotice(initialNotice); }, [initialNotice]);
 
   const set = (key) => (e) => setFields((f) => ({ ...f, [key]: e.target.value }));
   const go = (next) => { setMode(next); setSent(''); setNotice(''); };
@@ -37,7 +40,7 @@ export default function AuthScreen({ onSignedIn, resetToken, onResetDone }) {
     e.preventDefault();
     setError('');
     if ((mode === 'signup' || mode === 'reset') && fields.password.length < 8) return setError('Please choose a password of at least 8 characters.');
-    if (mode === 'signup' && !agreed) return setError('Please confirm you’re 18 or older and agree to the privacy note.');
+    if (mode === 'signup' && !agreed) return setError('Please confirm you’re 18 or older and agree to the terms of use and privacy note.');
     setBusy(true);
     try {
       if (mode === 'forgot') {
@@ -116,8 +119,9 @@ export default function AuthScreen({ onSignedIn, resetToken, onResetDone }) {
             )}
             {mode === 'signup' && (
               <label className="consent">
-                <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} aria-label="I'm 18 or older and agree to the privacy note" />
+                <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} aria-label="I'm 18 or older and agree to the terms of use and privacy note" />
                 <span>I'm 18 or older and agree to the{' '}
+                  <button type="button" className="text-btn" onClick={() => setTerms(true)}>terms of use</button> and{' '}
                   <button type="button" className="text-btn" onClick={() => setPrivacy(true)}>privacy note</button>.</span>
               </label>
             )}
@@ -134,9 +138,14 @@ export default function AuthScreen({ onSignedIn, resetToken, onResetDone }) {
           {mode === 'login' && <>New to Adaa? <button type="button" className="text-btn" onClick={() => go('signup')}>Create an account</button></>}
           {(mode === 'forgot' || mode === 'reset') && <button type="button" className="text-btn" onClick={() => { if (mode === 'reset') onResetDone(false); go('login'); }}>Back to log in</button>}
         </p>
-        <p className="auth-switch"><button type="button" className="text-btn" onClick={() => setPrivacy(true)}>Privacy note</button></p>
+        <p className="auth-switch legal-links">
+          <button type="button" className="text-btn" onClick={() => setTerms(true)}>Terms of use</button>
+          <span aria-hidden="true"> · </span>
+          <button type="button" className="text-btn" onClick={() => setPrivacy(true)}>Privacy note</button>
+        </p>
       </form>
       {privacy && <PrivacyNote onClose={() => setPrivacy(false)} />}
+      {terms && <TermsNote onClose={() => setTerms(false)} />}
     </div>
   );
 }

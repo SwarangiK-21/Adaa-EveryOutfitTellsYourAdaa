@@ -15,18 +15,31 @@ export default function Root() {
     try { const m = sessionStorage.getItem(HELLO); sessionStorage.removeItem(HELLO); return m || ''; } catch { return ''; }
   });
   const hadUser = useRef(false);
-  // Opened from a "choose a new password" email: http://.../?reset=<token>
-  const [resetToken, setResetToken] = useState(() => new URLSearchParams(window.location.search).get('reset'));
+  // Opened from a "choose a new password" email: https://.../#reset=<token> (the part after # never reaches the server)
+  const [resetToken, setResetToken] = useState(() => new URLSearchParams(window.location.hash.slice(1)).get('reset')
+    || new URLSearchParams(window.location.search).get('reset'));
   const resetDone = (changed) => {
-    window.history.replaceState(null, '', window.location.pathname);   // the link works once; drop it from the address
+    window.history.replaceState(null, '', window.location.pathname);   // the link works once; drop it from the address bar and history
     setResetToken(null);
     if (changed) setUser(null);   // a new password signs out every browser, this one too
   };
   const [splash, setSplash] = useState(() => { try { return sessionStorage.getItem(SPLASH) !== '1'; } catch { return false; } });
   const endSplash = useCallback(() => { try { sessionStorage.setItem(SPLASH, '1'); } catch { /* fine */ } setSplash(false); }, []);
 
+  // Opened from a "confirm your email" link (#verify=<token>): confirm first, then load the account.
+  const [verified, setVerified] = useState('');
   useEffect(() => {
-    api.me().then((u) => { setStorageUser(u.id); hadUser.current = true; setUser(u); }).catch(() => setUser(null));
+    const verifyToken = new URLSearchParams(window.location.hash.slice(1)).get('verify');
+    let confirm = Promise.resolve();
+    if (verifyToken) {
+      window.history.replaceState(null, '', window.location.pathname);   // the link works once
+      confirm = api.verifyEmail(verifyToken)
+        .then(() => setVerified('Your email is confirmed. Thank you!'))
+        .catch((err) => setVerified(err.message));
+    }
+    confirm.finally(() => api.me()
+      .then((u) => { setStorageUser(u.id); hadUser.current = true; setUser(u); })
+      .catch(() => setUser(null)));
     // A session that ended (logged out elsewhere, or expired) shows the sign-in screen again.
     const signedOut = () => setUser(null);
     window.addEventListener('adaa-signed-out', signedOut);
@@ -57,8 +70,8 @@ export default function Root() {
 
   let page;
   if (user === undefined) page = splash ? null : <div className="auth-loading"><img src="/brand/adaa-mark.svg" alt="Adaa" /></div>;
-  else if (!user || resetToken) page = <AuthScreen onSignedIn={signedIn} resetToken={resetToken} onResetDone={resetDone} />;
-  else page = <UserContext.Provider value={{ user, setUser, logout }}><App hello={hello} /></UserContext.Provider>;
+  else if (!user || resetToken) page = <AuthScreen onSignedIn={signedIn} resetToken={resetToken} onResetDone={resetDone} initialNotice={verified} />;
+  else page = <UserContext.Provider value={{ user, setUser, logout }}><App hello={verified || hello} /></UserContext.Provider>;
   // The opening animation stays in the same place while the page underneath changes, so it plays once, smoothly.
   return <>{splash && <Splash name={user?.first_name} onDone={endSplash} />}{page}</>;
 }

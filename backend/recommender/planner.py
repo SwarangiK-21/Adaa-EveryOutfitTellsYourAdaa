@@ -8,7 +8,7 @@ from collections import Counter
 from datetime import date
 from dataclasses import dataclass
 
-from recommender import colours, engine, garments as g
+from recommender import colours, engine, garments as g, profile_fit
 from wardrobe_options import OCCASIONS
 
 
@@ -93,7 +93,7 @@ def _join(words: list[str]) -> str:
     return words[0] if len(words) == 1 else ", ".join(words[:-1]) + " and " + words[-1]
 
 
-def find_gaps(items: list[dict], limit: int = 6) -> dict:
+def find_gaps(items: list[dict], limit: int = 6, profile: dict | None = None) -> dict:
     """Suggest the few purchases that would unlock the most new outfits from this wardrobe."""
     now = {o: _bases(items, o) for o in OCCASIONS}
     outfits_now = len({b.ids for bases in now.values() for b in bases})
@@ -102,7 +102,7 @@ def find_gaps(items: list[dict], limit: int = 6) -> dict:
 
     for index, entry in enumerate(CATALOGUE):
         cand = _candidate(entry, index)
-        if _already_owned(cand, items):
+        if _already_owned(cand, items) or not profile_fit.shop_idea_fits(cand["name"], profile):
             continue
         role, _ = g.classify(cand)
         new_bases: dict[frozenset, set[str]] = {}

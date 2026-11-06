@@ -12,14 +12,18 @@ import WearStats from './pages/WearStats.jsx';
 import { queueMissingCutouts } from './cutoutQueue.js';
 import WeatherSettings from './components/WeatherSettings.jsx';
 import AccountSettings from './components/AccountSettings.jsx';
+import PrivacyNote from './components/PrivacyNote.jsx';
+import TermsNote from './components/TermsNote.jsx';
+import { StyleProfileSetup, StyleProfileSettings } from './components/StyleProfile.jsx';
 import { useUser, initials } from './user.js';
 import { swatchFor } from './components/OutfitPreview.jsx';
-import { PREFERENCE_CHOICES, DEFAULT_PREFERENCES, loadPreferences, savePreferences } from './preferences.js';
+import { PREFERENCE_CHOICES, DEFAULT_PREFERENCES, loadPreferences, savePreferences, syncPreferences, toAccount } from './preferences.js';
 
 const nav = [{name:'Overview',Icon:LayoutDashboard},{name:'My Wardrobe',Icon:Shirt},{name:'AI Stylist',Icon:MessageCircle},{name:'Saved Looks',Icon:Heart},{name:'Wedding Planner',Icon:Gem},{name:'Trip Planner',Icon:Luggage},{name:'Wear Stats',Icon:BarChart3},{name:'Shop Smart',Icon:ShoppingBag},{name:'Preferences',Icon:SlidersHorizontal}];
 
 export default function App({hello}){
  const {user,first,logout}=useUser();
+ const [legal,setLegal]=useState(null);   // 'terms' | 'privacy': the footer links
  const [page,setPage]=useState('Overview'),[itemCount,setItemCount]=useState(null),[anchorId,setAnchorId]=useState(null),[preset,setPreset]=useState(null),[mobile,setMobile]=useState(false),[toast,setToast]=useState(''),[lookCount,setLookCount]=useState(0);
  // Show a message briefly. A new message restarts the timer, so it isn't cut short by an older one.
  const toastTimer=useRef(null);
@@ -28,6 +32,9 @@ export default function App({hello}){
  const notify=(s,ms=3000)=>{setToast(s);window.clearTimeout(toastTimer.current);toastTimer.current=window.setTimeout(()=>setToast(''),ms)};
  // A warm hello after signing in ("Welcome back, Swarangi!").
  useEffect(()=>{if(hello)notify(hello,5000)},[]); // eslint-disable-line react-hooks/exhaustive-deps
+ // The optional style profile questions, once per account (skippable; editable later in Preferences).
+ const [setup,setSetup]=useState(null);
+ useEffect(()=>{api.getStyleProfile().then(p=>{syncPreferences(p,api);if(!p.onboarded)setSetup(p)}).catch(()=>{})},[]);
  // Show the real number of wardrobe pieces on the Overview page.
  useEffect(()=>{if(page!=='Overview')return;api.listItems().then(list=>setItemCount(list.length)).catch(()=>setItemCount(null))},[page]);
  // Keep the Saved Looks count (sidebar badge, Overview) in step with the database.
@@ -48,7 +55,7 @@ export default function App({hello}){
    <div className="side-bottom"><div className="note"><Sparkles size={17}/><h3>A little style goes a long way.</h3><p>Build new looks from pieces you already love.</p><button onClick={()=>change('AI Stylist')}>Meet your stylist ↗</button></div><div className="profile"><span>{initials(user.name)}</span><div><b>{user.name}</b><small>{user.email}</small></div><button className="icon-btn logout" onClick={logout} aria-label="Log out" title="Log out"><LogOut size={15}/></button></div></div>
   </aside>{mobile&&<button className="scrim" onClick={()=>setMobile(false)} aria-label="Close menu"/>}
   <main><header><button className="menu mobile" onClick={()=>setMobile(true)}><Menu/></button><div className="crumb">Workspace <ChevronRight size={14}/><b>{page}</b></div><span className="mode">● Prototype mode</span><span className="user" title={user.name}>{initials(user.name)}</span></header>
-   <div className="content">
+   <div className="content"><VerifyBanner/>
     {page==='Overview'&&<><Heading eyebrow="YOUR STYLE, SIMPLIFIED" title={<>{greeting()}, {first}. <em>What feels like you today?</em></>} sub="A calmer way to get dressed, using the pieces you already own." action={<button className="primary" onClick={()=>change('AI Stylist')}><Sparkles size={16}/> Ask my stylist</button>}/>
      <section className="hero"><div className="hero-copy"><label>✦ YOUR DAILY STYLE NOTE</label><h2>Wear what you love.<br/><em>See it differently.</em></h2><p>Tell me where you're going and how you want to feel, {first}, and I'll find fresh combinations from your own wardrobe.</p><button className="light" onClick={()=>change('AI Stylist')}>Find my outfit ↗</button><small>● Every outfit tells your Adaa.</small></div><div className="hero-art"><div className="sun"></div><span className="art-title">THE ART OF<br/>GETTING DRESSED</span><div className="garment g1"></div><div className="garment g2"></div><div className="garment g3"></div><span className="sticker">LESS, BUT<br/><b>LOVELY</b></span></div></section>
      {festival&&<section className="festival-card"><div className="festival-swatches">{festival.colours.slice(0,4).map(c=><span key={c} style={{background:swatchFor(c)}} title={c}/>)}</div><div className="festival-copy"><small>{festival.today?'✦ TODAY\'S FESTIVAL COLOUR':'✦ COMING UP'}</small><h3>{festival.title}</h3><p>{festival.day_label?`${festival.day_label}. `:''}{festival.tip}</p><p className="festival-note">Festival dates can differ by a day in your region.</p></div><button className="primary" onClick={()=>change('AI Stylist',null,festivalPreset(festival))}><Sparkles size={15}/> {festival.colours.length===1?`Style me in ${festival.colour}`:`Style me for ${festival.name}`}</button></section>}
@@ -64,8 +71,8 @@ export default function App({hello}){
     {page==='Wear Stats'&&<WearStats onStyle={(item)=>change('AI Stylist',item.id)} goToWardrobe={()=>change('My Wardrobe')}/>}
     {page==='Shop Smart'&&<ShopSmart goToWardrobe={()=>change('My Wardrobe')}/>}
     {page==='Preferences'&&<><Heading eyebrow="MADE TO FEEL LIKE YOU" title={<>Your style, <em>your choices, {first}.</em></>} sub="Your account, and optional preferences that help personalise future recommendations."/><Preferences notify={notify}/></>}
-   </div><footer><span>Made for your wardrobe, not your shopping cart.</span><span>ADAA 1.0 · LOCAL PROTOTYPE</span></footer>
-  </main>{toast&&<div className="toast"><Check size={16}/>{toast}</div>}
+   </div><footer><span>Made for your wardrobe, not your shopping cart.</span><span className="legal-links"><button className="text-btn" onClick={()=>setLegal('terms')}>Terms of use</button> · <button className="text-btn" onClick={()=>setLegal('privacy')}>Privacy note</button> · ADAA 1.0</span></footer>{legal==='terms'&&<TermsNote onClose={()=>setLegal(null)}/>}{legal==='privacy'&&<PrivacyNote onClose={()=>setLegal(null)}/>}
+  </main>{toast&&<div className="toast"><Check size={16}/>{toast}</div>}{setup&&<StyleProfileSetup initial={setup} notify={notify} onDone={()=>setSetup(null)}/>}
  </div>
 }
 function greeting(){const h=new Date().getHours();return h<12?'Good morning':h<17?'Good afternoon':'Good evening'}
@@ -74,5 +81,15 @@ function Stat({icon,value,label,color}){return <div className="stat"><span class
 function Preferences({notify}){
  const [prefs,setPrefs]=useState(()=>loadPreferences()??DEFAULT_PREFERENCES);
  const set=(k,v)=>setPrefs(p=>({...p,[k]:v}));
- const save=()=>notify(savePreferences(prefs)?'Preferences saved. Your stylist will start with these.':'Could not save preferences in this browser.');
- return <div className="prefs"><AccountSettings notify={notify}/><WeatherSettings notify={notify}/>{[['Personal style','style'],['What matters most?','comfort'],['Colours you gravitate toward','colour']].map(([title,key])=><section key={key}><h3>{title}</h3><div>{PREFERENCE_CHOICES[key].map(o=><button className={prefs[key]===o?'chosen':''} aria-pressed={prefs[key]===o} key={o} onClick={()=>set(key,o)}>{o}{prefs[key]===o?' ✓':''}</button>)}</div></section>)}<button className="primary" onClick={save}>Save preferences <Check size={15}/></button><p className="muted">Saved in this browser. The AI Stylist form starts with these choices, and you can still change them for any request.</p></div>}
+ const save=async()=>{savePreferences(prefs);try{await api.saveStyleProfile(toAccount(prefs));notify('Preferences saved to your account. Your stylist will start with these on any device.')}catch(e){notify(e.message)}};
+ return <div className="prefs"><AccountSettings notify={notify}/><StyleProfileSettings notify={notify}/><WeatherSettings notify={notify}/>{[['Personal style','style'],['What matters most?','comfort'],['Colours you gravitate toward','colour']].map(([title,key])=><section key={key}><h3>{title}</h3><div>{PREFERENCE_CHOICES[key].map(o=><button className={prefs[key]===o?'chosen':''} aria-pressed={prefs[key]===o} key={o} onClick={()=>set(key,o)}>{o}{prefs[key]===o?' ✓':''}</button>)}</div></section>)}<button className="primary" onClick={save}>Save preferences <Check size={15}/></button><p className="muted">Saved with your account, so they follow you to any device. The AI Stylist form starts with these choices, and you can still change them for any request.</p></div>}
+
+// Until the email is confirmed: a gentle reminder with a resend button (nothing is blocked meanwhile).
+function VerifyBanner(){
+ const {user,setUser,first}=useUser();
+ const [state,setState]=useState({busy:false,text:''});
+ if(!user||user.email_verified)return null;
+ const resend=async()=>{setState({busy:true,text:''});try{const r=await api.resendVerification();setState({busy:false,text:r.detail});if(/already confirmed/.test(r.detail))setUser({...user,email_verified:true})}catch(e){setState({busy:false,text:e.message})}};
+ return <div className="verify-banner" role="status"><span>Please confirm your email, {first} (<b>{user.email}</b>): open the link we email you.{state.text&&<> {state.text}</>}</span><button className="text-btn" onClick={resend} disabled={state.busy}>{state.busy?'Sending…':'Email me a link'}</button></div>
+}
+
