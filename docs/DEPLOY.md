@@ -1,4 +1,24 @@
-# Put Adaa online (free Oracle Cloud server)
+# Put Adaa online
+
+**Adaa runs at https://adaa-every-outfit-tells-your-adaa.eastasia.cloudapp.azure.com** (Azure for Students, set up on 7 Nov 2026).
+
+Two routes, both ₹0: **Azure for Students** (no card needed: what Adaa uses) or **Oracle Cloud Always Free** (needs a Visa/Mastercard that allows international transactions; many Indian debit cards are declined). After the server exists, both use the same install script.
+
+## Route A: Azure for Students (no credit card)
+
+What it gives: US$100 credit and free services for 12 months, renewable every year while you're a student (verify with your college email or student ID). The B2ats_v2 / B1s server (750 hours a month: enough for 24/7) and a 64 GB P6 SSD are in the free services; the public IP comes out of the credit (a few dollars a month). With no card on file nothing is ever charged: when the credit or year ends, Microsoft emails and the services stop until you choose.
+
+1. Sign up at **azure.microsoft.com/free/students** with your college email (or student ID). Done when the portal's *Education* page shows "US$100 out of US$100".
+2. On your laptop, make the server key (once): `ssh-keygen -t ed25519 -f $HOME\.ssh\adaa_azure -N '""' -C adaa-azure-server` (create `C:\Users\<you>\.ssh` first if it doesn't exist). Keep `adaa_azure` private; `adaa_azure.pub` is the public half.
+3. In the portal, open **Cloud Shell** (`>_` icon, Bash, "No storage account required"), upload or paste `deploy/azure-create-vm.sh`, and run it with the public key:
+   `bash azure-create-vm.sh "<contents of adaa_azure.pub>"`
+   Student subscriptions may only use some regions (Adaa's could use East Asia, India South Central, Korea Central, Malaysia West and UAE North; not Central/South India): the script reads the allowed list and tries the closest first. It ends with **Done!** and the public IP.
+4. Free web address from Azure (instead of DuckDNS): `az network public-ip update -g adaa-rg -n adaa-ip-<region> --dns-name <name> --query dnsSettings.fqdn -o tsv` → `<name>.<region>.cloudapp.azure.com` (lowercase letters, digits and hyphens only).
+5. Connect: `ssh -i $HOME\.ssh\adaa_azure azureuser@<public IP>`. Then follow **steps 5–10 below** (deploy key, install with your Azure address, wardrobe, email, off-site backups, uptime alerts). Ports 80/443 are already open (the script did step 2).
+6. **Budget alert:** portal → *Cost Management → Budgets → Add*, amount US$10/month, alert at 50 % to your email, so any unexpected use shows up early.
+
+## Route B: Oracle Cloud Always Free
+
 
 This puts Adaa on a server that's always on, at a free `https://your-name.duckdns.org` address, so anyone with the link can sign up from anywhere. It takes about an hour the first time. Everything here is free.
 

@@ -101,4 +101,4 @@ done
 curl -fsS http://127.0.0.1:8000/api/health >/dev/null || fail "Adaa didn't start. See: sudo journalctl -u adaa -n 50"
 echo "Adaa is running."
 printf '\n\033[1;32mDone!\033[0m Open https://%s (the certificate can take a minute the first time).\n' "$DOMAIN"
-echo "If it doesn't open, check that ports 80 and 443 are open in Oracle's security list (docs/DEPLOY.md, step 2)."
+echo "If it doesn't open, check that ports 80 and 443 are open in your provider's firewall (Oracle security list / Azure network security group)."

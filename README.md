@@ -158,7 +158,7 @@ Adaa can sit on the home screen with its plum **A** icon and open full-screen.
 
 ## Put Adaa online
 
-[docs/DEPLOY.md](docs/DEPLOY.md) walks through putting Adaa on a **free Oracle Cloud server** with a free `https://your-name.duckdns.org` address, step by step: one install command (`deploy/install.sh`), https from Caddy, nightly backups, moving your laptop wardrobe over, and updating with `deploy/update.sh`. On a server the backend also serves the built app, so only one program runs.
+**Live:** https://adaa-every-outfit-tells-your-adaa.eastasia.cloudapp.azure.com (Azure for Students). [docs/DEPLOY.md](docs/DEPLOY.md) walks through putting Adaa on a **free Azure for Students server (no card) or Oracle Cloud server** with a free `https://your-name.duckdns.org` address, step by step: one install command (`deploy/install.sh`), https from Caddy, nightly backups, moving your laptop wardrobe over, and updating with `deploy/update.sh`. On a server the backend also serves the built app, so only one program runs.
 
 ## Settings for running Adaa for other people
 
