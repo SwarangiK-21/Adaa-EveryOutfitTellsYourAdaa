@@ -97,6 +97,10 @@ def test_public_pages_still_work_signed_out(anon):
         assert anon.get(path).status_code == 200, path
 
 
+def test_health_answers_uptime_monitors_head_request(anon):
+    assert anon.head("/api/health").status_code == 200
+
+
 # ---------- each account only sees its own wardrobe ----------
 
 def test_two_accounts_never_see_each_others_things(client, other_client):

@@ -46,7 +46,7 @@ BACKUP_KEEP = _int("ADAA_BACKUP_KEEP", 7)
 # Per-address request limits (ratelimit.py). 0 switches them off.
 RATE_LIMITS = os.environ.get("ADAA_RATE_LIMITS", "1") != "0"
 
-# Off-site copy of each backup (offsite.py): Cloudflare R2 or any S3-compatible storage. Empty = local only.
+# Off-site copy of each backup (offsite.py): Backblaze B2, Cloudflare R2 or any S3-compatible storage. Empty = local only.
 S3_ENDPOINT = os.environ.get("ADAA_BACKUP_S3_ENDPOINT", "")
 S3_BUCKET = os.environ.get("ADAA_BACKUP_S3_BUCKET", "")
 S3_KEY_ID = os.environ.get("ADAA_BACKUP_S3_KEY_ID", "")

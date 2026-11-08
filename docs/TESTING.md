@@ -350,4 +350,4 @@ On a copy of the real wardrobe (backend 8011, Vite 5181), then the built app ser
 | Phone: email banner fits | ✅ (wording fixed for accounts created before confirmation existed) |
 | `npm audit` | ✅ 0 vulnerabilities |
 | Backend tests | ✅ 257 passed |
-| Not tested here: a real Linux server (install.sh / update.sh only syntax-checked), real SMTP delivery, a real R2 bucket, a full axe audit (loading outside scripts was blocked) | ⏳ during deployment |
+| Tested live on the Azure server: install.sh, https, Gmail email, Backblaze off-site backup, UptimeRobot check. Not yet: update.sh on the server, a full axe audit (loading outside scripts was blocked) | ✅ / ⏳ |

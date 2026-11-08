@@ -171,7 +171,7 @@ All optional: without them Adaa behaves as on your laptop. Set them as environme
 | `ADAA_SECURE_COOKIES` | `1` once Adaa is on `https`, so the sign-in cookie is only sent encrypted | off |
 | `ADAA_MAX_ITEMS` / `ADAA_MAX_LOOKS` | Most pieces / saved looks per person | 300 / 200 |
 | `ADAA_MAX_USERS` | Most accounts in total (`0` = no cap) | 0 |
-| `ADAA_BACKUP_S3_ENDPOINT`, `ADAA_BACKUP_S3_BUCKET`, `ADAA_BACKUP_S3_KEY_ID`, `ADAA_BACKUP_S3_SECRET` | Off-site copy of each nightly backup (Cloudflare R2, 10 GB free; docs/DEPLOY.md step 9) | none: backups stay on the server only |
+| `ADAA_BACKUP_S3_ENDPOINT`, `ADAA_BACKUP_S3_BUCKET`, `ADAA_BACKUP_S3_KEY_ID`, `ADAA_BACKUP_S3_SECRET` | Off-site copy of each nightly backup (Backblaze B2, 10 GB free, no card; docs/DEPLOY.md step 9) | none: backups stay on the server only |
 | `ADAA_RATE_LIMITS` | `0` switches the per-address request limits off (never on a public server) | on |
 | `ADAA_SMTP_HOST`, `ADAA_SMTP_PORT`, `ADAA_SMTP_USER`, `ADAA_SMTP_PASSWORD`, `ADAA_MAIL_FROM` | Email service for "forgot password", e.g. Gmail (`smtp.gmail.com`, 587, your address and a Google **app password**) or Brevo's free plan | none: the email is **printed in the backend terminal** instead, handy for testing |
 
@@ -253,7 +253,7 @@ Adaa/
 │  ├─ ratelimit.py          Per-address request limits (sign-ups, log-ins, reset emails, uploads...)
 │  ├─ security.py           Cross-site request check and the app page's Content Security Policy
 │  ├─ image_meta.py         Removes hidden metadata (GPS location, camera details) from uploaded photos
-│  ├─ offsite.py            Copies each nightly backup to Cloudflare R2 (S3-compatible, signed requests)
+│  ├─ offsite.py            Copies each nightly backup to Backblaze B2 / any S3-compatible storage (signed requests)
 │  ├─ requirements.lock     Exact package versions the tests passed with (used on the server)
 │  ├─ backup.py             Back up / restore the database and photos (one .tar.gz, newest 7 kept)
 │  ├─ mailer.py             Sends password-reset and email-confirmation emails (any SMTP service), or prints it when none is set

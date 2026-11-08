@@ -134,41 +134,25 @@ Until this is set, password-reset and email-confirmation emails only go to the s
 
 With Gmail (free):
 1. Google Account → **Security** → turn on **2-Step Verification** → **App passwords** → create one called `Adaa`. Copy the 16 letters.
-2. On the server: `sudo nano /etc/adaa.env` and fill in:
-   ```
-   ADAA_CONTACT_EMAIL=your.address@gmail.com
-   ADAA_SMTP_HOST=smtp.gmail.com
-   ADAA_SMTP_PORT=587
-   ADAA_SMTP_USER=your.address@gmail.com
-   ADAA_SMTP_PASSWORD=the16letterapppassword
-   ADAA_MAIL_FROM=your.address@gmail.com
-   ```
-   Save with `Ctrl+O`, `Enter`, exit with `Ctrl+X`.
-3. `sudo systemctl restart adaa`, then try **Forgot password?** on the log-in screen.
+2. On the server: `sudo bash /opt/adaa/deploy/email-setup.sh`. It asks for the Gmail address and the app password (typed in hidden), saves them in `/etc/adaa.env`, sends a test email and restarts Adaa.
+3. Try **Forgot password?** on the log-in screen.
 
 Gmail allows about 500 emails a day, plenty for password resets. (Brevo's free plan works the same way with its SMTP details.)
 
-## 9. Off-site backups (Cloudflare R2, free)
+## 9. Off-site backups (Backblaze B2, free, no card)
 
-The nightly backup is on the server's own disk. If the server is lost (or Oracle reclaims it), so are those backups. R2 keeps a copy elsewhere: 10 GB free, no download fees.
+The nightly backup is on the server's own disk. If the server is lost, so are those backups. Backblaze B2 keeps a copy elsewhere: 10 GB free, no credit card. (Cloudflare R2 also works, but asks for a card.)
 
-1. Sign up at [dash.cloudflare.com](https://dash.cloudflare.com) → **R2 Object Storage** (it may ask for a card even for the free tier).
-2. **Create bucket** → name `adaa-backups` → location Automatic → Create.
-3. In the bucket → **Settings → Object lifecycle rules → Add rule**: delete objects **14 days** after upload (keeps two weeks).
-4. **R2 → Manage API tokens → Create API token** → permission **Object Read & Write**, limited to the `adaa-backups` bucket → Create. Copy the **Access Key ID**, **Secret Access Key** and the **endpoint** (`https://<account-id>.r2.cloudflarestorage.com`).
-5. On the server: `sudo nano /etc/adaa.env` and fill in:
-   ```
-   ADAA_BACKUP_S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
-   ADAA_BACKUP_S3_BUCKET=adaa-backups
-   ADAA_BACKUP_S3_KEY_ID=...
-   ADAA_BACKUP_S3_SECRET=...
-   ```
-6. Test it: `sudo systemctl start adaa-backup && sudo journalctl -u adaa-backup -n 5` should end with **Copied off-site**. The file also appears in the bucket in the Cloudflare dashboard.
+1. Sign up at [backblaze.com/sign-up/s3](https://www.backblaze.com/sign-up/s3).
+2. **Buckets → Create a Bucket** → a unique name (e.g. `adaa-backups-yourname`), **Private**, encryption **Enable** → Create. Note its **Endpoint** (e.g. `s3.us-west-004.backblazeb2.com`).
+3. On the bucket → **Lifecycle Settings → custom rules**: days till hide `14`, days till delete `1` (keeps two weeks).
+4. **Application Keys → Add a New Application Key** → only that bucket, **Read and Write** → Create. Keep the **keyID** and **applicationKey** on screen (shown once).
+5. On the server: `sudo bash /opt/adaa/deploy/backup-setup.sh`. It asks for the endpoint, bucket, keyID and applicationKey (typed in hidden), saves them in `/etc/adaa.env` and runs one backup to check it ends with **Copied off-site**.
 
 ## 10. Get told when Adaa is down (UptimeRobot, free)
 
 1. Sign up at [uptimerobot.com](https://uptimerobot.com) (free plan).
-2. **New monitor** → type **HTTP(s)** → URL `https://adaa-swarangi.duckdns.org/api/health` → every 5 minutes → alert to your email.
+2. **New monitor** → type **HTTP(s)** → URL `https://YOUR-ADDRESS/api/health` → every 5 minutes → alert to your email.
 3. If Adaa (or the server) stops, you get an email within minutes.
 
 ## Before you invite people

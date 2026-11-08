@@ -71,7 +71,7 @@ def client_error(report: ClientError):
     log.warning("Browser error on %s: %s | %s", report.page, report.message, where)
 
 
-@app.get("/api/health")
+@app.api_route("/api/health", methods=["GET", "HEAD"])  # HEAD: uptime monitors check with it
 def health_check():
     return {
         "status": "ok",

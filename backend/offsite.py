@@ -1,8 +1,8 @@
-"""Copies a backup to off-site storage (Cloudflare R2, or any S3-compatible service).
+"""Copies a backup to off-site storage (Backblaze B2, Cloudflare R2, or any S3-compatible service).
 
 A server's own disk can fail or the server can be removed; the nightly backups then go with it.
 After each backup, backup.py calls upload() to put a copy somewhere else. Old copies are removed
-by the bucket's own lifecycle rule (set in the R2 dashboard, see docs/DEPLOY.md), so this only
+by the bucket's own lifecycle rule (set in the storage dashboard, see docs/DEPLOY.md), so this only
 needs permission to write. Requests are signed with AWS Signature V4 using only the standard
 library and httpx (already installed).
 
