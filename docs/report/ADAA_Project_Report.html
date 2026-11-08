@@ -1,0 +1,368 @@
+<!doctype html>
+<!--
+  Source of docs/ADAA_Project_Report.pdf. To rebuild the PDF after editing (Windows, from the repo folder):
+  "C:\Program Files\Google\Chrome\Application\chrome.exe" --headless=new --no-pdf-header-footer
+    --print-to-pdf=docs\ADAA_Project_Report.pdf docs\report\ADAA_Project_Report.html
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Adaa: Project Report</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm 16mm 15mm; }
+  :root { --plum:#5B1F3F; --soft:#7A3A5C; --gold:#A8843E; --blush:#F6E9EE; --line:#E4CFD8; --ink:#2A1D24; --muted:#6B5A62; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Arial, sans-serif; color: var(--ink); font-size: 10.2pt; line-height: 1.45; margin: 0; }
+  h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; color: var(--plum); margin: 0; }
+  h2 { font-size: 16pt; margin: 0 0 6px; padding-bottom: 4px; border-bottom: 2px solid var(--line); }
+  h2 .n { color: var(--gold); margin-right: 6px; }
+  h3 { font-size: 11.5pt; margin: 10px 0 4px; }
+  p { margin: 4px 0 8px; }
+  section { margin: 0 0 14px; }
+  .break { break-before: page; }
+  .keep { break-inside: avoid; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; break-inside: auto; }
+  tr { break-inside: avoid; }
+  th { background: var(--plum); color: #fff; text-align: left; font-weight: 600; padding: 5px 7px; font-size: 9.5pt; }
+  td { padding: 5px 7px; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 9.5pt; }
+  tr:nth-child(even) td { background: #FCF7F9; }
+  td:first-child { font-weight: 600; color: var(--plum); width: 24%; }
+  .note { background: var(--blush); border-left: 4px solid var(--plum); padding: 7px 10px; margin: 8px 0; font-size: 9.6pt; }
+  .muted { color: var(--muted); font-size: 9pt; }
+  .term { font-style: italic; color: var(--soft); }
+
+  /* Cover */
+  .cover { height: 255mm; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+  .cover img.logo { width: 62mm; }
+  .cover h1 { font-size: 30pt; margin-top: 10mm; }
+  .cover .tag { font-family: Georgia, serif; font-style: italic; color: var(--gold); font-size: 14pt; margin-top: 2mm; }
+  .cover .sub { margin-top: 8mm; font-size: 11pt; max-width: 130mm; color: var(--muted); }
+  .cover .meta { margin-top: 14mm; font-size: 10pt; line-height: 1.7; }
+  .cover .meta b { color: var(--plum); }
+
+  .contents { columns: 2; font-size: 10pt; margin: 6px 0 0; padding-left: 18px; }
+  figure { margin: 8px 0 12px; text-align: center; break-inside: avoid; }
+  figcaption { font-size: 8.8pt; color: var(--muted); margin-top: 3px; }
+  svg text { font-family: "Segoe UI", Arial, sans-serif; }
+  .shots { display: flex; gap: 8px; align-items: flex-start; }
+  .shots img { border: 1px solid var(--line); border-radius: 6px; }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <img class="logo" src="../../brand/png/adaa-logo.png" alt="Adaa logo">
+  <h1>Adaa: Project Report</h1>
+  <div class="tag">Every outfit tells your Adaa</div>
+  <div class="sub">A personal wardrobe stylist that builds complete outfits only from the clothes a person already owns, with Indian traditional, Western and Indo-Western styling.</div>
+  <div class="meta">
+    <b>Author:</b> Swarangi Kothawade<br>
+    <b>Live app:</b> adaa-every-outfit-tells-your-adaa.eastasia.cloudapp.azure.com<br>
+    <b>Google Play:</b> coming soon<br>
+    <b>Report date:</b> November 2026
+  </div>
+</div>
+
+<!-- ============ 1. PROBLEM ============ -->
+<section class="break">
+  <h2>Contents</h2>
+  <ol class="contents">
+    <li>Problem statement</li><li>Proposed solution</li><li>Architecture</li><li>Workflow</li><li>Technology stack</li>
+    <li>Features</li><li>Feature-wise implementation</li><li>Security</li><li>Future scope</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="n">1</span>Problem Statement</h2>
+  <table>
+    <tr><th>Problem</th><th>What it looks like in daily life</th></tr>
+    <tr><td>"Nothing to wear"</td><td>People own many clothes but forget what they have, so they repeat the same few outfits.</td></tr>
+    <tr><td>Wasted money</td><td>New clothes are bought that don't go with anything already in the wardrobe.</td></tr>
+    <tr><td>Generic apps</td><td>Most fashion apps suggest clothes the user doesn't own, or push shopping.</td></tr>
+    <tr><td>Indian wear ignored</td><td>Sarees, kurtas, lehengas, jhumkas, wedding functions and festival colours are rarely understood.</td></tr>
+    <tr><td>Untrustworthy AI</td><td>AI image tools can "invent" clothes or show pieces that don't look like the real ones.</td></tr>
+  </table>
+</section>
+
+<!-- ============ 2. SOLUTION ============ -->
+<section>
+  <h2><span class="n">2</span>Proposed Solution</h2>
+  <p>Adaa is a web app (it also installs on a phone's home screen) that works like a personal stylist for <b>your own</b> wardrobe.</p>
+  <table>
+    <tr><th>Idea</th><th>How Adaa does it</th></tr>
+    <tr><td>Start from what you own</td><td>The user adds a photo and a few details of each piece once (clothes, jewellery, shoes, bags).</td></tr>
+    <tr><td>Ask naturally</td><td>Type or speak a request in English or Hinglish, e.g. <i>"Aaj college ke liye kuch comfy"</i>, or tap options.</td></tr>
+    <tr><td>Complete, honest looks</td><td>Up to 4 different outfits, each with the reasons it works and honest cautions. If a piece is missing, Adaa says so instead of inventing it.</td></tr>
+    <tr><td>See the real pieces</td><td>Each look is shown as an "outfit board" made from the user's own photos with the backgrounds removed. No AI-generated images.</td></tr>
+    <tr><td>Indian occasions built in</td><td>Wedding functions (haldi, mehendi, sangeet…), about 30 festivals with their colours, and Hinglish words.</td></tr>
+    <tr><td>Wear more, buy less</td><td>Wear stats, cost per wear, and "Shop Smart" ideas for the few new pieces that would unlock the most outfits.</td></tr>
+  </table>
+  <div class="note"><b>Core rule:</b> Adaa never invents a piece. Every outfit uses only items the user has added.</div>
+</section>
+
+<!-- ============ 3. ARCHITECTURE ============ -->
+<section class="break">
+  <h2><span class="n">3</span>Architecture</h2>
+  <p>Adaa has three main parts: the <b>app in the browser</b> (what the user sees), the <b>server</b> (stores data and chooses outfits), and a few <b>outside services</b> used only for specific jobs.</p>
+  <figure>
+    <svg viewBox="0 0 720 360" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Architecture diagram">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#7A3A5C"/></marker>
+      </defs>
+      <!-- Browser -->
+      <rect x="10" y="20" width="210" height="300" rx="12" fill="#F6E9EE" stroke="#5B1F3F" stroke-width="1.5"/>
+      <text x="115" y="44" text-anchor="middle" font-size="14" font-weight="700" fill="#5B1F3F">User's browser / phone</text>
+      <rect x="25" y="58" width="180" height="58" rx="8" fill="#fff" stroke="#E4CFD8"/>
+      <text x="115" y="80" text-anchor="middle" font-size="12" font-weight="600" fill="#2A1D24">React app (screens)</text>
+      <text x="115" y="98" text-anchor="middle" font-size="10" fill="#6B5A62">Wardrobe, Stylist, Planners…</text>
+      <rect x="25" y="126" width="180" height="58" rx="8" fill="#fff" stroke="#E4CFD8"/>
+      <text x="115" y="148" text-anchor="middle" font-size="12" font-weight="600" fill="#2A1D24">In-browser AI models</text>
+      <text x="115" y="166" text-anchor="middle" font-size="10" fill="#6B5A62">background removal, auto-fill</text>
+      <rect x="25" y="194" width="180" height="50" rx="8" fill="#fff" stroke="#E4CFD8"/>
+      <text x="115" y="216" text-anchor="middle" font-size="12" font-weight="600" fill="#2A1D24">Voice input</text>
+      <text x="115" y="232" text-anchor="middle" font-size="10" fill="#6B5A62">browser speech-to-text</text>
+      <rect x="25" y="254" width="180" height="50" rx="8" fill="#fff" stroke="#E4CFD8"/>
+      <text x="115" y="276" text-anchor="middle" font-size="12" font-weight="600" fill="#2A1D24">Photo shrinking</text>
+      <text x="115" y="292" text-anchor="middle" font-size="10" fill="#6B5A62">before upload</text>
+
+      <!-- Server -->
+      <rect x="280" y="20" width="250" height="300" rx="12" fill="#FCF7F9" stroke="#5B1F3F" stroke-width="1.5"/>
+      <text x="405" y="44" text-anchor="middle" font-size="14" font-weight="700" fill="#5B1F3F">Server (Ubuntu on Azure)</text>
+      <rect x="295" y="58" width="220" height="40" rx="8" fill="#fff" stroke="#E4CFD8"/>
+      <text x="405" y="83" text-anchor="middle" font-size="12" font-weight="600" fill="#2A1D24">Caddy: https + security headers</text>
+      <rect x="295" y="110" width="220" height="92" rx="8" fill="#fff" stroke="#E4CFD8"/>
+      <text x="405" y="130" text-anchor="middle" font-size="12" font-weight="600" fill="#2A1D24">FastAPI backend (Python)</text>
+      <text x="405" y="148" text-anchor="middle" font-size="10" fill="#6B5A62">accounts · wardrobe · looks · limits</text>
+      <rect x="310" y="158" width="190" height="34" rx="6" fill="#F6E9EE" stroke="#E4CFD8"/>
+      <text x="405" y="179" text-anchor="middle" font-size="11" font-weight="600" fill="#5B1F3F">Rule-based stylist</text>
+      <rect x="295" y="214" width="105" height="46" rx="8" fill="#fff" stroke="#E4CFD8"/>
+      <text x="347" y="235" text-anchor="middle" font-size="11.5" font-weight="600" fill="#2A1D24">SQLite</text>
+      <text x="347" y="250" text-anchor="middle" font-size="9.5" fill="#6B5A62">database</text>
+      <rect x="410" y="214" width="105" height="46" rx="8" fill="#fff" stroke="#E4CFD8"/>
+      <text x="462" y="235" text-anchor="middle" font-size="11.5" font-weight="600" fill="#2A1D24">Photo files</text>
+      <text x="462" y="250" text-anchor="middle" font-size="9.5" fill="#6B5A62">on disk</text>
+      <rect x="295" y="270" width="220" height="38" rx="8" fill="#fff" stroke="#E4CFD8"/>
+      <text x="405" y="294" text-anchor="middle" font-size="11.5" font-weight="600" fill="#2A1D24">Nightly backup (systemd timer)</text>
+
+      <!-- Outside services -->
+      <text x="635" y="44" text-anchor="middle" font-size="14" font-weight="700" fill="#5B1F3F">Outside services</text>
+      <rect x="565" y="62" width="145" height="50" rx="8" fill="#fff" stroke="#A8843E"/>
+      <text x="637" y="84" text-anchor="middle" font-size="11.5" font-weight="600" fill="#2A1D24">Open-Meteo</text>
+      <text x="637" y="100" text-anchor="middle" font-size="9.5" fill="#6B5A62">weather forecast</text>
+      <rect x="565" y="150" width="145" height="50" rx="8" fill="#fff" stroke="#A8843E"/>
+      <text x="637" y="172" text-anchor="middle" font-size="11.5" font-weight="600" fill="#2A1D24">Gmail (SMTP)</text>
+      <text x="637" y="188" text-anchor="middle" font-size="9.5" fill="#6B5A62">confirm / reset emails</text>
+      <rect x="565" y="262" width="145" height="50" rx="8" fill="#fff" stroke="#A8843E"/>
+      <text x="637" y="284" text-anchor="middle" font-size="11.5" font-weight="600" fill="#2A1D24">Backblaze B2</text>
+      <text x="637" y="300" text-anchor="middle" font-size="9.5" fill="#6B5A62">off-site backup copy</text>
+
+      <!-- Arrows -->
+      <line x1="205" y1="87" x2="293" y2="78" stroke="#7A3A5C" stroke-width="1.8" marker-end="url(#ar)"/>
+      <text x="249" y="70" text-anchor="middle" font-size="10" fill="#7A3A5C">https</text>
+      <line x1="405" y1="98" x2="405" y2="108" stroke="#7A3A5C" stroke-width="1.8" marker-end="url(#ar)"/>
+      <line x1="370" y1="202" x2="355" y2="212" stroke="#7A3A5C" stroke-width="1.5" marker-end="url(#ar)"/>
+      <line x1="440" y1="202" x2="455" y2="212" stroke="#7A3A5C" stroke-width="1.5" marker-end="url(#ar)"/>
+      <path d="M205,72 C380,6 520,8 563,80" fill="none" stroke="#A8843E" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+      <text x="470" y="14" text-anchor="middle" font-size="9.5" fill="#A8843E">city forecast (from the browser)</text>
+      <line x1="515" y1="160" x2="563" y2="172" stroke="#A8843E" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+      <line x1="515" y1="289" x2="563" y2="288" stroke="#A8843E" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+    </svg>
+    <figcaption>Figure 1. Adaa's architecture. Solid arrows: the app's own traffic. Dashed arrows: outside services.</figcaption>
+  </figure>
+  <table>
+    <tr><th>Part</th><th>Job</th></tr>
+    <tr><td>Browser app</td><td>Shows every screen. Runs the photo-cleaning AI models on the user's own device, so wardrobe photos are never sent to an AI company. Voice uses the browser's speech-to-text (in Chrome, Google's speech service).</td></tr>
+    <tr><td>Caddy</td><td>The "front door": gives the site its padlock (<span class="term">https</span>, encrypted connection) and adds security headers.</td></tr>
+    <tr><td>FastAPI backend</td><td>The <span class="term">API</span> (the set of addresses the app talks to): accounts, wardrobe, looks, planners. Also serves the app's files, so only one program runs.</td></tr>
+    <tr><td>Rule-based stylist</td><td>Plain Python rules that pick and explain outfits (section 7).</td></tr>
+    <tr><td>SQLite + photo files</td><td>All data in one database file; photos as files with random names.</td></tr>
+    <tr><td>Backups</td><td>Every night: a copy of the database and photos, the newest 7 kept on the server, plus an off-site copy in Backblaze B2.</td></tr>
+  </table>
+</section>
+
+<!-- ============ 4. WORKFLOW ============ -->
+<section class="break">
+  <h2><span class="n">4</span>Workflow</h2>
+  <p>How a person uses Adaa, from first visit to everyday use:</p>
+  <figure>
+    <svg viewBox="0 0 720 250" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Workflow diagram">
+      <defs>
+        <marker id="aw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#7A3A5C"/></marker>
+      </defs>
+      <g font-size="11">
+        <!-- row 1 -->
+        <rect x="10" y="20" width="150" height="66" rx="10" fill="#5B1F3F"/>
+        <text x="85" y="46" text-anchor="middle" fill="#fff" font-weight="700">1. Sign up</text>
+        <text x="85" y="64" text-anchor="middle" fill="#F6E9EE" font-size="9.5">name, email, password,</text>
+        <text x="85" y="77" text-anchor="middle" fill="#F6E9EE" font-size="9.5">confirm email</text>
+        <rect x="195" y="20" width="150" height="66" rx="10" fill="#F6E9EE" stroke="#5B1F3F"/>
+        <text x="270" y="46" text-anchor="middle" fill="#5B1F3F" font-weight="700">2. Style profile</text>
+        <text x="270" y="64" text-anchor="middle" fill="#6B5A62" font-size="9.5">optional: shape, fit,</text>
+        <text x="270" y="77" text-anchor="middle" fill="#6B5A62" font-size="9.5">colours (skippable)</text>
+        <rect x="380" y="20" width="150" height="66" rx="10" fill="#F6E9EE" stroke="#5B1F3F"/>
+        <text x="455" y="46" text-anchor="middle" fill="#5B1F3F" font-weight="700">3. Add clothes</text>
+        <text x="455" y="64" text-anchor="middle" fill="#6B5A62" font-size="9.5">photo + details;</text>
+        <text x="455" y="77" text-anchor="middle" fill="#6B5A62" font-size="9.5">auto-fill suggests them</text>
+        <rect x="565" y="20" width="150" height="66" rx="10" fill="#F6E9EE" stroke="#5B1F3F"/>
+        <text x="640" y="46" text-anchor="middle" fill="#5B1F3F" font-weight="700">4. Photos cleaned</text>
+        <text x="640" y="64" text-anchor="middle" fill="#6B5A62" font-size="9.5">background removed</text>
+        <text x="640" y="77" text-anchor="middle" fill="#6B5A62" font-size="9.5">in the browser</text>
+        <line x1="160" y1="53" x2="193" y2="53" stroke="#7A3A5C" stroke-width="2" marker-end="url(#aw)"/>
+        <line x1="345" y1="53" x2="378" y2="53" stroke="#7A3A5C" stroke-width="2" marker-end="url(#aw)"/>
+        <line x1="530" y1="53" x2="563" y2="53" stroke="#7A3A5C" stroke-width="2" marker-end="url(#aw)"/>
+        <path d="M640,86 L640,112 L85,112 L85,138" fill="none" stroke="#7A3A5C" stroke-width="2" marker-end="url(#aw)"/>
+        <!-- row 2 -->
+        <rect x="10" y="140" width="150" height="76" rx="10" fill="#5B1F3F"/>
+        <text x="85" y="166" text-anchor="middle" fill="#fff" font-weight="700">5. Ask the stylist</text>
+        <text x="85" y="184" text-anchor="middle" fill="#F6E9EE" font-size="9.5">type, speak, or pick</text>
+        <text x="85" y="197" text-anchor="middle" fill="#F6E9EE" font-size="9.5">occasion and style</text>
+        <rect x="195" y="140" width="150" height="76" rx="10" fill="#F6E9EE" stroke="#5B1F3F"/>
+        <text x="270" y="166" text-anchor="middle" fill="#5B1F3F" font-weight="700">6. Get up to 4 looks</text>
+        <text x="270" y="184" text-anchor="middle" fill="#6B5A62" font-size="9.5">outfit boards with</text>
+        <text x="270" y="197" text-anchor="middle" fill="#6B5A62" font-size="9.5">reasons and cautions</text>
+        <rect x="380" y="140" width="150" height="76" rx="10" fill="#F6E9EE" stroke="#5B1F3F"/>
+        <text x="455" y="166" text-anchor="middle" fill="#5B1F3F" font-weight="700">7. Swap and save</text>
+        <text x="455" y="184" text-anchor="middle" fill="#6B5A62" font-size="9.5">change a piece, save,</text>
+        <text x="455" y="197" text-anchor="middle" fill="#6B5A62" font-size="9.5">download the image</text>
+        <rect x="565" y="140" width="150" height="76" rx="10" fill="#F6E9EE" stroke="#5B1F3F"/>
+        <text x="640" y="166" text-anchor="middle" fill="#5B1F3F" font-weight="700">8. Wear and learn</text>
+        <text x="640" y="184" text-anchor="middle" fill="#6B5A62" font-size="9.5">"Wore it today" feeds</text>
+        <text x="640" y="197" text-anchor="middle" fill="#6B5A62" font-size="9.5">Wear Stats, Shop Smart</text>
+        <line x1="160" y1="178" x2="193" y2="178" stroke="#7A3A5C" stroke-width="2" marker-end="url(#aw)"/>
+        <line x1="345" y1="178" x2="378" y2="178" stroke="#7A3A5C" stroke-width="2" marker-end="url(#aw)"/>
+        <line x1="530" y1="178" x2="563" y2="178" stroke="#7A3A5C" stroke-width="2" marker-end="url(#aw)"/>
+        <text x="360" y="242" text-anchor="middle" fill="#6B5A62" font-size="10">Planners (Wedding, Trip) and Festival styling follow the same path from step 5.</text>
+      </g>
+    </svg>
+    <figcaption>Figure 2. The user's journey in Adaa.</figcaption>
+  </figure>
+  <h3>What happens behind one request</h3>
+  <table>
+    <tr><th>Step</th><th>What happens</th></tr>
+    <tr><td>1. Understand</td><td>The request text is read by keyword rules: occasion, style, colours, comfort, festival, and any piece the user names ("my purple navari").</td></tr>
+    <tr><td>2. Build</td><td>Every sensible combination is built from the user's own items: one-pieces (saree, gown, dress) and top + bottom pairs.</td></tr>
+    <tr><td>3. Score</td><td>Each combination gets points for the occasion, style, colour harmony, weather and style profile.</td></tr>
+    <tr><td>4. Complete</td><td>Shoes, jewellery and a bag tagged for that occasion are added.</td></tr>
+    <tr><td>5. Choose and explain</td><td>Up to 4 looks that really differ are picked, each with reasons and honest cautions.</td></tr>
+  </table>
+  <figure>
+    <div class="shots">
+      <img src="../screenshots/stylist-outfit.png" alt="An outfit card" style="width:62%">
+      <img src="../screenshots/phone-saved-look.png" alt="A saved look on a phone" style="width:30%">
+    </div>
+    <figcaption>Figure 3. Real screenshots: an outfit made from the user's own pieces (left) and a saved look on a phone (right).</figcaption>
+  </figure>
+</section>
+
+<!-- ============ 5. TECH STACK ============ -->
+<section class="break">
+  <h2><span class="n">5</span>Technology Stack</h2>
+  <table>
+    <tr><th>Layer</th><th>Technology</th><th>In simple words</th></tr>
+    <tr><td>Frontend</td><td>React 18, Vite, plain CSS, Lucide icons</td><td>React builds the screens; Vite bundles them into fast files for the browser.</td></tr>
+    <tr><td>Backend</td><td>Python, FastAPI, Uvicorn, Pydantic</td><td>FastAPI answers the app's requests; Pydantic checks that incoming data is valid.</td></tr>
+    <tr><td>Database</td><td>SQLite (WAL mode)</td><td>A whole database in one file; WAL lets reading and writing happen together.</td></tr>
+    <tr><td>Styling logic</td><td>Rule-based Python</td><td>Hand-written styling rules instead of a paid AI service.</td></tr>
+    <tr><td>In-browser AI</td><td>onnxruntime-web, IS-Net, SegFormer-B2 clothes parser</td><td>Free AI models that run inside the browser to remove photo backgrounds and recognise clothes.</td></tr>
+    <tr><td>Weather</td><td>Open-Meteo API</td><td>Free weather service, no account or key needed.</td></tr>
+    <tr><td>Voice</td><td>Web Speech API</td><td>The browser's built-in speech-to-text.</td></tr>
+    <tr><td>Email</td><td>SMTP (Gmail app password)</td><td>Sends email-confirmation and password-reset links.</td></tr>
+    <tr><td>Hosting</td><td>Azure for Students VM, Ubuntu 24.04, Caddy, systemd</td><td>A free student server; Caddy provides https; systemd keeps Adaa running and restarts it if needed.</td></tr>
+    <tr><td>Backups</td><td>Python <code>backup.py</code>, Backblaze B2</td><td>Nightly copies kept on the server and off-site.</td></tr>
+    <tr><td>Monitoring</td><td>UptimeRobot</td><td>Checks the site every 5 minutes and emails if it goes down.</td></tr>
+    <tr><td>Testing</td><td>pytest (258 tests)</td><td>Automatic checks that the backend and styling rules still work.</td></tr>
+  </table>
+</section>
+
+<!-- ============ 6. FEATURES ============ -->
+<section>
+  <h2><span class="n">6</span>Features</h2>
+  <table>
+    <tr><th>Feature</th><th>Purpose</th></tr>
+    <tr><td>My Wardrobe</td><td>Add, search, filter, edit and delete pieces, with photo auto-fill.</td></tr>
+    <tr><td>AI Stylist</td><td>Ask for outfits by typing, voice or options; get up to 4 explained looks.</td></tr>
+    <tr><td>Outfit boards</td><td>See each look as the user's own garment photos arranged as if worn; download as an image.</td></tr>
+    <tr><td>Swap, save, history</td><td>Change any piece, save looks, add a photo wearing a look, record what was worn.</td></tr>
+    <tr><td>Wedding Planner</td><td>A different look per function (haldi to reception), following dress codes, no garment repeated.</td></tr>
+    <tr><td>Festivals</td><td>About 30 festivals and national days with their colours; Navratri colour of the day.</td></tr>
+    <tr><td>Trip Planner</td><td>One outfit per trip day without repeating a garment, plus a packing list.</td></tr>
+    <tr><td>Weather-aware styling</td><td>Dresses the user for today's temperature and rain in their city.</td></tr>
+    <tr><td>Wear Stats</td><td>Pieces not worn lately, most worn, cost per wear.</td></tr>
+    <tr><td>Shop Smart</td><td>Which one new piece would unlock the most new outfits.</td></tr>
+    <tr><td>Style profile</td><td>Optional details that add "Why it suits you" notes to each look.</td></tr>
+    <tr><td>Accounts</td><td>Private wardrobe per person, email confirmation, password reset, delete account.</td></tr>
+    <tr><td>Home-screen app</td><td>Can be installed on a phone or laptop and opens like an app.</td></tr>
+  </table>
+</section>
+
+<!-- ============ 7. FEATURE-WISE IMPLEMENTATION ============ -->
+<section class="break">
+  <h2><span class="n">7</span>Feature-wise Implementation</h2>
+  <table>
+    <tr><th>Feature</th><th>Technology used</th><th>How it works</th></tr>
+    <tr><td>Wardrobe and photos</td><td>React form, FastAPI, SQLite, <code>storage.py</code>, <code>image_meta.py</code></td><td>The browser shrinks the photo (max 1600 px). The server checks the real file type, saves it under a random name and removes hidden data like GPS location.</td></tr>
+    <tr><td>Auto-fill from photo</td><td>SegFormer-B2 clothes parser in a Web Worker</td><td>The model labels the garment's pixels (top, skirt, trousers…); the shape and main colour fill in the form. Only untouched fields are filled.</td></tr>
+    <tr><td>Background removal</td><td>IS-Net + clothes parser, onnxruntime-web</td><td>Runs once per garment in a background thread of the browser; the clean picture is saved on the server and reused.</td></tr>
+    <tr><td>Understanding requests</td><td><code>recommender/parser.py</code></td><td>Keyword rules with small typo tolerance; knows Hindi colour and occasion words (lal, shaadi, safar…).</td></tr>
+    <tr><td>Choosing outfits</td><td><code>recommender/engine.py</code>, <code>colours.py</code>, <code>garments.py</code></td><td>Builds every valid combination, scores it, adds accessories, picks up to 4 that differ, and writes reasons and cautions.</td></tr>
+    <tr><td>Voice requests</td><td>Web Speech API (Indian English)</td><td>Speech becomes text in the browser, then goes through the same parser.</td></tr>
+    <tr><td>Outfit board</td><td><code>OutfitBoard.jsx</code>, <code>boardImage.js</code></td><td>Places the cut-outs as if worn, sized to each other; "Download image" redraws it on a canvas as a PNG.</td></tr>
+    <tr><td>Wedding Planner</td><td><code>recommender/events.py</code> + planner search</td><td>Each function has dress-code colours and colours to avoid; a search gives each function a different look without repeating any garment.</td></tr>
+    <tr><td>Trip Planner</td><td><code>recommender/planner.py</code></td><td>A search fills the days with the best outfits so no garment is worn twice; builds a packing list.</td></tr>
+    <tr><td>Festivals</td><td><code>recommender/festivals.py</code></td><td>A table of festivals, their spellings, colours and dates; requests for a festival show only outfits in its colours.</td></tr>
+    <tr><td>Weather</td><td>Open-Meteo, <code>weather.js</code>, <code>recommender/weather.py</code></td><td>The browser fetches today's forecast for the saved city; hot, cold and rain gently change the scores and add notes.</td></tr>
+    <tr><td>Wear Stats</td><td>SQLite history tables, <code>planner.py</code></td><td>Counts each "Wore it today"; works out days since worn and price ÷ wears.</td></tr>
+    <tr><td>Shop Smart</td><td><code>planner.py</code></td><td>Tries 17 versatile pieces against the wardrobe and counts how many new outfits each would make.</td></tr>
+    <tr><td>Style profile</td><td><code>recommender/profile_fit.py</code></td><td>Reads each piece's cut from its type and name, adds small score bonuses and "Why it suits you" notes. Never hides clothes.</td></tr>
+    <tr><td>Accounts and email</td><td><code>auth.py</code>, <code>mailer.py</code>, SMTP</td><td>Passwords hashed with scrypt; session cookie; one-use links emailed for confirmation and reset.</td></tr>
+    <tr><td>Hosting and backups</td><td>Caddy, systemd, <code>backup.py</code>, <code>offsite.py</code></td><td>One service runs Adaa; a nightly timer backs up the database and photos and uploads a copy to Backblaze B2.</td></tr>
+  </table>
+</section>
+
+<!-- ============ 8. SECURITY ============ -->
+<section class="break">
+  <h2><span class="n">8</span>Security</h2>
+  <table>
+    <tr><th>Area</th><th>Measure</th><th>Why it matters</th></tr>
+    <tr><td>Passwords</td><td>Only a salted <span class="term">scrypt hash</span> is stored (a one-way scramble)</td><td>Even someone with the database can't read passwords.</td></tr>
+    <tr><td>Sign-in sessions</td><td>Random token in an HttpOnly, SameSite cookie (Secure on https); database keeps only its SHA-256</td><td>Scripts can't read the cookie, and a copied database can't be used to log in.</td></tr>
+    <tr><td>Guessing passwords</td><td>5 wrong tries per email in 15 minutes; per-address limits on sign-up, log-in, reset emails, uploads</td><td>Stops automated guessing and spam.</td></tr>
+    <tr><td>Private wardrobes</td><td>Every database query is filtered by the logged-in user</td><td>One account can never see or change another's data.</td></tr>
+    <tr><td>Email links</td><td>One-use, hashed, short-lived (30 min reset, 24 h confirm); placed after <code>#</code></td><td>Links can't be reused and never appear in server logs.</td></tr>
+    <tr><td>Photos</td><td>Real type check, random names, size limit, hidden location data removed</td><td>Blocks disguised files and protects the user's location.</td></tr>
+    <tr><td>Web attacks</td><td>Cross-site write requests blocked; strict <span class="term">Content Security Policy</span>; no third-party scripts or fonts</td><td>Prevents other sites from acting as the user and blocks injected scripts.</td></tr>
+    <tr><td>Connection</td><td>https everywhere (Caddy, Let's Encrypt), HSTS and other security headers</td><td>Data is encrypted between the phone and the server.</td></tr>
+    <tr><td>Server</td><td>Runs as its own limited user, may only write to its data folders; logs kept 30 days</td><td>Limits damage if something goes wrong.</td></tr>
+    <tr><td>Data loss</td><td>Nightly backups (7 kept) + off-site copy; tested restore</td><td>Data survives a server failure.</td></tr>
+    <tr><td>Your choices</td><td>Delete account any time (data and photos erased); privacy note and terms; 18+ only</td><td>Users stay in control of their data.</td></tr>
+  </table>
+  <div class="note">No API keys or passwords are stored in the code. Server secrets live only in a settings file on the server, readable by the Adaa service alone.</div>
+</section>
+
+<!-- ============ 9. FUTURE SCOPE ============ -->
+<section>
+  <h2><span class="n">9</span>Future Scope</h2>
+  <table>
+    <tr><th>Improvement</th><th>Benefit</th></tr>
+    <tr><td>Android app on Google Play</td><td>Easy to find and install (the web app wrapped as a Trusted Web Activity).</td></tr>
+    <tr><td>Own domain + transactional email</td><td>A memorable address, and emails that land in the inbox instead of spam.</td></tr>
+    <tr><td>Offline screen</td><td>A friendly message instead of a browser error when there's no internet.</td></tr>
+    <tr><td>Use wear history in styling</td><td>Rank pieces that haven't been worn lately higher.</td></tr>
+    <tr><td>Makeup suggestions</td><td>Complete the look beyond clothes and jewellery.</td></tr>
+    <tr><td>Optional local language model</td><td>Friendlier chat, while the rules still choose the clothes.</td></tr>
+    <tr><td>Commercially licensed clothes model</td><td>The current clothes parser's licence allows non-commercial use only.</td></tr>
+  </table>
+  <h3>Current limitations</h3>
+  <table>
+    <tr><th>Limitation</th><th>Detail</th></tr>
+    <tr><td>Keyword understanding</td><td>Clear sentences work best; Adaa always shows what it understood.</td></tr>
+    <tr><td>Auto-fill accuracy</td><td>On 28 real photos: category always right, type about 9 in 10, colour about 3 in 4.</td></tr>
+    <tr><td>Phones</td><td>Automatic background removal is skipped on phones (the model is about 200 MB).</td></tr>
+    <tr><td>Scale</td><td>One server and one SQLite file: suited to early users, not very large numbers.</td></tr>
+  </table>
+  <p class="muted">All features, technologies and figures in this report come from the Adaa source code and its test records (docs/TESTING.md).</p>
+</section>
+
+</body>
+</html>

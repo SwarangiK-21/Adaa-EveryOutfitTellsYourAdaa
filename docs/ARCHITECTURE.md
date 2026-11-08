@@ -6,10 +6,12 @@ This explains how Adaa is put together and why it was built this way. For setup,
 
 ```
  Browser (React + Vite, port 5173)
-   │   pages: My Wardrobe · AI Stylist · Saved Looks · Preferences
+   │   pages: Overview · My Wardrobe · AI Stylist · Saved Looks · Wedding Planner
+   │          Trip Planner · Wear Stats · Shop Smart · Preferences
    │   all calls go through src/api.js  →  /api/...
    ▼
  Vite dev server  ── forwards /api/* ──►  FastAPI backend (port 8000)
+ (on the live server there is no Vite: the backend serves the built app itself, see "Running on a server")
                                             │
                      routes/items.py ───────┤  add / list / edit / delete items, photos
                      routes/recommendations.py  parse requests, recommend outfits
@@ -39,7 +41,7 @@ Because the recommender is plain Python that takes a list of items and returns o
 ## Accounts (`auth.py`, `routes/auth.py`)
 
 - **Consent:** sign-up requires `accept_privacy` ("I'm 18 or older and agree to the privacy note"); the time is stored in `users.privacy_accepted_at`. The note itself is `PrivacyNote.jsx`.
-- **Forgot password:** `POST /api/auth/forgot` always gives the same reply (nobody can learn who has an account) and sends the email after replying, via `mailer.py` (any SMTP service; printed to the terminal when none is set). The link is `ADAA_PUBLIC_URL/?reset=<token>`, never built from request headers, so a forged request can't point it at another site. Tokens are random, stored only as SHA-256 in `password_resets`, work once, for 30 minutes; at most 3 emails per address per hour.
+- **Forgot password:** `POST /api/auth/forgot` always gives the same reply (nobody can learn who has an account) and sends the email after replying, via `mailer.py` (any SMTP service; printed to the terminal when none is set). The link is `ADAA_PUBLIC_URL/#reset=<token>` (after `#`, so the token never reaches server logs), never built from request headers, so a forged request can't point it at another site. Tokens are random, stored only as SHA-256 in `password_resets`, work once, for 30 minutes; at most 3 emails per address per hour.
 - **New password** (reset or change) ends every session and cancels unused reset links; changing it in Preferences keeps the current browser signed in. Both changing the password and deleting the account ask for the current password (wrong tries count towards the 5-try throttle).
 - **Delete account:** one transaction removes looks (with their pieces and photos), history, wardrobe items, then the user (sessions and reset links cascade); the photo files are deleted from disk afterwards. The browser also forgets that account's saved preferences.
 - **Limits:** `ADAA_MAX_ITEMS` (300) pieces and `ADAA_MAX_LOOKS` (200) looks per person (403 with a friendly message), and an optional `ADAA_MAX_USERS` cap on accounts. `ADAA_SECURE_COOKIES=1` adds `Secure` to the cookie behind https.
@@ -54,7 +56,9 @@ Because the recommender is plain Python that takes a list of items and returns o
 ## Data model (SQLite)
 
 ```
-users: id, name, email (unique), phone, password_hash, created_at, privacy_accepted_at
+users: id, name, email (unique), phone, password_hash, created_at, privacy_accepted_at, email_verified_at
+email_verifications: token_hash, user_id → users (CASCADE), expires_at, used_at
+style_profiles: user_id → users (CASCADE), height, body shape, fit, undertone... (see "Style profile")
 password_resets: token_hash, user_id → users (CASCADE), expires_at, used_at
 sessions: token_hash, user_id → users (CASCADE), expires_at
 
@@ -124,7 +128,7 @@ If nothing is tagged for the occasion, it relaxes that rule, says so clearly, an
 - **Honest by construction:** it can only ever pick from your items, so it can't "hallucinate" a piece you don't own.
 - **Explainable:** every suggestion comes with the actual reasons it was chosen.
 - **Free and local:** no API keys, no internet, no costs, works on any laptop.
-- **Testable:** the same input always gives the same output, so behaviour is pinned down by 79 automated tests.
+- **Testable:** the same input always gives the same output, so behaviour is pinned down by automated tests (about half of the 258 backend tests cover styling: the engine, parser, planners, festivals, weather and style profile).
 
 An optional free local language model could later make the chat friendlier, but it would only *read* requests and *write* explanations. The rules would still choose the clothes.
 
@@ -256,7 +260,7 @@ Trousers, shoes, bag, dupatta, belt, hat and sunglasses come straight from their
 
 - `App.jsx` holds the layout and navigation. Each main page is its own file in `pages/`.
 - **Wi-Fi sharing:** `npm run share` = `vite build && vite preview --host`. The preview server (port 4173) is reachable on the home network and forwards `/api` to the backend, which itself stays on 127.0.0.1:8000. The session cookie has no `Secure` flag, so login works over plain http on the LAN.
-- **Installable app:** `public/manifest.webmanifest` (standalone, plum theme, 192/512 icons and a maskable 512 icon with the A inside the safe circle) and Apple meta tags in `index.html`. No service worker: Adaa needs the laptop's backend anyway, so there's nothing useful to cache offline.
+- **Installable app:** `public/manifest.webmanifest` (standalone, plum theme, 192/512 icons and a maskable 512 icon with the A inside the safe circle) and Apple meta tags in `index.html`. No service worker: every screen needs the backend anyway, so there's nothing useful to cache offline (an offline page is planned for the Play Store version).
 - **Phones:** `cutoutQueue.js` skips automatic cut-outs on touch devices with a small screen (the IS-Net model is ~179 MB); the board shows the original photo until a computer makes the cut-out. `AskBox.jsx` hides the microphone when `window.isSecureContext` is false.
 - **Opening animation (`Splash.jsx`):** `Root.jsx` shows it once per tab (`sessionStorage` `adaa.splashSeen`) while it checks who is logged in, always in the same place so it never restarts. `assets/adaa-splash.svg` is the plum logo with each part in its own group (`s-mark`, `s-shine`, `s-name`, `s-thread`, `s-dot`, `s-tag`), imported with `?raw` so CSS can animate the parts: focus-in (scale + blur), a gold glint clipped to the A, `clip-path` reveals for the name and tagline, the thread scaling out from the centre. After about 6 s (or a tap / key) it slides up in 0.9 s. With `prefers-reduced-motion` it's a still logo that fades out. Pure CSS, no libraries.
 - The Style me form is the single source of truth: typed requests, the ✦ "Style this" button and saved preferences all just fill in the form, then call `/api/recommendations`.

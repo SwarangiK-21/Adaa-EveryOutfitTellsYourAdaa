@@ -8,7 +8,7 @@ Run from `backend/` with the virtual environment active:
 python -m pytest
 ```
 
-Expected result: **257 passed**. Each test runs against a fresh temporary database and photo folder, so your real wardrobe is never touched.
+Expected result: **258 passed**. Each test runs against a fresh temporary database and photo folder, so your real wardrobe is never touched.
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -59,7 +59,7 @@ Done on 15 Oct 2026, starting from an **empty** data folder, using the real form
 
 ## Quick checklist before a demo
 
-1. `python -m pytest` → `257 passed`
+1. `python -m pytest` → `258 passed`
 2. Backend running: http://127.0.0.1:8000/api/health → `"status":"ok"`
 3. Frontend running: http://localhost:5173 → Overview shows your piece count
 4. AI Stylist → ask for one of your demo requests → outfits with photos appear
@@ -351,3 +351,17 @@ On a copy of the real wardrobe (backend 8011, Vite 5181), then the built app ser
 | `npm audit` | ✅ 0 vulnerabilities |
 | Backend tests | ✅ 257 passed |
 | Tested live on the Azure server: install.sh, https, Gmail email, Backblaze off-site backup, UptimeRobot check. Not yet: update.sh on the server, a full axe audit (loading outside scripts was blocked) | ✅ / ⏳ |
+
+## Repository review (8 Nov 2026)
+
+| Check | Result |
+|---|---|
+| Screenshots in `docs/screenshots/` taken from the real app (built `dist` served by the backend on a scratch copy of a real wardrobe, demo login, no real email or phone shown) | ✅ |
+| Every page loads after the review changes (Overview, My Wardrobe, AI Stylist, Saved Looks, Wedding Planner, Trip Planner, Wear Stats, Shop Smart, Preferences) | ✅ |
+| Phone menu button now has an accessible name ("Open menu") | ✅ (fixed during this pass) |
+| Privacy note named Cloudflare R2 for backups; production uses Backblaze B2 | ✅ (fixed during this pass) |
+| README links, image paths and section links resolve; report images resolve | ✅ |
+| `docs/ADAA_Project_Report.pdf` generated from `docs/report/ADAA_Project_Report.html` with headless Chrome | ✅ |
+| No secrets, keys or personal contact details in tracked files or git history (pattern scan) | ✅ |
+| `npm run build`, `npm audit --omit=dev` | ✅ built, 0 vulnerabilities |
+| Backend tests | ✅ 258 passed |

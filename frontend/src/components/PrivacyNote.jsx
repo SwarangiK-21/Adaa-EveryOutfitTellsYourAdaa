@@ -1,7 +1,7 @@
 import React from 'react';
 import LegalDialog from './LegalDialog.jsx';
 
-export const PRIVACY_UPDATED = '6 November 2026';
+export const PRIVACY_UPDATED = '8 November 2026';
 
 /* The privacy note, in plain words: what Adaa keeps, why, who else is involved, and how to delete it. */
 export default function PrivacyNote({ onClose }) {
@@ -21,7 +21,7 @@ export default function PrivacyNote({ onClose }) {
           <p>Only to run your account and style outfits from your own clothes. Your name is used to talk to you; your email to sign in and reset your password; your phone number only to contact you about your account. Adaa never sells or shares your details, and never sends marketing.</p>
 
           <h3>Where it's kept</h3>
-          <p>On the server that runs this Adaa, with a nightly backup copy kept with a storage service (Cloudflare R2). Only you can see your wardrobe. Cleaning up photo backgrounds and auto-fill happen inside your own browser.</p>
+          <p>On the server that runs this Adaa, with a nightly backup copy kept with a storage service (Backblaze B2). Only you can see your wardrobe. Cleaning up photo backgrounds and auto-fill happen inside your own browser.</p>
 
           <h3>Other services, only if you use them</h3>
           <ul>

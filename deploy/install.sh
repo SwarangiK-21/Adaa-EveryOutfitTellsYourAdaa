@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Sets up Adaa on a fresh Ubuntu 24.04 server (Oracle Cloud, or any VPS), with https.
+# Sets up Adaa on a fresh Ubuntu 24.04 server (Azure for Students, Oracle Cloud, or any VPS), with https.
 #
 #   sudo git clone https://github.com/SwarangiK-21/Adaa-.git /opt/adaa
-#   sudo bash /opt/adaa/deploy/install.sh your-name.duckdns.org
+#   sudo bash /opt/adaa/deploy/install.sh your-address.example.com   (e.g. an Azure DNS name)
 #
 # Safe to run again: it skips what's already done and never touches existing data or settings.
 set -euo pipefail

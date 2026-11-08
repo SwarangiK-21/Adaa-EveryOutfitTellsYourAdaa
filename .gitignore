@@ -1,14 +1,28 @@
+# Dependencies and builds
 node_modules/
 dist/
 .venv/
 __pycache__/
 *.pyc
+.pytest_cache/
+
+# Secrets and local settings (never commit these; deploy/adaa.env.example is the template)
 .env
+.env.*
+*.pem
+*.key
+
+# Editors and operating systems
+.vscode/
+.idea/
 .DS_Store
+Thumbs.db
 *.log
 
-# Local app data: database and uploaded photos
+# Local app data: database, uploaded photos and downloaded AI models
 backend/data/
 
 # Backups made by backend/backup.py on your laptop
 backend/backups/
+*.tar.gz
+*.part

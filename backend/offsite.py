@@ -6,8 +6,9 @@ by the bucket's own lifecycle rule (set in the storage dashboard, see docs/DEPLO
 needs permission to write. Requests are signed with AWS Signature V4 using only the standard
 library and httpx (already installed).
 
-Settings: ADAA_BACKUP_S3_ENDPOINT (e.g. https://<account-id>.r2.cloudflarestorage.com),
-ADAA_BACKUP_S3_BUCKET, ADAA_BACKUP_S3_KEY_ID, ADAA_BACKUP_S3_SECRET, ADAA_BACKUP_S3_REGION ("auto").
+Settings: ADAA_BACKUP_S3_ENDPOINT (e.g. https://s3.us-west-004.backblazeb2.com for Backblaze B2),
+ADAA_BACKUP_S3_BUCKET, ADAA_BACKUP_S3_KEY_ID, ADAA_BACKUP_S3_SECRET, and ADAA_BACKUP_S3_REGION
+(the B2 region such as "us-west-004"; "auto" for Cloudflare R2). deploy/backup-setup.sh fills these in.
 """
 import hashlib
 import hmac
