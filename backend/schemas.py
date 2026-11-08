@@ -530,7 +530,7 @@ class AboutOut(BaseModel):
 class UserOut(BaseModel):
     id: int
     name: str
-    first_name: str           # what Adaa calls you: "Swarangi"
+    first_name: str           # what Adaa calls you, e.g. "Ananya"
     email: str
     phone: str
     created_at: str

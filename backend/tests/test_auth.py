@@ -21,13 +21,13 @@ def add_item(client, name="Green saree", item_type="Saree", colour="Green"):
 # ---------- sign up, log in, log out ----------
 
 def test_signup_signs_you_in_and_knows_your_first_name(anon):
-    res = anon.post("/api/auth/signup", json={**TEST_USER, "name": "  Swarangi   Kothawade ", "phone": "+91 98765 43210"})
+    res = anon.post("/api/auth/signup", json={**TEST_USER, "name": "  Ananya   Rao ", "phone": "+91 98765 43210"})
     assert res.status_code == 201, res.text
     user = res.json()
-    assert user["name"] == "Swarangi Kothawade" and user["first_name"] == "Swarangi"
+    assert user["name"] == "Ananya Rao" and user["first_name"] == "Ananya"
     assert user["phone"] == "+919876543210" and user["email"] == "test@example.com"
     assert "password" not in json.dumps(user) and "hash" not in json.dumps(user)
-    assert anon.get("/api/auth/me").json()["first_name"] == "Swarangi"
+    assert anon.get("/api/auth/me").json()["first_name"] == "Ananya"
 
 
 @pytest.mark.parametrize("change, field", [
@@ -74,9 +74,9 @@ def test_passwords_and_sessions_are_never_stored_in_plain_text(client):
 
 
 def test_you_can_change_your_name_and_phone(client):
-    res = client.put("/api/auth/me", json={"name": "Swarangi K", "phone": "9123456789"})
-    assert res.status_code == 200 and res.json()["first_name"] == "Swarangi"
-    assert client.put("/api/auth/me", json={"name": "Swarangi", "phone": "12"}).status_code == 422
+    res = client.put("/api/auth/me", json={"name": "Ananya R", "phone": "9123456789"})
+    assert res.status_code == 200 and res.json()["first_name"] == "Ananya"
+    assert client.put("/api/auth/me", json={"name": "Ananya", "phone": "12"}).status_code == 422
 
 
 # ---------- everything needs you to be signed in ----------

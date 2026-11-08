@@ -11,20 +11,21 @@ A personal wardrobe stylist that builds complete outfits from the clothes you al
   <a href="https://adaa-every-outfit-tells-your-adaa.eastasia.cloudapp.azure.com"><img alt="Live app" src="https://img.shields.io/badge/live-open%20Adaa-5B1F3F?style=flat-square"></a>
   <img alt="Google Play: coming soon" src="https://img.shields.io/badge/Google%20Play-coming%20soon-C9A45C?style=flat-square">
   <img alt="Tests: 258 passing" src="https://img.shields.io/badge/tests-258%20passing-2E7D32?style=flat-square">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-7A3A5C?style=flat-square"></a>
   <img alt="React 18" src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=white">
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-Python-009688?style=flat-square&logo=fastapi&logoColor=white">
   <img alt="SQLite" src="https://img.shields.io/badge/SQLite-database-003B57?style=flat-square&logo=sqlite&logoColor=white">
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/stylist-outfit.png" alt="An Adaa outfit: the user's own crop top, skirt, shoes, bag and jewellery arranged as one look, with the reasons it works" width="720">
+  <img src="docs/screenshots/opening-screen.webp" alt="Adaa's opening screen: the plum ribbon A logo with the tagline and a personal greeting" width="820">
 </p>
 
 ---
 
 ## Contents
 
-[Problem and solution](#the-problem) · [Features](#features) · [Screenshots](#screenshots) · [Tech stack](#tech-stack) · [How it works](#how-it-works) · [Run it locally](#run-it-locally) · [Project structure](#project-structure) · [Security and privacy](#security-and-privacy) · [Links](#links) · [Roadmap](#roadmap) · [Credits](#credits-and-contributing)
+[Problem and solution](#the-problem) · [Features](#features) · [Screenshots](#screenshots) · [Tech stack](#tech-stack) · [How it works](#how-it-works) · [Run it locally](#run-it-locally) · [Project structure](#project-structure) · [Security and privacy](#security-and-privacy) · [Links](#links) · [Roadmap](#roadmap) · [Credits](#credits-and-contributing) · [License](#license)
 
 ## The problem
 
@@ -56,19 +57,34 @@ Adaa is a stylist for **your own** wardrobe. You add photos of your clothes, jew
 
 ## Screenshots
 
-> All screenshots are of the real app, taken from a copy of a real wardrobe. Nothing is mocked up or AI-generated.
+> Screenshots of the real app with a real wardrobe. Nothing is mocked up or AI-generated.
 
-| Overview | My Wardrobe |
-|---|---|
-| ![Overview page with a greeting, the daily style note and today's festival colours](docs/screenshots/overview.png) | ![Wardrobe page showing clothing photos with category filters](docs/screenshots/wardrobe.png) |
-| **Ask the stylist** | **Saved look (outfit board)** |
-| ![The AI Stylist after a typed request, showing what Adaa understood and the first look](docs/screenshots/stylist-request.png) | ![A saved look shown as an outfit board with its pieces and reasons](docs/screenshots/saved-look.png) |
-| **Wedding Planner** | **Shop Smart** |
-| ![Wedding planner with a different look for haldi, mehendi and sangeet](docs/screenshots/wedding-planner.png) | ![Shop Smart ideas such as gold juttis and beige trousers, with how many new outfits each unlocks](docs/screenshots/shop-smart.png) |
-| **Wear Stats** | **Sign up** |
-| ![Wear stats showing pieces not worn in 30 days](docs/screenshots/wear-stats.png) | ![Sign-up screen with name, email, phone and password](docs/screenshots/sign-up.png) |
-
-<p align="center"><b>On a phone</b><br><img src="docs/screenshots/phone-saved-look.png" alt="A saved look on a phone screen" width="300"></p>
+<table>
+  <tr>
+    <td width="50%" align="center"><b>Overview</b><br><sub>A personal greeting and the daily style note</sub></td>
+    <td width="50%" align="center"><b>My Wardrobe</b><br><sub>Every piece with its photo, category, colour and style</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/overview.webp" alt="Overview page with a personal greeting, the Ask my stylist button and the daily style note"></td>
+    <td><img src="docs/screenshots/wardrobe.webp" alt="My Wardrobe page with saree, gown and top photos, a search box and category filters"></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><b>A college look</b><br><sub>Outfit board made from the user's own photos, with reasons</sub></td>
+    <td width="50%" align="center"><b>Another look for the same request</b><br><sub>Up to 4 different looks, each piece swappable</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/outfit-white-top.webp" alt="Look 1: white ruffled top with black baggy jeans, sandals, earrings, necklace, bag and watch, with the reasons it works"></td>
+    <td><img src="docs/screenshots/outfit-checks-shirt.webp" alt="Look 4: checked shirt with straight jeans, sandals and a pearl bracelet, with the reasons it works"></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><b>Trip Planner</b><br><sub>One outfit per day, no garment repeated, plus a packing list</sub></td>
+    <td width="50%" align="center"><b>Shop Smart</b><br><sub>The new pieces that would unlock the most outfits</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/trip-planner.webp" alt="Trip Planner for 3 days (party, college, festive) with a packing list and an outfit board for each day"></td>
+    <td><img src="docs/screenshots/shop-smart.webp" alt="Shop Smart ideas such as beige trousers and gold juttis, with how many new outfits each would unlock"></td>
+  </tr>
+</table>
 
 ## Tech stack
 
@@ -297,4 +313,8 @@ Details: the *Launch hardening* section of [docs/ARCHITECTURE.md](docs/ARCHITECT
 
 **Contributing:** this is a student project. Ideas and bug reports are welcome as GitHub issues. For code changes, please open an issue first, keep changes small, and make sure `python -m pytest` and `npm run build` pass.
 
-**Licence:** no open-source licence has been chosen yet, so all rights are reserved by the author.
+## License
+
+Adaa's source code is released under the **[MIT License](LICENSE)**: you may use, copy, change and share it, as long as the copyright notice is kept.
+
+The MIT License covers this repository's code and documentation only. The AI models Adaa downloads at runtime keep their own licences: IS-Net is Apache 2.0, and the SegFormer-B2 clothes parser is under an NVIDIA licence that allows **non-commercial use only**. A commercial version of Adaa would need a differently licensed clothes model. The Adaa name and logo identify this project; please don't present a modified version as the official Adaa.

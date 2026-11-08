@@ -90,24 +90,24 @@ export default function AuthScreen({ onSignedIn, resetToken, onResetDone, initia
           <>
             {mode === 'signup' && (
               <label className="field"><span>Your name</span>
-                <input ref={first} value={fields.name} onChange={set('name')} maxLength={60} autoComplete="name" placeholder="e.g. Swarangi Kothawade" required />
+                <input ref={first} value={fields.name} onChange={set('name')} maxLength={60} autoComplete="name" placeholder="Type your name" required />
               </label>
             )}
             {mode !== 'reset' && (
               <label className="field"><span>Email</span>
-                <input ref={mode === 'signup' ? null : first} type="email" value={fields.email} onChange={set('email')} maxLength={120} autoComplete="email" placeholder="you@example.com" required />
+                <input ref={mode === 'signup' ? null : first} type="email" value={fields.email} onChange={set('email')} maxLength={120} autoComplete="email" placeholder="Type your email address" required />
               </label>
             )}
             {mode === 'signup' && (
               <label className="field"><span>Phone number</span>
-                <input type="tel" value={fields.phone} onChange={set('phone')} maxLength={25} autoComplete="tel" placeholder="+91 98765 43210" required />
+                <input type="tel" value={fields.phone} onChange={set('phone')} maxLength={25} autoComplete="tel" placeholder="Type your phone number" required />
               </label>
             )}
             {needsPassword && (
               <label className="field"><span>{mode === 'reset' ? 'New password' : 'Password'}</span>
                 <span className="password">
                   <input ref={mode === 'reset' ? first : null} type={show ? 'text' : 'password'} value={fields.password} onChange={set('password')} maxLength={128}
-                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'} placeholder={mode === 'login' ? '' : 'At least 8 characters'} required />
+                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'} placeholder={mode === 'login' ? 'Type your password' : mode === 'reset' ? 'Type a new password (at least 8 characters)' : 'Type a password (at least 8 characters)'} required />
                   <button type="button" className="icon-btn" onClick={() => setShow((s) => !s)} aria-label={show ? 'Hide password' : 'Show password'}>
                     {show ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>

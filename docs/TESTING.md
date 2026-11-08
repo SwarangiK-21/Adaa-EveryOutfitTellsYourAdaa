@@ -356,7 +356,9 @@ On a copy of the real wardrobe (backend 8011, Vite 5181), then the built app ser
 
 | Check | Result |
 |---|---|
-| Screenshots in `docs/screenshots/` taken from the real app (built `dist` served by the backend on a scratch copy of a real wardrobe, demo login, no real email or phone shown) | ✅ |
+| Screenshots in `docs/screenshots/` are the author's own captures of the real app; the sidebar account line (email) and an old header label were cropped out, nothing else edited | ✅ |
+| "Prototype mode" label removed; sign-up and log-in fields start empty with neutral hints ("Type your name"…); no personal details in placeholders or test data | ✅ |
+| MIT `LICENSE` added; README explains that downloaded AI models keep their own licences | ✅ |
 | Every page loads after the review changes (Overview, My Wardrobe, AI Stylist, Saved Looks, Wedding Planner, Trip Planner, Wear Stats, Shop Smart, Preferences) | ✅ |
 | Phone menu button now has an accessible name ("Open menu") | ✅ (fixed during this pass) |
 | Privacy note named Cloudflare R2 for backups; production uses Backblaze B2 | ✅ (fixed during this pass) |
