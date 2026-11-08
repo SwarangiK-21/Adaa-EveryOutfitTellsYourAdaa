@@ -80,20 +80,13 @@ Type `yes` the first time. You're now typing on the server (the prompt shows `ub
 
 ## 5. Let the server download Adaa from GitHub
 
-The repository is private, so give the server a **read-only deploy key** (it can read this one repository and nothing else).
+The repository is public, so the server can download it directly:
 
 ```bash
-sudo ssh-keygen -t ed25519 -f /root/.ssh/id_ed25519 -N "" -C "adaa-server"
-sudo cat /root/.ssh/id_ed25519.pub
+sudo git clone https://github.com/SwarangiK-21/Adaa-EveryOutfitTellsYourAdaa.git /opt/adaa
 ```
-Copy the line it prints. On GitHub: **SwarangiK-21/Adaa- → Settings → Deploy keys → Add deploy key** → title `adaa-server`, paste, leave *Allow write access* **unticked** → **Add key**.
 
-Back on the server:
-```bash
-sudo ssh -o StrictHostKeyChecking=accept-new -T git@github.com
-sudo git clone git@github.com:SwarangiK-21/Adaa-.git /opt/adaa
-```
-The first command should say *"You've successfully authenticated"*.
+*(For a private copy instead: make a read-only deploy key on the server with `sudo ssh-keygen -t ed25519 -f /root/.ssh/id_ed25519 -N "" -C adaa-server`, add `/root/.ssh/id_ed25519.pub` under the repository's **Settings → Deploy keys** with write access unticked, and clone with `git@github.com:<you>/<repo>.git`.)*
 
 ## 6. Install Adaa (one command)
 
