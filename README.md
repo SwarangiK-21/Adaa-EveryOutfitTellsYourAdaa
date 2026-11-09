@@ -135,97 +135,15 @@ flowchart LR
 
 More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Project report (PDF): [docs/ADAA_Project_Report.pdf](docs/ADAA_Project_Report.pdf)
 
-## Run it locally
 
-**You need:** Python 3.11+ and Node.js 18+ (tested with Python 3.15 and Node 24).
 
-**1. Backend** (terminal 1):
 
-```bash
-cd backend
-python -m venv .venv
-# Windows: .\.venv\Scripts\Activate.ps1     macOS/Linux: source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn main:app --reload
-```
 
-Check http://127.0.0.1:8000/api/health shows `"status":"ok"`.
 
-**2. Frontend** (terminal 2):
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
 
-Open **http://localhost:5173** and create an account. Without email settings, confirmation and reset emails are printed in the backend terminal.
 
-**3. Tests:**
 
-```bash
-cd backend
-pip install -r requirements-dev.txt
-python -m pytest        # expected: 258 passed
-```
-
-<details>
-<summary><b>Troubleshooting</b></summary>
-
-| Problem | Fix |
-|---|---|
-| *"running scripts is disabled"* (Windows) | Run `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` once |
-| App says *"Can't reach the Adaa server"* | The backend isn't running; start terminal 1 |
-| Port 8000 is already in use | Start the backend with `--port 8001`, and the frontend with `ADAA_API_URL=http://127.0.0.1:8001` set (PowerShell: `$env:ADAA_API_URL="http://127.0.0.1:8001"; npm run dev`) |
-| iPhone photo refused | HEIC isn't supported; share the photo as JPEG |
-
-</details>
-
-<details>
-<summary><b>Share on home Wi-Fi</b> (friends try it on their phones)</summary>
-
-Run `npm run share` instead of `npm run dev` in the `frontend` folder and share the **Network** address it prints (e.g. `http://192.168.1.20:4173`). Everyone creates their own account. Over plain `http` the microphone button is hidden, and Android may show the browser bar.
-</details>
-
-<details>
-<summary><b>Put it on a server</b></summary>
-
-[docs/DEPLOY.md](docs/DEPLOY.md) walks through a free **Azure for Students** (no card) or Oracle Cloud server: one install command (`deploy/install.sh`) sets up https (Caddy), the service, nightly backups and log retention. Helper scripts set up email (`deploy/email-setup.sh`) and off-site backups (`deploy/backup-setup.sh`); `deploy/update.sh` updates from GitHub. On a server the backend also serves the built app, so only one program runs.
-</details>
-
-<details>
-<summary><b>Settings</b> (environment variables, all optional)</summary>
-
-| Setting | What it does | Default |
-|---|---|---|
-| `ADAA_PUBLIC_URL` | The address people open Adaa at (used in email links) | `http://localhost:5173` |
-| `ADAA_CONTACT_EMAIL` | Shown in the privacy note | none |
-| `ADAA_SECURE_COOKIES` | `1` behind https, so the sign-in cookie is only sent encrypted | off |
-| `ADAA_MAX_ITEMS` / `ADAA_MAX_LOOKS` / `ADAA_MAX_USERS` | Limits per person / total accounts (`0` = no cap) | 300 / 200 / 0 |
-| `ADAA_SMTP_HOST`, `_PORT`, `_USER`, `_PASSWORD`, `ADAA_MAIL_FROM` | Email service for confirmation and reset emails | none: printed in the terminal |
-| `ADAA_BACKUP_S3_ENDPOINT`, `_BUCKET`, `_KEY_ID`, `_SECRET`, `_REGION` | Off-site copy of each nightly backup (Backblaze B2 or any S3-compatible storage) | none: backups stay on the server |
-| `ADAA_RATE_LIMITS` | `0` switches request limits off (never on a public server) | on |
-| `ADAA_DATA_DIR`, `ADAA_BACKUP_DIR`, `ADAA_FRONTEND_DIR` | Where data, backups and the built app live | inside `backend/` and `frontend/dist` |
-
-The full list with comments is in [`deploy/adaa.env.example`](deploy/adaa.env.example).
-</details>
-
-<details>
-<summary><b>API overview</b></summary>
-
-Interactive docs at http://127.0.0.1:8000/docs while the backend runs. Every route needs a logged-in user, except health, options, sign-up/log-in/reset, festivals and the cut-out models.
-
-| Area | Routes |
-|---|---|
-| Accounts | `POST /api/auth/signup`, `/login`, `/logout`, `/forgot`, `/reset`, `/verify`, `/verify/resend` · `GET/PUT/DELETE /api/auth/me` · `PUT /api/auth/password` · `GET /api/auth/about` |
-| Style profile | `GET/PATCH /api/profile/style` |
-| Wardrobe | `GET/POST /api/items` · `GET/PUT/DELETE /api/items/{id}` · `GET /api/items/{id}/photo` · `PUT/GET/DELETE /api/items/{id}/cutout` |
-| Stylist | `POST /api/stylist/parse` · `POST /api/recommendations` · `POST /api/outfits/evaluate` · `POST /api/outfits/alternatives` |
-| Looks and history | `GET/POST /api/looks` · `PUT/DELETE /api/looks/{id}` · `POST /api/looks/{id}/wear` · `POST/GET/DELETE /api/looks/{id}/photo` · `GET/POST /api/history` · `DELETE /api/history/{id}` |
-| Planners and insights | `POST /api/trips/plan` · `GET /api/events/functions` · `POST /api/events/plan` · `GET /api/festivals/now` · `GET /api/insights/gaps` · `GET /api/insights/wear?days=30` |
-| Other | `GET /api/health` · `GET /api/options` · `GET /api/models/{isnet\|clothes}` · `POST /api/client-error` |
-
-</details>
 
 ## Project structure
 
