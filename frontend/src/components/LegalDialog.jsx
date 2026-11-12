@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 import { api } from '../api.js';
 
 // Shared by the privacy note and the terms: a pop-up over the whole page (Esc or "Got it" closes it).
-// children(contact) gets the contact line: the email set by whoever runs this Adaa, or a fallback.
+// children(contact) gets the contact line: the email set by whoever runs this Peheraav, or a fallback.
 export default function LegalDialog({ title, updated, onClose, children }) {
   const [about, setAbout] = useState(null);
   useEffect(() => { api.about().then(setAbout).catch(() => setAbout(null)); }, []);
@@ -16,7 +16,7 @@ export default function LegalDialog({ title, updated, onClose, children }) {
 
   const contact = about?.contact_email
     ? <a href={`mailto:${about.contact_email}`}>{about.contact_email}</a>
-    : 'the person who runs this Adaa';
+    : 'the person who runs this Peheraav';
 
   // On top of the whole page (not inside the section that opened it), so no outside styles leak in.
   return createPortal(

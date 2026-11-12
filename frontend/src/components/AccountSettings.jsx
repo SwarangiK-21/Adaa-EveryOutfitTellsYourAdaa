@@ -78,7 +78,7 @@ export default function AccountSettings({ notify }) {
     <section className="account-settings">
       <h3>Your account</h3>
       <form onSubmit={save}>
-        <label className="field"><span>Name <i>(Adaa calls you {name.trim().split(/\s+/)[0] || '…'})</i></span>
+        <label className="field"><span>Name <i>(Peheraav calls you {name.trim().split(/\s+/)[0] || '…'})</i></span>
           <input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} autoComplete="name" />
         </label>
         <label className="field"><span>Phone number</span>

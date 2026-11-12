@@ -4,7 +4,7 @@
 
 import { storageKey } from './user.js';
 
-const KEY = 'adaa.preferences';   // stored per account: see storageKey
+const KEY = 'peheraav.preferences';   // stored per account: see storageKey
 
 export const PREFERENCE_CHOICES = {
   style: ['Traditional Indian', 'Minimal & elegant', 'Western', 'Indo-western', 'A little bit of everything'],

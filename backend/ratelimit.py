@@ -2,8 +2,8 @@
 
 They stop one computer from flooding sign-ups or reset emails, guessing many passwords, filling the
 disk with uploads, or re-downloading the big AI model over and over. Normal use never comes close.
-Counts are kept in memory (Adaa runs as a single process); behind Caddy the real visitor address
-comes from X-Forwarded-For (uvicorn --proxy-headers). ADAA_RATE_LIMITS=0 switches this off.
+Counts are kept in memory (Peheraav runs as a single process); behind Caddy the real visitor address
+comes from X-Forwarded-For (uvicorn --proxy-headers). PEHERAAV_RATE_LIMITS=0 switches this off.
 """
 import re
 import threading

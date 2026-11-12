@@ -1,4 +1,4 @@
-# https for Adaa. Caddy gets a free Let's Encrypt certificate for this address and renews it by itself.
+# https for Peheraav. Caddy gets a free Let's Encrypt certificate for this address and renews it by itself.
 YOUR-DOMAIN {
 	encode zstd gzip
 	request_body {

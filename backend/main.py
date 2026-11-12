@@ -25,8 +25,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Adaa API",
-    description="Backend for Adaa, the personal wardrobe stylist. Also serves the built app when frontend/dist exists.",
+    title="Peheraav API",
+    description="Backend for Peheraav, the personal wardrobe stylist. Also serves the built app when frontend/dist exists.",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -47,7 +47,7 @@ app.include_router(planner.router)
 app.include_router(profile.router)
 
 
-log = logging.getLogger("adaa")
+log = logging.getLogger("peheraav")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 
@@ -75,7 +75,7 @@ def client_error(report: ClientError):
 def health_check():
     return {
         "status": "ok",
-        "project": "Adaa",
+        "project": "Peheraav",
         "phase": 6,
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
     }
@@ -97,7 +97,7 @@ def frontend(path: str):
     if not index.is_file():
         if path:
             raise HTTPException(status_code=404, detail="Not Found")
-        return {"message": "Adaa API is running.", "docs": "/docs", "health": "/api/health"}
+        return {"message": "Peheraav API is running.", "docs": "/docs", "health": "/api/health"}
     file = (dist / path).resolve()
     if path and file.is_file() and file.is_relative_to(dist):
         # Built files have a content hash in their name, so browsers may keep them for a year.

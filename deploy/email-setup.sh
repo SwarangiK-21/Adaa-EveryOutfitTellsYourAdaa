@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# Sets up Adaa's email (Gmail app password) on the server, then sends a test email.
+# Sets up Peheraav's email (Gmail app password) on the server, then sends a test email.
 #
-#   sudo bash /opt/adaa/deploy/email-setup.sh
+#   sudo bash /opt/peheraav/deploy/email-setup.sh
 #
-# It asks for Adaa's Gmail address and its 16-letter app password (typed in hidden, never shown or
-# logged), writes them into /etc/adaa.env (readable only by root and Adaa), restarts Adaa and
+# It asks for Peheraav's Gmail address and its 16-letter app password (typed in hidden, never shown or
+# logged), writes them into /etc/peheraav.env (readable only by root and Peheraav), restarts Peheraav and
 # checks that Gmail accepts the login by sending a test email to that address.
 set -euo pipefail
 [ "$(id -u)" = 0 ] || exec sudo bash "$0" "$@"
-ENV=/etc/adaa.env
+ENV=/etc/peheraav.env
 [ -f "$ENV" ] || { echo "No $ENV yet: run deploy/install.sh first."; exit 1; }
 
-read -rp "Adaa's Gmail address: " ADDR
+read -rp "Peheraav's Gmail address: " ADDR
 ADDR="$(echo "$ADDR" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')"
 [[ "$ADDR" =~ ^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]+$ ]] || { echo "That doesn't look like an email address. Run me again."; exit 1; }
 
@@ -29,23 +29,23 @@ done
 set_var() {   # replace KEY=... in the settings file, or add it
   if grep -q "^$1=" "$ENV"; then sed -i "s|^$1=.*|$1=$2|" "$ENV"; else echo "$1=$2" >> "$ENV"; fi
 }
-set_var ADAA_CONTACT_EMAIL "$ADDR"
-set_var ADAA_SMTP_HOST smtp.gmail.com
-set_var ADAA_SMTP_PORT 587
-set_var ADAA_SMTP_USER "$ADDR"
-set_var ADAA_SMTP_PASSWORD "$PASS"
-set_var ADAA_MAIL_FROM "$ADDR"
-chown root:adaa "$ENV"; chmod 640 "$ENV"
+set_var PEHERAAV_CONTACT_EMAIL "$ADDR"
+set_var PEHERAAV_SMTP_HOST smtp.gmail.com
+set_var PEHERAAV_SMTP_PORT 587
+set_var PEHERAAV_SMTP_USER "$ADDR"
+set_var PEHERAAV_SMTP_PASSWORD "$PASS"
+set_var PEHERAAV_MAIL_FROM "$ADDR"
+chown root:peheraav "$ENV"; chmod 640 "$ENV"
 echo "Saved the email settings."
 
 echo "Checking that Gmail accepts them (sending a test email to $ADDR)..."
-if ADDR="$ADDR" PASS="$PASS" /opt/adaa/backend/.venv/bin/python - <<'PY'
+if ADDR="$ADDR" PASS="$PASS" /opt/peheraav/backend/.venv/bin/python - <<'PY'
 import os, smtplib, ssl, sys
 from email.message import EmailMessage
 addr, password = os.environ["ADDR"], os.environ["PASS"]
 msg = EmailMessage()
-msg["From"], msg["To"], msg["Subject"] = f"Adaa <{addr}>", addr, "Adaa can send emails"
-msg.set_content("This is a test from your Adaa server. Confirmation and password-reset emails will come from this address.")
+msg["From"], msg["To"], msg["Subject"] = f"Peheraav <{addr}>", addr, "Peheraav can send emails"
+msg.set_content("This is a test from your Peheraav server. Confirmation and password-reset emails will come from this address.")
 try:
     with smtplib.SMTP("smtp.gmail.com", 587, timeout=20) as s:
         s.starttls(context=ssl.create_default_context())
@@ -59,10 +59,10 @@ except Exception as exc:
     sys.exit(1)
 PY
 then
-  systemctl restart adaa
+  systemctl restart peheraav
   echo
-  echo "Done! Adaa now sends emails from $ADDR (and shows it as the contact address)."
-  echo "Look for the test email 'Adaa can send emails' in that inbox."
+  echo "Done! Peheraav now sends emails from $ADDR (and shows it as the contact address)."
+  echo "Look for the test email 'Peheraav can send emails' in that inbox."
 else
   echo "The settings were saved, but the test failed (see above). Fix it and run me again."
   exit 1

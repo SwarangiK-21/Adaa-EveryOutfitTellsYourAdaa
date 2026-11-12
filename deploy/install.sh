@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# Sets up Adaa on a fresh Ubuntu 24.04 server (Azure for Students, Oracle Cloud, or any VPS), with https.
+# Sets up Peheraav on a fresh Ubuntu 24.04 server (Azure for Students, Oracle Cloud, or any VPS), with https.
 #
-#   sudo git clone https://github.com/SwarangiK-21/Adaa-EveryOutfitTellsYourAdaa.git /opt/adaa
-#   sudo bash /opt/adaa/deploy/install.sh your-address.example.com   (e.g. an Azure DNS name)
+#   sudo git clone https://github.com/SwarangiK-21/Peheraav-AI.git /opt/peheraav
+#   sudo bash /opt/peheraav/deploy/install.sh your-address.example.com   (e.g. an Azure DNS name)
 #
 # Safe to run again: it skips what's already done and never touches existing data or settings.
 set -euo pipefail
 
 DOMAIN="${1:-}"
 APP="$(cd "$(dirname "$0")/.." && pwd)"
-DATA=/var/lib/adaa
-BACKUPS=/var/backups/adaa
+DATA=/var/lib/peheraav
+BACKUPS=/var/backups/peheraav
 
 step() { printf '\n\033[1;35m==> %s\033[0m\n' "$*"; }
 fail() { printf '\n\033[1;31m%s\033[0m\n' "$*"; exit 1; }
@@ -18,7 +18,7 @@ fail() { printf '\n\033[1;31m%s\033[0m\n' "$*"; exit 1; }
 [ "$(id -u)" = 0 ] || fail "Please run with sudo:  sudo bash $0 your-name.duckdns.org"
 [ -n "$DOMAIN" ] || fail "Please give your web address:  sudo bash $0 your-name.duckdns.org"
 [[ "$DOMAIN" =~ ^[A-Za-z0-9.-]+$ ]] || fail "That doesn't look like a web address: $DOMAIN"
-[ "$APP" = /opt/adaa ] || fail "Please clone Adaa into /opt/adaa (the service files expect it there)."
+[ "$APP" = /opt/peheraav ] || fail "Please clone Peheraav into /opt/peheraav (the service files expect it there)."
 
 step "Installing system packages (Python, Node.js, git)"
 export DEBIAN_FRONTEND=noninteractive
@@ -43,13 +43,13 @@ if ! command -v caddy >/dev/null; then
   apt-get install -y caddy
 fi
 
-step "Creating the adaa user and its folders"
-id adaa >/dev/null 2>&1 || useradd --system --home-dir "$DATA" --shell /usr/sbin/nologin adaa
+step "Creating the peheraav user and its folders"
+id peheraav >/dev/null 2>&1 || useradd --system --home-dir "$DATA" --shell /usr/sbin/nologin peheraav
 mkdir -p "$DATA" "$BACKUPS"
-chown adaa:adaa "$DATA" "$BACKUPS"
+chown peheraav:peheraav "$DATA" "$BACKUPS"
 chmod 750 "$DATA" "$BACKUPS"
 
-step "Installing Adaa's Python packages"
+step "Installing Peheraav's Python packages"
 [ -d "$APP/backend/.venv" ] || python3 -m venv "$APP/backend/.venv"
 "$APP/backend/.venv/bin/pip" install --upgrade pip -q
 "$APP/backend/.venv/bin/pip" install -r "$APP/backend/requirements.txt" -c "$APP/backend/requirements.lock" -q
@@ -59,26 +59,26 @@ cd "$APP/frontend"
 npm ci --no-audit --no-fund
 npm run build
 
-step "Settings (/etc/adaa.env)"
-if [ ! -f /etc/adaa.env ]; then
-  sed "s/YOUR-DOMAIN/$DOMAIN/g" "$APP/deploy/adaa.env.example" > /etc/adaa.env
-  echo "Created /etc/adaa.env. Add your email settings there later (see docs/DEPLOY.md)."
+step "Settings (/etc/peheraav.env)"
+if [ ! -f /etc/peheraav.env ]; then
+  sed "s/YOUR-DOMAIN/$DOMAIN/g" "$APP/deploy/peheraav.env.example" > /etc/peheraav.env
+  echo "Created /etc/peheraav.env. Add your email settings there later (see docs/DEPLOY.md)."
 else
-  echo "/etc/adaa.env already exists: left as it is."
+  echo "/etc/peheraav.env already exists: left as it is."
 fi
-chown root:adaa /etc/adaa.env
-chmod 640 /etc/adaa.env
+chown root:peheraav /etc/peheraav.env
+chmod 640 /etc/peheraav.env
 
 step "Keeping server logs for 30 days at most (as the privacy note says)"
 mkdir -p /etc/systemd/journald.conf.d
-printf '%s\n' '[Journal]' 'MaxRetentionSec=30day' > /etc/systemd/journald.conf.d/adaa.conf
+printf '%s\n' '[Journal]' 'MaxRetentionSec=30day' > /etc/systemd/journald.conf.d/peheraav.conf
 systemctl restart systemd-journald
 
-step "Starting Adaa and the nightly backup"
-cp "$APP/deploy/adaa.service" "$APP/deploy/adaa-backup.service" "$APP/deploy/adaa-backup.timer" /etc/systemd/system/
+step "Starting Peheraav and the nightly backup"
+cp "$APP/deploy/peheraav.service" "$APP/deploy/peheraav-backup.service" "$APP/deploy/peheraav-backup.timer" /etc/systemd/system/
 systemctl daemon-reload
-systemctl enable --now adaa.service adaa-backup.timer
-systemctl restart adaa.service
+systemctl enable --now peheraav.service peheraav-backup.timer
+systemctl restart peheraav.service
 
 step "Turning on https for $DOMAIN"
 sed "s/YOUR-DOMAIN/$DOMAIN/g" "$APP/deploy/Caddyfile" > /etc/caddy/Caddyfile
@@ -98,7 +98,7 @@ for _ in $(seq 1 20); do
   if curl -fsS http://127.0.0.1:8000/api/health >/dev/null; then break; fi
   sleep 1
 done
-curl -fsS http://127.0.0.1:8000/api/health >/dev/null || fail "Adaa didn't start. See: sudo journalctl -u adaa -n 50"
-echo "Adaa is running."
+curl -fsS http://127.0.0.1:8000/api/health >/dev/null || fail "Peheraav didn't start. See: sudo journalctl -u peheraav -n 50"
+echo "Peheraav is running."
 printf '\n\033[1;32mDone!\033[0m Open https://%s (the certificate can take a minute the first time).\n' "$DOMAIN"
 echo "If it doesn't open, check that ports 80 and 443 are open in your provider's firewall (Oracle security list / Azure network security group)."

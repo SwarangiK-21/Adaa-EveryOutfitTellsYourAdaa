@@ -32,9 +32,9 @@ def _send_verification(db, user: dict, tasks: BackgroundTasks) -> None:
     first = user["name"].split()[0]
     link = f"{config.PUBLIC_URL}/#verify={token}"   # after "#": never reaches the server's access logs
     tasks.add_task(
-        mailer.send_email, user["email"], "Confirm your email for Adaa",
-        f"Hi {first},\n\nWelcome to Adaa! Please confirm this is your email address:\n\n{link}\n\n"
-        f"The link works for {auth.VERIFY_HOURS} hours. If you didn't sign up for Adaa, ignore this email.\n\nAdaa\n")
+        mailer.send_email, user["email"], "Confirm your email for Peheraav",
+        f"Hi {first},\n\nWelcome to Peheraav! Please confirm this is your email address:\n\n{link}\n\n"
+        f"The link works for {auth.VERIFY_HOURS} hours. If you didn't sign up for Peheraav, ignore this email.\n\nPeheraav\n")
 
 
 @router.post("/signup", response_model=UserOut, status_code=201)
@@ -45,7 +45,7 @@ def signup(body: SignupIn, db: Db, response: Response, tasks: BackgroundTasks):
         raise HTTPException(status_code=409, detail="An account with this email already exists. Please log in.")
     users = database.count_users(db)
     if config.MAX_USERS and users >= config.MAX_USERS:
-        raise HTTPException(status_code=403, detail="Adaa isn't taking new accounts right now. Please try again later.")
+        raise HTTPException(status_code=403, detail="Peheraav isn't taking new accounts right now. Please try again later.")
     user = database.create_user(db, body.name, body.email, body.phone, auth.hash_password(body.password))
     moved = database.claim_unowned(db, user["id"]) if users == 0 else 0
     auth.start_session(db, response, user["id"])
@@ -125,7 +125,7 @@ def change_password(body: PasswordChange, user: auth.User, db: Db, response: Res
 @router.post("/forgot", status_code=202)
 def forgot_password(body: ForgotIn, db: Db, tasks: BackgroundTasks):
     """Email a link to choose a new password. The reply is the same whether or not the email has an
-    account (so nobody can find out who uses Adaa), and the email is sent after replying."""
+    account (so nobody can find out who uses Peheraav), and the email is sent after replying."""
     user = database.find_user_by_email(db, body.email)
     if user and auth.may_send_reset(body.email):
         token = auth.new_reset_token(db, user["id"])
@@ -133,10 +133,10 @@ def forgot_password(body: ForgotIn, db: Db, tasks: BackgroundTasks):
         link = f"{config.PUBLIC_URL}/#reset={token}"
         first = user["name"].split()[0]
         tasks.add_task(
-            mailer.send_email, user["email"], "Choose a new password for Adaa",
-            f"Hi {first},\n\nSomeone (hopefully you) asked to reset your Adaa password. Open this link to choose a new one:\n\n"
+            mailer.send_email, user["email"], "Choose a new password for Peheraav",
+            f"Hi {first},\n\nSomeone (hopefully you) asked to reset your Peheraav password. Open this link to choose a new one:\n\n"
             f"{link}\n\nIt works once, for {auth.RESET_MINUTES} minutes. If you didn't ask for this, ignore this email: "
-            f"your password stays the same.\n\nAdaa\n")
+            f"your password stays the same.\n\nPeheraav\n")
     return FORGOT_REPLY
 
 

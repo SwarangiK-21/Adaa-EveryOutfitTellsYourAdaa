@@ -1,14 +1,14 @@
 <p align="center">
-  <img src="brand/adaa-logo-cream.svg" alt="Adaa logo: a plum ribbon A" width="240">
+  <img src="brand/peheraav-logo-cream.svg" alt="Peheraav AI logo: a plum ribbon P" width="240">
 </p>
 
-<h1 align="center">Adaa</h1>
+<h1 align="center">Peheraav AI</h1>
 
-<p align="center"><b>Every outfit tells your Adaa.</b><br>
+<p align="center"><b>Your wardrobe, styled by AI.</b><br>
 A personal wardrobe stylist that builds complete outfits from the clothes you already own.</p>
 
 <p align="center">
-  <a href="https://adaa-every-outfit-tells-your-adaa.eastasia.cloudapp.azure.com"><img alt="Live app" src="https://img.shields.io/badge/live-open%20Adaa-5B1F3F?style=flat-square"></a>
+  <a href="https://peheraav-ai.eastasia.cloudapp.azure.com"><img alt="Live app" src="https://img.shields.io/badge/live-open%20Peheraav-5B1F3F?style=flat-square"></a>
   <img alt="Google Play: coming soon" src="https://img.shields.io/badge/Google%20Play-coming%20soon-C9A45C?style=flat-square">
   <img alt="Tests: 258 passing" src="https://img.shields.io/badge/tests-258%20passing-2E7D32?style=flat-square">
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-7A3A5C?style=flat-square"></a>
@@ -18,7 +18,7 @@ A personal wardrobe stylist that builds complete outfits from the clothes you al
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/opening-screen.webp" alt="Adaa's opening screen: the plum ribbon A logo with the tagline and a personal greeting" width="820">
+  <img src="docs/screenshots/opening-screen.webp" alt="Peheraav's opening screen: the plum ribbon P logo with the tagline and a personal greeting" width="820">
 </p>
 
 ---
@@ -33,9 +33,9 @@ Most of us have a full wardrobe and still feel we have "nothing to wear". We for
 
 ## The solution
 
-Adaa is a stylist for **your own** wardrobe. You add photos of your clothes, jewellery, shoes and bags once. Then you ask in plain words (*"Aaj college ke liye kuch comfy"*) and Adaa puts together complete looks, **only from pieces you really own**, and explains why each one works.
+Peheraav is a stylist for **your own** wardrobe. You add photos of your clothes, jewellery, shoes and bags once. Then you ask in plain words (*"Aaj college ke liye kuch comfy"*) and Peheraav puts together complete looks, **only from pieces you really own**, and explains why each one works.
 
-> **The core rule:** Adaa never invents a piece. If something is missing (no bag, nothing tagged for a wedding, "my green kurta" when you don't have one), it says so and shows the best real combination instead.
+> **The core rule:** Peheraav never invents a piece. If something is missing (no bag, nothing tagged for a wedding, "my green kurta" when you don't have one), it says so and shows the best real combination instead.
 
 ## Features
 
@@ -50,9 +50,9 @@ Adaa is a stylist for **your own** wardrobe. You add photos of your clothes, jew
 | 🧳 **Trip Planner** | One outfit per day of a trip with no garment worn twice, and a packing list |
 | ☀️ **Weather-aware** | Uses today's forecast for your city: lighter pieces when it's hot, layers when it's cold, a caution about heels in the rain |
 | 📊 **Wear Stats** | Pieces not worn in 30/60/90 days, most worn, and cost per wear |
-| 🛍️ **Shop Smart** | The few new pieces that would unlock the most outfits with what you already own (ideas only; Adaa never sells) |
+| 🛍️ **Shop Smart** | The few new pieces that would unlock the most outfits with what you already own (ideas only; Peheraav never sells) |
 | 💜 **Style profile** | Optional height, body shape, fit, undertone and colours you love or avoid. Each look then explains **"Why it suits you"** |
-| 🔐 **Accounts** | Email + password, a private wardrobe per person, email confirmation, password reset, delete account. Adaa greets you by name |
+| 🔐 **Accounts** | Email + password, a private wardrobe per person, email confirmation, password reset, delete account. Peheraav greets you by name |
 | 📱 **Phone-friendly** | Works in any modern browser and can be added to the home screen like an app |
 
 ## Screenshots
@@ -130,10 +130,10 @@ flowchart LR
     F --> G["Wore it today<br/>→ Wear Stats"]
 ```
 
-- **How outfits are chosen:** every piece is classified (kurta → top, palazzo → bottom, jhumkas → earrings). Adaa builds every sensible top + bottom pair or one-piece, scores it (occasion tags, style, colour harmony, weather, style profile), adds shoes, jewellery and a bag, then picks up to 4 looks that really differ.
+- **How outfits are chosen:** every piece is classified (kurta → top, palazzo → bottom, jhumkas → earrings). Peheraav builds every sensible top + bottom pair or one-piece, scores it (occasion tags, style, colour harmony, weather, style profile), adds shoes, jewellery and a bag, then picks up to 4 looks that really differ.
 - **Why rules instead of a chatbot:** it can only pick from your items, so it can't "hallucinate" a piece. Every suggestion comes with the real reasons, it's free to run, and it gives the same answer every time, so it can be tested.
 
-More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Project report (PDF): [docs/ADAA_Project_Report.pdf](docs/ADAA_Project_Report.pdf)
+More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Project report (PDF): [docs/PEHERAAV_AI_Project_Report.pdf](docs/PEHERAAV_AI_Project_Report.pdf)
 
 
 
@@ -148,7 +148,7 @@ More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Project report (PDF
 ## Project structure
 
 ```
-Adaa/
+Peheraav/
 ├─ backend/                  Python + FastAPI
 │  ├─ main.py                App setup, middleware, serves the built app on a server
 │  ├─ config.py              All settings (paths, limits, email, backups)
@@ -178,7 +178,7 @@ Adaa/
 
 ## Security and privacy
 
-| Area | What Adaa does |
+| Area | What Peheraav does |
 |---|---|
 | Passwords | Never stored; only a salted **scrypt** hash |
 | Sign-in | A random session token in an **HttpOnly, SameSite** cookie (Secure on https); the database stores only its SHA-256 |
@@ -195,9 +195,9 @@ Details: the *Launch hardening* section of [docs/ARCHITECTURE.md](docs/ARCHITECT
 
 | | |
 |---|---|
-| 🌐 **Live app** | https://adaa-every-outfit-tells-your-adaa.eastasia.cloudapp.azure.com |
+| 🌐 **Live app** | https://peheraav-ai.eastasia.cloudapp.azure.com |
 | 📱 **Google Play** | Coming soon |
-| 📄 **Project report** | [docs/ADAA_Project_Report.pdf](docs/ADAA_Project_Report.pdf) |
+| 📄 **Project report** | [docs/PEHERAAV_AI_Project_Report.pdf](docs/PEHERAAV_AI_Project_Report.pdf) |
 | 🏗️ **Architecture** | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | 🚀 **Deploy guide** | [docs/DEPLOY.md](docs/DEPLOY.md) |
 | 🧪 **Testing log** | [docs/TESTING.md](docs/TESTING.md) |
@@ -217,7 +217,7 @@ Details: the *Launch hardening* section of [docs/ARCHITECTURE.md](docs/ARCHITECT
 - An optional free local language model for friendlier chat (the rules would still choose the clothes)
 
 **Known limitations**
-- Requests are understood by keyword rules: clear sentences work best, and Adaa shows what it understood.
+- Requests are understood by keyword rules: clear sentences work best, and Peheraav shows what it understood.
 - Auto-fill is a suggestion: on 28 real photos it got the category right every time, the type about 9 in 10 and the colour about 3 in 4.
 - Phones skip automatic background removal (the model is about 200 MB); those pieces get a clean cut-out the next time the account is opened on a computer.
 - One server and one SQLite file: right for friends and early users, not for very large numbers.
@@ -233,6 +233,6 @@ Details: the *Launch hardening* section of [docs/ARCHITECTURE.md](docs/ARCHITECT
 
 ## License
 
-Adaa's source code is released under the **[MIT License](LICENSE)**: you may use, copy, change and share it, as long as the copyright notice is kept.
+Peheraav's source code is released under the **[MIT License](LICENSE)**: you may use, copy, change and share it, as long as the copyright notice is kept.
 
-The MIT License covers this repository's code and documentation only. The AI models Adaa downloads at runtime keep their own licences: IS-Net is Apache 2.0, and the SegFormer-B2 clothes parser is under an NVIDIA licence that allows **non-commercial use only**. A commercial version of Adaa would need a differently licensed clothes model. The Adaa name and logo identify this project; please don't present a modified version as the official Adaa.
+The MIT License covers this repository's code and documentation only. The AI models Peheraav downloads at runtime keep their own licences: IS-Net is Apache 2.0, and the SegFormer-B2 clothes parser is under an NVIDIA licence that allows **non-commercial use only**. A commercial version of Peheraav would need a differently licensed clothes model. The Peheraav name and logo identify this project; please don't present a modified version as the official Peheraav.

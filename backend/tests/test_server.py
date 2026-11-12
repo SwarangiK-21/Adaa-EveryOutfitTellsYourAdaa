@@ -26,9 +26,9 @@ def built_app(tmp_path, monkeypatch):
     dist = tmp_path / "dist"
     (dist / "assets").mkdir(parents=True)
     (dist / "index.html").write_text("<!doctype html><div id=root></div>")
-    (dist / "assets" / "index-abc123.js").write_text("console.log('adaa')")
+    (dist / "assets" / "index-abc123.js").write_text("console.log('peheraav')")
     (dist / "assets" / "ort.wasm").write_bytes(b"\0asm")
-    (dist / "manifest.webmanifest").write_text('{"name":"Adaa"}')
+    (dist / "manifest.webmanifest").write_text('{"name":"Peheraav"}')
     (tmp_path / "secret.txt").write_text("not for the web")
     monkeypatch.setattr(config, "FRONTEND_DIR", dist)
     return dist
@@ -61,7 +61,7 @@ def test_files_outside_the_app_folder_are_not_served(anon, built_app):
 
 def test_without_a_build_the_root_just_says_running(anon, tmp_path, monkeypatch):
     monkeypatch.setattr(config, "FRONTEND_DIR", tmp_path / "no-build")
-    assert anon.get("/").json()["message"] == "Adaa API is running."
+    assert anon.get("/").json()["message"] == "Peheraav API is running."
     assert anon.get("/wardrobe").status_code == 404
 
 
@@ -74,10 +74,10 @@ def test_backup_holds_the_database_and_photos(client, tmp_path):
     assert backup.NAME.match(path.name)
     with tarfile.open(path) as tar:
         names = tar.getnames()
-        assert "adaa.db" in names
+        assert "peheraav.db" in names
         assert sorted(n.removeprefix("uploads/") for n in names if n.startswith("uploads/")) == photos
-        tar.extract("adaa.db", tmp_path / "check", filter="data")
-    db = sqlite3.connect(tmp_path / "check" / "adaa.db")
+        tar.extract("peheraav.db", tmp_path / "check", filter="data")
+    db = sqlite3.connect(tmp_path / "check" / "peheraav.db")
     assert db.execute("SELECT name FROM wardrobe_items").fetchall() == [("Green saree",)]
     db.close()
 
@@ -86,14 +86,14 @@ def test_only_the_newest_backups_are_kept(client, tmp_path):
     dest = tmp_path / "backups"
     dest.mkdir()
     for day in range(1, 10):                      # nine older backups...
-        old = dest / f"adaa-202610{day:02d}-030000.tar.gz"
+        old = dest / f"peheraav-202610{day:02d}-030000.tar.gz"
         old.write_bytes(b"old")
         os.utime(old, (day * 1000, day * 1000))
     (dest / "notes.txt").write_text("not a backup")
     newest = backup.make_backup(dest, keep=7)
     kept = sorted(p.name for p in dest.iterdir() if backup.NAME.match(p.name))
     assert len(kept) == 7 and newest.name in kept
-    assert "adaa-20261001-030000.tar.gz" not in kept     # the oldest went first
+    assert "peheraav-20261001-030000.tar.gz" not in kept     # the oldest went first
     assert (dest / "notes.txt").exists()                  # other files are left alone
 
 

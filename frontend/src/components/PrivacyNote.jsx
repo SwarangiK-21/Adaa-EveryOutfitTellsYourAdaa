@@ -3,25 +3,25 @@ import LegalDialog from './LegalDialog.jsx';
 
 export const PRIVACY_UPDATED = '8 November 2026';
 
-/* The privacy note, in plain words: what Adaa keeps, why, who else is involved, and how to delete it. */
+/* The privacy note, in plain words: what Peheraav keeps, why, who else is involved, and how to delete it. */
 export default function PrivacyNote({ onClose }) {
   return (
     <LegalDialog title="Privacy note" updated={PRIVACY_UPDATED} onClose={onClose}>
       {(contact) => (
         <>
-          <h3>What Adaa keeps</h3>
+          <h3>What Peheraav keeps</h3>
           <ul>
-            <li><b>Your account:</b> name, email, phone number, and your password as a scrambled hash (nobody can read it, not even Adaa).</li>
+            <li><b>Your account:</b> name, email, phone number, and your password as a scrambled hash (nobody can read it, not even Peheraav).</li>
             <li><b>Your wardrobe:</b> photos and details of your clothes, saved looks, what you wore and when, and any photos you add of yourself in a look. Photos are shrunk and their hidden details (such as the place they were taken) are removed before they're saved.</li>
             <li><b>One sign-in cookie</b>, so you stay logged in. No ads, no tracking, no analytics.</li>
-            <li><b>Server logs:</b> the time, your internet address and the page requested, to keep Adaa secure and fix problems. Deleted after 30 days.</li>
+            <li><b>Server logs:</b> the time, your internet address and the page requested, to keep Peheraav secure and fix problems. Deleted after 30 days.</li>
           </ul>
 
           <h3>Why</h3>
-          <p>Only to run your account and style outfits from your own clothes. Your name is used to talk to you; your email to sign in and reset your password; your phone number only to contact you about your account. Adaa never sells or shares your details, and never sends marketing.</p>
+          <p>Only to run your account and style outfits from your own clothes. Your name is used to talk to you; your email to sign in and reset your password; your phone number only to contact you about your account. Peheraav never sells or shares your details, and never sends marketing.</p>
 
           <h3>Where it's kept</h3>
-          <p>On the server that runs this Adaa, with a nightly backup copy kept with a storage service (Backblaze B2). Only you can see your wardrobe. Cleaning up photo backgrounds and auto-fill happen inside your own browser.</p>
+          <p>On the server that runs this Peheraav, with a nightly backup copy kept with a storage service (Backblaze B2). Only you can see your wardrobe. Cleaning up photo backgrounds and auto-fill happen inside your own browser.</p>
 
           <h3>Other services, only if you use them</h3>
           <ul>
@@ -38,7 +38,7 @@ export default function PrivacyNote({ onClose }) {
           </ul>
 
           <h3>Age</h3>
-          <p>Adaa is for people aged 18 or older.</p>
+          <p>Peheraav is for people aged 18 or older.</p>
         </>
       )}
     </LegalDialog>

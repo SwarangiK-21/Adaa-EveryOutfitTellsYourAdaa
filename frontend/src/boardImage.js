@@ -1,5 +1,5 @@
 // Saves an outfit board as a PNG, drawn from the pictures exactly where they appear on screen,
-// with Adaa's cream background and the look's name at the bottom. Nothing leaves the device.
+// with Peheraav's cream background and the look's name at the bottom. Nothing leaves the device.
 
 const W = 900;
 const H = 1500;   // the board's 3:5 shape
@@ -57,14 +57,14 @@ export async function downloadBoard(frame, title) {
   ctx.fillText(name, W / 2, H - W * 0.075);
   ctx.fillStyle = '#94712F';   // brand gold
   ctx.font = `${Math.round(W * 0.019)}px "DM Sans", Arial, sans-serif`;
-  ctx.fillText('Styled from my own wardrobe · Adaa', W / 2, H - W * 0.04);
+  ctx.fillText('Styled from my own wardrobe · Peheraav', W / 2, H - W * 0.04);
 
   const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   if (!blob) throw new Error("Couldn't make the image.");
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `adaa-${slug(title)}.png`;
+  link.download = `peheraav-${slug(title)}.png`;
   document.body.appendChild(link);
   link.click();
   link.remove();

@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Sets up the off-site copy of Adaa's nightly backup (Backblaze B2, or any S3-compatible storage),
+# Sets up the off-site copy of Peheraav's nightly backup (Backblaze B2, or any S3-compatible storage),
 # then runs one backup to check it works.
 #
-#   sudo bash /opt/adaa/deploy/backup-setup.sh
+#   sudo bash /opt/peheraav/deploy/backup-setup.sh
 #
 # It asks for the bucket's endpoint and name, and the key ID and secret key (typed in hidden, never
-# shown or logged), and writes them into /etc/adaa.env (readable only by root and Adaa).
+# shown or logged), and writes them into /etc/peheraav.env (readable only by root and Peheraav).
 set -euo pipefail
 [ "$(id -u)" = 0 ] || exec sudo bash "$0" "$@"
-ENV=/etc/adaa.env
+ENV=/etc/peheraav.env
 [ -f "$ENV" ] || { echo "No $ENV yet: run deploy/install.sh first."; exit 1; }
 clean() { echo "$1" | tr -d '[:space:]'; }
 
@@ -43,23 +43,23 @@ set_var() {   # replace KEY=... in the settings file, or add it (safe for any ch
   printf '%s=%s\n' "$1" "$2" >> "$tmp"
   cat "$tmp" > "$ENV"; rm -f "$tmp"
 }
-set_var ADAA_BACKUP_S3_ENDPOINT "https://$ENDPOINT"
-set_var ADAA_BACKUP_S3_BUCKET "$BUCKET"
-set_var ADAA_BACKUP_S3_KEY_ID "$KEY_ID"
-set_var ADAA_BACKUP_S3_SECRET "$SECRET"
-set_var ADAA_BACKUP_S3_REGION "$REGION"
-chown root:adaa "$ENV"; chmod 640 "$ENV"
+set_var PEHERAAV_BACKUP_S3_ENDPOINT "https://$ENDPOINT"
+set_var PEHERAAV_BACKUP_S3_BUCKET "$BUCKET"
+set_var PEHERAAV_BACKUP_S3_KEY_ID "$KEY_ID"
+set_var PEHERAAV_BACKUP_S3_SECRET "$SECRET"
+set_var PEHERAAV_BACKUP_S3_REGION "$REGION"
+chown root:peheraav "$ENV"; chmod 640 "$ENV"
 echo "Saved the backup settings (region: $REGION)."
 
 echo "Running one backup now to check it reaches $BUCKET..."
 START="$(date '+%Y-%m-%d %H:%M:%S')"
-if systemctl start adaa-backup.service && journalctl -u adaa-backup --since "$START" -o cat | grep -q "Copied off-site"; then
+if systemctl start peheraav-backup.service && journalctl -u peheraav-backup --since "$START" -o cat | grep -q "Copied off-site"; then
   echo
   echo "Done! Each night's backup is now also copied to $BUCKET."
-  echo "In Backblaze, open the bucket (Browse Files): you should see a file like adaa-$(date +%Y%m%d)-....tar.gz"
+  echo "In Backblaze, open the bucket (Browse Files): you should see a file like peheraav-$(date +%Y%m%d)-....tar.gz"
 else
   echo
-  journalctl -u adaa-backup --since "$START" -o cat | tail -5
+  journalctl -u peheraav-backup --since "$START" -o cat | tail -5
   echo "The settings were saved, but the off-site copy failed (see above). Check the 4 values and run me again."
   exit 1
 fi

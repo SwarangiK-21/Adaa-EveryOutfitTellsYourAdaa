@@ -25,7 +25,7 @@ def test_signature_matches_the_aws_published_example():
 @pytest.fixture()
 def r2(monkeypatch):
     monkeypatch.setattr(config, "S3_ENDPOINT", "https://acct123.r2.cloudflarestorage.com")
-    monkeypatch.setattr(config, "S3_BUCKET", "adaa-backups")
+    monkeypatch.setattr(config, "S3_BUCKET", "peheraav-backups")
     monkeypatch.setattr(config, "S3_KEY_ID", "key-id")
     monkeypatch.setattr(config, "S3_SECRET", "secret")
     monkeypatch.setattr(config, "S3_REGION", "auto")
@@ -38,17 +38,17 @@ def test_upload_sends_a_signed_put(tmp_path, r2):
         seen.update(method=request.method, url=str(request.url), headers=dict(request.headers), body=request.content)
         return httpx.Response(200)
 
-    archive = tmp_path / "adaa-20261106-033000.tar.gz"
+    archive = tmp_path / "peheraav-20261106-033000.tar.gz"
     archive.write_bytes(b"backup bytes")
     url = offsite.upload(archive, transport=httpx.MockTransport(handler))
-    assert url == "https://acct123.r2.cloudflarestorage.com/adaa-backups/adaa-20261106-033000.tar.gz"
+    assert url == "https://acct123.r2.cloudflarestorage.com/peheraav-backups/peheraav-20261106-033000.tar.gz"
     assert seen["method"] == "PUT" and seen["url"] == url and seen["body"] == b"backup bytes"
     assert seen["headers"]["authorization"].startswith("AWS4-HMAC-SHA256 Credential=key-id/")
     assert "/auto/s3/aws4_request" in seen["headers"]["authorization"]
 
 
 def test_refused_upload_raises(tmp_path, r2):
-    archive = tmp_path / "adaa-20261106-033000.tar.gz"
+    archive = tmp_path / "peheraav-20261106-033000.tar.gz"
     archive.write_bytes(b"x")
     with pytest.raises(offsite.OffsiteError, match="403"):
         offsite.upload(archive, transport=httpx.MockTransport(lambda r: httpx.Response(403, text="AccessDenied")))

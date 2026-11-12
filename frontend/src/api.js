@@ -1,5 +1,5 @@
 import { preparePhoto } from './photo.js';
-// Small helpers for talking to the Adaa backend (proxied by Vite to port 8000).
+// Small helpers for talking to the Peheraav backend (proxied by Vite to port 8000).
 
 export class ApiError extends Error {
   constructor(message, status = 0) {
@@ -13,18 +13,18 @@ async function request(path, options = {}) {
   try {
     res = await fetch(path, options);
   } catch {
-    throw new ApiError("Can't reach the Adaa server. Is the backend running?");
+    throw new ApiError("Can't reach the Peheraav server. Is the backend running?");
   }
   if (res.status === 204) return null;
 
   const body = await res.json().catch(() => null);
   // Signed out (session ended): let the app show the sign-in screen. Auth calls handle their own 401s.
   if (res.status === 401 && !path.startsWith('/api/auth/')) {
-    window.dispatchEvent(new Event('adaa-signed-out'));
+    window.dispatchEvent(new Event('peheraav-signed-out'));
   }
   if (!res.ok) {
     if (res.status >= 500 && !body) {
-      throw new ApiError("Can't reach the Adaa server. Is the backend running?");
+      throw new ApiError("Can't reach the Peheraav server. Is the backend running?");
     }
     const detail = body?.detail;
     const message = Array.isArray(detail)

@@ -1,17 +1,18 @@
-# Adaa brand
+# Peheraav brand
 
-**Adaa — Every outfit tells your Adaa.** A plum ribbon "A": fabric folding like a dupatta or saree pleat, drawn as one continuous ribbon with a fine line for the left side.
+**Peheraav AI — Your wardrobe, styled by AI.** A plum ribbon "P": a slanted ribbon stem with a curled foot, and a bowl that drapes across the stem like the end of a dupatta. Peheraav (पेहराव) is Marathi for attire, the way you dress.
 
 ## Files
 
 | File | Use |
 |---|---|
-| `adaa-logo.svg` / `png/adaa-logo.png` | Main logo (stacked), transparent background |
-| `adaa-logo-cream.svg` | Main logo on cream |
-| `adaa-logo-dark.svg` | Main logo on plum (cream lettering, gold tagline) |
-| `adaa-logo-horizontal.svg`, `-dark.svg` | Headers, website, email signature |
-| `adaa-mark.svg` | The ribbon A alone (small spaces, watermark) |
-| `adaa-app-icon.svg`, `-light.svg` | App icon / favicon / WhatsApp & Instagram profile picture |
+| `peheraav-logo.svg` / `png/peheraav-logo.png` | Main logo (stacked), transparent background |
+| `peheraav-logo-cream.svg` | Main logo on cream |
+| `peheraav-logo-dark.svg` | Main logo on plum (cream lettering, gold tagline) |
+| `peheraav-logo-horizontal.svg`, `-dark.svg` | Headers, website, email signature |
+| `peheraav-mark.svg` | The ribbon P alone (small spaces, watermark) |
+| `peheraav-app-icon.svg`, `-light.svg` | App icon / favicon / WhatsApp & Instagram profile picture |
+| `peheraav-app-icon-maskable.svg` | Phone home-screen icon (the P sits inside the safe circle phones crop to) |
 
 SVGs are vectors: they stay sharp at any size and open in browsers, Canva, Figma and Illustrator. The lettering is already turned into shapes, so no fonts need to be installed. The `png/` folder has high-resolution PNGs (about 1000 px) for places that don't take SVG.
 
@@ -26,8 +27,8 @@ SVGs are vectors: they stay sharp at any size and open in browsers, Canva, Figma
 
 ## Fonts (free, SIL Open Font License)
 
-- **Great Vibes**: the name *Adaa*
-- **Cormorant Garamond Italic** (medium): the tagline *every outfit tells your adaa*
+- **Great Vibes**: the name *Peheraav*
+- **Cormorant Garamond Italic** (medium): the small gold *AI* and the tagline *your wardrobe, styled by AI*
 
 ## Do
 

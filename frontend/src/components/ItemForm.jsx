@@ -195,7 +195,7 @@ export default function ItemForm({ options, item, onClose, onSaved, notify }) {
               <p className="autofill"><Sparkles size={12} /> Filled in from your photo: <b>{autoFill.text}</b>. Please check and change anything that's off.</p>
             )}
             {autoFill?.status === 'none' && (
-              <p className="autofill quiet">Adaa couldn't tell what this is from the photo (it recognises clothes, shoes and bags, not jewellery yet). Please fill in the details.</p>
+              <p className="autofill quiet">Peheraav couldn't tell what this is from the photo (it recognises clothes, shoes and bags, not jewellery yet). Please fill in the details.</p>
             )}
           </div>
 

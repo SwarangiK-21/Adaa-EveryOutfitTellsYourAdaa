@@ -1,4 +1,4 @@
-# Adaa: mentor demo script
+# Peheraav: mentor demo script
 
 About **10 minutes**, plus questions. Suggested words to say are in *italics*.
 
@@ -6,10 +6,10 @@ About **10 minutes**, plus questions. Suggested words to say are in *italics*.
 
 ## The day before
 
-1. **Back up your data:** stop the backend, then copy `backend/data` to somewhere safe (e.g. `Desktop\adaa-backup`).
+1. **Back up your data:** stop the backend, then copy `backend/data` to somewhere safe (e.g. `Desktop\peheraav-backup`).
 2. **Build a demo wardrobe of about 15 pieces**, covering both styles you want to show:
    - **Western:** your crop top, short skirt, gown, short frock, heels, sandals, silver jewellery, bag, watch.
-   - **Traditional:** add at least one **kurta**, a **churidar/salwar/palazzo**, a **dupatta**, **jhumkas**, and **juttis or kolhapuris**. Without traditional bottoms, Adaa will honestly say it can't build a full traditional look.
+   - **Traditional:** add at least one **kurta**, a **churidar/salwar/palazzo**, a **dupatta**, **jhumkas**, and **juttis or kolhapuris**. Without traditional bottoms, Peheraav will honestly say it can't build a full traditional look.
    - **Tag occasions carefully.** The engine relies on them (e.g. kurta → Festive, Traditional function, Wedding).
 3. **Rehearse your three requests** (below) and check the results look good with *your* pieces. Adjust occasion tags if a result surprises you.
 4. Run the tests once: `python -m pytest` → **68 passed**.
@@ -35,7 +35,7 @@ About **10 minutes**, plus questions. Suggested words to say are in *italics*.
 ## The demo
 
 ### 1. The problem (30 s): Overview page
-*"We all own lots of clothes but still struggle to put outfits together, and fashion inspiration usually shows clothes we don't own. Adaa is a personal stylist that only ever uses what's actually in your wardrobe."*
+*"We all own lots of clothes but still struggle to put outfits together, and fashion inspiration usually shows clothes we don't own. Peheraav is a personal stylist that only ever uses what's actually in your wardrobe."*
 
 Point at: the piece count and saved looks on the Overview. These are live numbers from the database.
 
@@ -51,7 +51,7 @@ Type your first rehearsed request, e.g. **"Style my black crop top for a party"*
 - Point at **"Here's what I understood"**: occasion, and the piece it's building around.
   *"This is a rule-based parser that runs locally. It matches 'my crop top' against my actual items."*
 - Point at the **full-body preview**.
-  *"This is an outfit board made from my own garment photos. Adaa removed the backgrounds and arranged them as if worn, so it shows exactly my pieces, with no AI guessing."*
+  *"This is an outfit board made from my own garment photos. Peheraav removed the backgrounds and arranged them as if worn, so it shows exactly my pieces, with no AI guessing."*
 - Scroll through the looks. Point at the **reasons** on one card.
   *"Every look explains itself: the occasion tags, the colour harmony, the pairing."*
 - Point at any **note**, e.g. "Only 1 distinct outfit…".
@@ -91,7 +91,7 @@ Optionally open `docs/ARCHITECTURE.md` and show the diagram.
 |---|---|
 | *Why not use ChatGPT or another AI?* | Cost, privacy and honesty. An AI model can invent clothes; this engine can only pick from real records, explains its reasons, runs free and offline, and is fully testable. A free local model could later polish the chat, but the rules would still choose the clothes. |
 | *How does it decide what goes together?* | Garment pairing rules (kurta + salwar, top + jeans…), occasion tags, style compatibility (Indo-Western bridges Traditional and Western), colour harmony (neutrals, tonal, complementary, clashes), comfort, then it picks 4 *different* looks. |
-| *Can it show the outfit on a real body (virtual try-on)?* | Not with free tools on this laptop: open-source try-on models need an NVIDIA GPU with 8 GB or more, and free online demos would upload my photos to someone else's server. I tried one on a free Colab GPU, but it took a minute per look and got shapes wrong, so I removed it. Adaa shows an outfit board made from my own garment photos, and a **verified** preview when I add my own photo of a saved look. If I later get a suitable GPU, a try-on model could plug into the same preview slot. |
+| *Can it show the outfit on a real body (virtual try-on)?* | Not with free tools on this laptop: open-source try-on models need an NVIDIA GPU with 8 GB or more, and free online demos would upload my photos to someone else's server. I tried one on a free Colab GPU, but it took a minute per look and got shapes wrong, so I removed it. Peheraav shows an outfit board made from my own garment photos, and a **verified** preview when I add my own photo of a saved look. If I later get a suitable GPU, a try-on model could plug into the same preview slot. |
 | *What if my wardrobe is small?* | It returns fewer looks and says why, e.g. "you haven't added any bags yet". |
 | *Does it recognise clothes from photos?* | Not yet: details are entered by hand. Automatic recognition was deliberately left out of the first version to keep it free and reliable. |
 | *Where is my data?* | In `backend/data` on this computer: the SQLite file plus photos. Git ignores it, so it's never pushed to GitHub. |
@@ -101,7 +101,7 @@ Optionally open `docs/ARCHITECTURE.md` and show the diagram.
 
 | Problem | What to do |
 |---|---|
-| Page says "Can't reach the Adaa server" | The backend stopped. In Terminal 1: `uvicorn main:app --reload`, then press **Try again** |
+| Page says "Can't reach the Peheraav server" | The backend stopped. In Terminal 1: `uvicorn main:app --reload`, then press **Try again** |
 | Backend won't start: port 8000 in use | Another project is running. Stop it, or use port 8001 (see the README troubleshooting table) |
 | A result looks odd | Say: *"This depends on my occasion tags. Let me show why,"* then open the piece in My Wardrobe and point to its tags. It's a good moment to explain that the rules are transparent. |
 | Photos missing | Check the backend terminal for errors; restart both servers |

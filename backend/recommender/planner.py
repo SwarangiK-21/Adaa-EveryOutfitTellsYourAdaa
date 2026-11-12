@@ -2,7 +2,7 @@
 (an outfit per day, no garment worn twice).
 
 Both only use the rules the stylist already uses (roles, top/bottom fit, colour harmony,
-occasion tags), so their advice matches the outfits Adaa actually suggests.
+occasion tags), so their advice matches the outfits Peheraav actually suggests.
 """
 from collections import Counter
 from datetime import date

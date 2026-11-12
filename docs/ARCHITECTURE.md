@@ -1,6 +1,6 @@
-# Adaa: how it works
+# Peheraav: how it works
 
-This explains how Adaa is put together and why it was built this way. For setup, see the [README](../README.md).
+This explains how Peheraav is put together and why it was built this way. For setup, see the [README](../README.md).
 
 ## The big picture
 
@@ -21,7 +21,7 @@ This explains how Adaa is put together and why it was built this way. For setup,
                         storage.py ─────────┤  photo checks + files on disk
                         database.py, looks_db.py  SQLite queries
                                             ▼
-                         backend/data/adaa.db   +   backend/data/uploads/*.jpg|png|webp
+                         backend/data/peheraav.db   +   backend/data/uploads/*.jpg|png|webp
 ```
 
 Each part has one job:
@@ -41,17 +41,17 @@ Because the recommender is plain Python that takes a list of items and returns o
 ## Accounts (`auth.py`, `routes/auth.py`)
 
 - **Consent:** sign-up requires `accept_privacy` ("I'm 18 or older and agree to the privacy note"); the time is stored in `users.privacy_accepted_at`. The note itself is `PrivacyNote.jsx`.
-- **Forgot password:** `POST /api/auth/forgot` always gives the same reply (nobody can learn who has an account) and sends the email after replying, via `mailer.py` (any SMTP service; printed to the terminal when none is set). The link is `ADAA_PUBLIC_URL/#reset=<token>` (after `#`, so the token never reaches server logs), never built from request headers, so a forged request can't point it at another site. Tokens are random, stored only as SHA-256 in `password_resets`, work once, for 30 minutes; at most 3 emails per address per hour.
+- **Forgot password:** `POST /api/auth/forgot` always gives the same reply (nobody can learn who has an account) and sends the email after replying, via `mailer.py` (any SMTP service; printed to the terminal when none is set). The link is `PEHERAAV_PUBLIC_URL/#reset=<token>` (after `#`, so the token never reaches server logs), never built from request headers, so a forged request can't point it at another site. Tokens are random, stored only as SHA-256 in `password_resets`, work once, for 30 minutes; at most 3 emails per address per hour.
 - **New password** (reset or change) ends every session and cancels unused reset links; changing it in Preferences keeps the current browser signed in. Both changing the password and deleting the account ask for the current password (wrong tries count towards the 5-try throttle).
 - **Delete account:** one transaction removes looks (with their pieces and photos), history, wardrobe items, then the user (sessions and reset links cascade); the photo files are deleted from disk afterwards. The browser also forgets that account's saved preferences.
-- **Limits:** `ADAA_MAX_ITEMS` (300) pieces and `ADAA_MAX_LOOKS` (200) looks per person (403 with a friendly message), and an optional `ADAA_MAX_USERS` cap on accounts. `ADAA_SECURE_COOKIES=1` adds `Secure` to the cookie behind https.
+- **Limits:** `PEHERAAV_MAX_ITEMS` (300) pieces and `PEHERAAV_MAX_LOOKS` (200) looks per person (403 with a friendly message), and an optional `PEHERAAV_MAX_USERS` cap on accounts. `PEHERAAV_SECURE_COOKIES=1` adds `Secure` to the cookie behind https.
 - **Sign-up** asks for name, email, phone and a password (8+ characters). Email is stored lower-case and must be unique; phone keeps only digits (10 to 15) and a leading `+`.
 - **Passwords:** Python's built-in `hashlib.scrypt` (n=2^14, r=8, p=1) with a random 16-byte salt, checked with `hmac.compare_digest`. No extra packages needed.
-- **Sessions:** a random token in an HttpOnly, SameSite=Lax cookie (`adaa_session`, 30 days). The database keeps only its SHA-256, so a copied database can't be used to log in.
+- **Sessions:** a random token in an HttpOnly, SameSite=Lax cookie (`peheraav_session`, 30 days). The database keeps only its SHA-256, so a copied database can't be used to log in.
 - **Throttle:** 5 wrong passwords for one email within 15 minutes → 429 until the window passes.
 - **Every data route** takes `user: auth.User` (a FastAPI dependency that returns 401 when logged out) and passes `user["id"]` to every query, so one account can never read or change another's items, looks, history or photos.
 - **Upgrading:** `wardrobe_items`, `looks` and `wear_log` gain a `user_id` column on startup. The first account to sign up claims all rows without an owner.
-- **Frontend:** `Root.jsx` asks `/api/auth/me`; logged out → `AuthScreen`, else the app inside a `UserContext`. `useUser()` gives `first` (first name), used in greetings, page titles, toasts, the stylist's replies and a personal line on each look. Browser storage keys get a per-account suffix (`adaa.preferences.u3`). Any 401 shows the log-in screen again.
+- **Frontend:** `Root.jsx` asks `/api/auth/me`; logged out → `AuthScreen`, else the app inside a `UserContext`. `useUser()` gives `first` (first name), used in greetings, page titles, toasts, the stylist's replies and a personal line on each look. Browser storage keys get a per-account suffix (`peheraav.preferences.u3`). Any 401 shows the log-in screen again.
 
 ## Data model (SQLite)
 
@@ -145,7 +145,7 @@ An optional free local language model could later make the chat friendlier, but 
 
 `frontend/src/components/OutfitPreview.jsx` shows a large full-body preview at the top of every outfit card. It uses the best kind available:
 
-| Priority | Kind | Status in Adaa |
+| Priority | Kind | Status in Peheraav |
 |---|---|---|
 | 1 | **Verified:** the user's own photo wearing a saved look | Shown only while the look's pieces still match the photo (stored in `look_photos`). |
 | 2 | **Outfit board** ("Your pieces"): the user's own garment cut-outs, arranged as if worn | **The default.** Instant, offline, exact pieces (see *Outfit board* below). |
@@ -181,18 +181,18 @@ OutfitBoard.jsx: sizes the pieces to each other using each cut-out's real propor
 - **Models:** downloaded once by `backend/cutout_model.py` into `backend/data/models/` and served at `/api/models/{name}` with long-lived caching:
   - `isnet`: IS-Net "isnet-general-use" (Apache 2.0) for the background.
   - `clothes`: SegFormer-B2 clothes parser (Xenova/segformer_b2_clothes, quantised ONNX, 18 ATR labels). **NVIDIA licence: non-commercial / research use only.** `partsFor()` in `cutoutQueue.js` picks the labels for each item (jeans → pants, crop top → upper clothes, sandals → shoes, bag → bag; jewellery and watches skip the parser).
-- **Combining (subtractive):** the parser is used only when it finds a person (hair/face/arms/legs over 1 % of the picture) and the garment (over 2 %). Adaa keeps what IS-Net sees and only **cuts away what the parser clearly labels as something else**: the person (face, hair, arms, legs), hat/sunglasses, shoes, and the other garment (a top's jeans, a skirt's top). Look-alike labels are never cut (the parser often reads a skirt as "dress"), so uncertain parts of the garment stay instead of leaving holes. The cut-away area is grown by one cell, so thin fringes (skin, a sneaker edge, the top underneath) go too. The parser's garment area (grown by 3 cells) then only decides **which pieces to keep**: a piece must lie mostly on it, which drops chairs and curtains. Product photos, flat lays and hangers use IS-Net alone. If the parser fails, the cut-out fails and is retried later. The worker runs one job at a time. Pieces smaller than 15 % of the biggest are dropped, so pairs like two shoes or earrings stay; faint pixels survive only next to the kept garment.
+- **Combining (subtractive):** the parser is used only when it finds a person (hair/face/arms/legs over 1 % of the picture) and the garment (over 2 %). Peheraav keeps what IS-Net sees and only **cuts away what the parser clearly labels as something else**: the person (face, hair, arms, legs), hat/sunglasses, shoes, and the other garment (a top's jeans, a skirt's top). Look-alike labels are never cut (the parser often reads a skirt as "dress"), so uncertain parts of the garment stay instead of leaving holes. The cut-away area is grown by one cell, so thin fringes (skin, a sneaker edge, the top underneath) go too. The parser's garment area (grown by 3 cells) then only decides **which pieces to keep**: a piece must lie mostly on it, which drops chairs and curtains. Product photos, flat lays and hangers use IS-Net alone. If the parser fails, the cut-out fails and is retried later. The worker runs one job at a time. Pieces smaller than 15 % of the biggest are dropped, so pairs like two shoes or earrings stay; faint pixels survive only next to the kept garment.
 - **Versions:** each cut-out stores `cutout_version` (`7` automatic, `7m` framed or touched up by the user). Bumping `CUTOUT_VERSION` redoes older automatic cut-outs in the background.
 - **Why in the browser:** onnxruntime has no Python 3.15 build, so it can't run in the backend. WebGPU hung on Intel Iris Xe, and multi-threaded WASM hung too (nested threads), so it runs single-threaded in a **Web Worker**. That way it isn't throttled in background tabs and doesn't freeze the page.
 - **Framing and erasing:** `CutoutEditor.jsx` lets the user drag a box around just the garment (only that part is processed), and `EraseCutout.jsx` is a brush that paints leftovers transparent on a canvas (undo, then trimmed and saved). Both save with an `m` version and are never redone automatically.
 - **Lifecycle:** replacing an item's photo clears its cut-out (a new one is queued), and deleting an item deletes its cut-out file. Older databases get the `cutout_filename` column automatically on startup.
 - **Fallback:** until a cut-out exists, the board shows the original photo in that position, and the caption says "Cleaning up photo backgrounds… (n of m)".
-- **Download image:** `boardImage.js` redraws the board on a 900×1500 canvas from the pictures exactly where they appear on screen (same cream background and shadows), adds the look's name, and downloads it as `adaa-<look>.png`. All in the browser.
+- **Download image:** `boardImage.js` redraws the board on a 900×1500 canvas from the pictures exactly where they appear on screen (same cream background and shadows), adds the look's name, and downloads it as `peheraav-<look>.png`. All in the browser.
 - **Photo tips:** `ItemForm.jsx` shows short tips for clean garment photos under the photo box, since the board is only as good as the photo.
 
 ## Planning (`recommender/planner.py`)
 
-Both features reuse the stylist's own rules (roles, top/bottom fit, colour harmony, occasion tags), so their advice matches the outfits Adaa suggests.
+Both features reuse the stylist's own rules (roles, top/bottom fit, colour harmony, occasion tags), so their advice matches the outfits Peheraav suggests.
 
 **Shop Smart (`GET /api/insights/gaps`).** A fixed catalogue of 17 versatile pieces (white sneakers, black heels, nude flats, gold juttis, blue jeans, black/beige trousers, black skirt, white shirt, black top, white kurta, white palazzo, gold jhumkas, silver studs, black clutch, tan tote, gold potli), each with the occasions it's usually worn for. For each one you don't already own (same kind and colour family; denim counts as blue):
 - *Clothes:* the wardrobe's outfit bases (top + bottom or a one-piece, tagged for the occasion, no colour clash) are counted with and without it. The difference is "new outfits".
@@ -226,13 +226,13 @@ One table of about 30 festivals and national days: Republic and Independence Day
 - the usual occasion and style, and a short tip.
 
 - **Typed requests:** the parser finds the festival first, tolerating small typos for longer names ("ganesh chaturti", "sankranthi"); short ones like Holi, Eid and Teej must be exact. It sets `festival`, the festival's occasion (unless another is named: "Diwali party" stays a party, while "Diwali puja" means Diwali) and its usual style (unless you ask for another). During Navratri it also sets **today's colour**.
-- **Styling (colour first):** when a request names a colour ("gulabi" → pink) or a festival (its usual colours), Adaa shows **only outfits in those colours**. The typed colour wins over the festival's. Pieces in the right colour that aren't tagged for the occasion are allowed, with a caution ("…isn't tagged for Festive, but it's in pink"). Outfits are ranked by how much of the outfit is in colour (+12 × share), so a green saree beats a white top with black jeans for 15 August. If nothing matches, the closest looks are shown with a note ("Nothing in your wardrobe is yellow…"), and fewer than 4 matches gets "Only 2 outfits in pink… add more". Each piece in a festival colour also gets +1.5, and each look says *"Saffron, white and green for Republic Day: your …"*. The festival stays on the form as a chip (with ×) and carries over to swaps and saved looks.
+- **Styling (colour first):** when a request names a colour ("gulabi" → pink) or a festival (its usual colours), Peheraav shows **only outfits in those colours**. The typed colour wins over the festival's. Pieces in the right colour that aren't tagged for the occasion are allowed, with a caution ("…isn't tagged for Festive, but it's in pink"). Outfits are ranked by how much of the outfit is in colour (+12 × share), so a green saree beats a white top with black jeans for 15 August. If nothing matches, the closest looks are shown with a note ("Nothing in your wardrobe is yellow…"), and fewer than 4 matches gets "Only 2 outfits in pink… add more". Each piece in a festival colour also gets +1.5, and each look says *"Saffron, white and green for Republic Day: your …"*. The festival stays on the form as a chip (with ×) and carries over to swaps and saved looks.
 - **Dates:** `DATES` lists Oct 2026 to Dec 2027, checked against several calendars, with Navratri's 9 day colours (2027 follows the usual weekday rule). `GET /api/festivals/now` gives today's festival or the next one within 3 weeks for the Overview card ("Navratri Day 9: Peacock Green · Maa Siddhidatri"). Its button opens the stylist preset to that festival and styles at once. Dates that weren't consistent across sources were left out, and the card notes that dates can differ by a day by region.
 
 ## Hinglish and voice (`recommender/parser.py`, `AskBox.jsx`)
 
 - **Hinglish:** the parser knows Hindi colour words (lal, peela, hara, neela, kaala, safed, gulabi, aasmani…, in `colours.HINDI`), occasion words (shaadi, sagai, tyohar, dussehra, safar, daftar, ghoomne…), comfort words (aaram, halka / bhaari, shandaar) and moods (rangeen, gehra). Filler words (aaj, ke liye, kuch, meri…) are ignored. Hindi colour words are translated before matching your pieces, so *"meri hari kurti"* finds your **green** kurti. Two-word colours like "sky blue" (from "aasmani") are recognised.
-- **Voice:** a microphone button (Chrome / Edge) uses the browser's Web Speech API with Indian English (`en-IN`), which handles Hinglish. The words appear in the box as you speak and are sent when you stop. In Chrome the audio goes to Google's speech service; nothing is recorded by Adaa. The button is hidden where the browser doesn't support it.
+- **Voice:** a microphone button (Chrome / Edge) uses the browser's Web Speech API with Indian English (`en-IN`), which handles Hinglish. The words appear in the box as you speak and are sent when you stop. In Chrome the audio goes to Google's speech service; nothing is recorded by Peheraav. The button is hidden where the browser doesn't support it.
 
 ## Weather (`recommender/weather.py`, `frontend/src/weather.js`)
 
@@ -245,7 +245,7 @@ One table of about 30 festivals and national days: Republic and Independence Day
 
 ## Wear stats (`GET /api/insights/wear?days=30`)
 
-Counts come from `wear_items`: *Wore it today* on a saved look, or on any stylist outfit (`POST /api/history`). For each piece, Adaa works out times worn, last worn and days since. **Not worn** lists pieces never worn (oldest first), then those not worn for the longest. **Most worn** shows the top 5. **Cost per wear** = price ÷ max(wears, 1), shown for pieces with a price, best value first. The totals are spent, average cost per wear (spent ÷ total wears) and pieces worn in the window. The window can be 7–365 days (the page offers 30/60/90). The Overview shows a nudge when pieces haven't been worn in 30 days.
+Counts come from `wear_items`: *Wore it today* on a saved look, or on any stylist outfit (`POST /api/history`). For each piece, Peheraav works out times worn, last worn and days since. **Not worn** lists pieces never worn (oldest first), then those not worn for the longest. **Most worn** shows the top 5. **Cost per wear** = price ÷ max(wears, 1), shown for pieces with a price, best value first. The totals are spent, average cost per wear (spent ÷ total wears) and pieces worn in the window. The window can be 7–365 days (the page offers 30/60/90). The Overview shows a nudge when pieces haven't been worn in 30 days.
 
 ## Auto-fill from a photo (browser)
 
@@ -260,9 +260,9 @@ Trousers, shoes, bag, dupatta, belt, hat and sunglasses come straight from their
 
 - `App.jsx` holds the layout and navigation. Each main page is its own file in `pages/`.
 - **Wi-Fi sharing:** `npm run share` = `vite build && vite preview --host`. The preview server (port 4173) is reachable on the home network and forwards `/api` to the backend, which itself stays on 127.0.0.1:8000. The session cookie has no `Secure` flag, so login works over plain http on the LAN.
-- **Installable app:** `public/manifest.webmanifest` (standalone, plum theme, 192/512 icons and a maskable 512 icon with the A inside the safe circle) and Apple meta tags in `index.html`. No service worker: every screen needs the backend anyway, so there's nothing useful to cache offline (an offline page is planned for the Play Store version).
+- **Installable app:** `public/manifest.webmanifest` (standalone, plum theme, 192/512 icons and a maskable 512 icon with the P inside the safe circle) and Apple meta tags in `index.html`. No service worker: every screen needs the backend anyway, so there's nothing useful to cache offline (an offline page is planned for the Play Store version).
 - **Phones:** `cutoutQueue.js` skips automatic cut-outs on touch devices with a small screen (the IS-Net model is ~179 MB); the board shows the original photo until a computer makes the cut-out. `AskBox.jsx` hides the microphone when `window.isSecureContext` is false.
-- **Opening animation (`Splash.jsx`):** `Root.jsx` shows it once per tab (`sessionStorage` `adaa.splashSeen`) while it checks who is logged in, always in the same place so it never restarts. `assets/adaa-splash.svg` is the plum logo with each part in its own group (`s-mark`, `s-shine`, `s-name`, `s-thread`, `s-dot`, `s-tag`), imported with `?raw` so CSS can animate the parts: focus-in (scale + blur), a gold glint clipped to the A, `clip-path` reveals for the name and tagline, the thread scaling out from the centre. After about 6 s (or a tap / key) it slides up in 0.9 s. With `prefers-reduced-motion` it's a still logo that fades out. Pure CSS, no libraries.
+- **Opening animation (`Splash.jsx`):** `Root.jsx` shows it once per tab (`sessionStorage` `peheraav.splashSeen`) while it checks who is logged in, always in the same place so it never restarts. `assets/peheraav-splash.svg` is the plum logo with each part in its own group (`s-mark`, `s-shine`, `s-name`, `s-thread`, `s-dot`, `s-tag`), imported with `?raw` so CSS can animate the parts: focus-in (scale + blur), a gold glint clipped to the A, `clip-path` reveals for the name and tagline, the thread scaling out from the centre. After about 6 s (or a tap / key) it slides up in 0.9 s. With `prefers-reduced-motion` it's a still logo that fades out. Pure CSS, no libraries.
 - The Style me form is the single source of truth: typed requests, the ✦ "Style this" button and saved preferences all just fill in the form, then call `/api/recommendations`.
 - Swapping a piece calls `/api/outfits/alternatives`, then `/api/outfits/evaluate`, so the reasons always match the current pieces.
 - Preferences are a per-browser convenience (`localStorage`, one set per account), used as the form's starting values.
@@ -283,15 +283,15 @@ Trousers, shoes, bag, dupatta, belt, hat and sunglasses come straight from their
 
 ```
 browser ──https──► Caddy (Let's Encrypt, security headers, 12 MB body limit)
-                     └──► uvicorn main:app on 127.0.0.1:8000 (systemd service "adaa", user "adaa", 1 worker)
+                     └──► uvicorn main:app on 127.0.0.1:8000 (systemd service "peheraav", user "peheraav", 1 worker)
                              ├─ /api/*        the API
                              └─ everything else: frontend/dist (index.html for app screens)
-data: /var/lib/adaa (ADAA_DATA_DIR)      settings: /etc/adaa.env      backups: /var/backups/adaa (timer, 03:30)
+data: /var/lib/peheraav (PEHERAAV_DATA_DIR)      settings: /etc/peheraav.env      backups: /var/backups/peheraav (timer, 03:30)
 ```
 
-- **One program:** when `frontend/dist/index.html` exists (`ADAA_FRONTEND_DIR`), `main.py`'s last route serves the build: real files directly (`assets/*` cached for a year because their names carry a content hash; everything else `no-cache`), any other non-API address gets `index.html`. Paths are resolved and must stay inside the build folder. In development the folder doesn't exist and Vite serves the app as before.
+- **One program:** when `frontend/dist/index.html` exists (`PEHERAAV_FRONTEND_DIR`), `main.py`'s last route serves the build: real files directly (`assets/*` cached for a year because their names carry a content hash; everything else `no-cache`), any other non-API address gets `index.html`. Paths are resolved and must stay inside the build folder. In development the folder doesn't exist and Vite serves the app as before.
 - **One worker on purpose:** SQLite and the in-memory login/reset throttles assume a single process. Plenty for friends and family.
-- **Backups (`backup.py`):** SQLite's online backup API copies the database consistently while Adaa runs; it and `uploads/` go into one `adaa-YYYYMMDD-HHMMSS.tar.gz`, written as `.part` and renamed when complete; the newest `ADAA_BACKUP_KEEP` (7) are kept. Restore extracts with `tarfile`'s `data` filter (no paths outside the folder, no links), keeps the replaced data as `*.before-restore`, and refuses to overwrite without `--force`. The AI models aren't backed up; they download again.
+- **Backups (`backup.py`):** SQLite's online backup API copies the database consistently while Peheraav runs; it and `uploads/` go into one `peheraav-YYYYMMDD-HHMMSS.tar.gz`, written as `.part` and renamed when complete; the newest `PEHERAAV_BACKUP_KEEP` (7) are kept. Restore extracts with `tarfile`'s `data` filter (no paths outside the folder, no links), keeps the replaced data as `*.before-restore`, and refuses to overwrite without `--force`. The AI models aren't backed up; they download again.
 - **Hardening:** the service may only write to its data and backup folders (`ProtectSystem=strict`), runs as its own user without a login shell, and the backend only listens on localhost. `install.sh` opens ports 80/443 in the server's own iptables (Oracle's Ubuntu images block them) and adds swap on 1 GB machines so the build fits.
 - **Deploy files keep LF line endings** (`.gitattributes`), so scripts edited on Windows still run on Linux.
 
@@ -306,7 +306,7 @@ data: /var/lib/adaa (ADAA_DATA_DIR)      settings: /etc/adaa.env      backups: /
 
 - **Photos:** the browser redraws every upload upright at ≤1600 px (`photo.js`: JPEG stays JPEG, others become WebP/PNG), which drops EXIF/GPS and makes files ~10× smaller; originals up to 25 MB can be chosen. The server still checks the type and strips metadata itself (`image_meta.py`, pure Python: JPEG APP1/APP13/COM, PNG eXIf/tEXt/zTXt/iTXt/tIME, WebP EXIF/XMP; ICC colour profiles kept). Photo URLs carry a version, so they're cached `private, max-age=30 days, immutable`.
 - **Rate limits (`ratelimit.py`):** per address, in memory: sign-up 10/h, log-in 20/15 min (plus 5 wrong passwords per email), forgot 5/h, reset 10/h, verify 20/h, model download 10/h, uploads 300/h, crash reports 30/h, everything else 1500/min. 429 with `Retry-After`.
-- **Cross-site requests (`security.py`):** POST/PUT/PATCH/DELETE to `/api/` with an `Origin` that isn't this site's host (or `ADAA_PUBLIC_URL`) get 403. **CSP** on the app page: `default-src 'self'`, `script-src 'self' 'wasm-unsafe-eval'` (the in-browser model), `worker-src 'self' blob:`, `connect-src` self + Open-Meteo, `frame-ancestors 'none'`, `object-src 'none'`. Fonts are self-hosted (`@fontsource`, OFL) so no request goes to Google.
+- **Cross-site requests (`security.py`):** POST/PUT/PATCH/DELETE to `/api/` with an `Origin` that isn't this site's host (or `PEHERAAV_PUBLIC_URL`) get 403. **CSP** on the app page: `default-src 'self'`, `script-src 'self' 'wasm-unsafe-eval'` (the in-browser model), `worker-src 'self' blob:`, `connect-src` self + Open-Meteo, `frame-ancestors 'none'`, `object-src 'none'`. Fonts are self-hosted (`@fontsource`, OFL) so no request goes to Google.
 - **Tokens never in logs:** reset and confirmation links use `#reset=` / `#verify=`; the part after `#` never reaches the server.
 - **Email confirmation:** `email_verifications` (hashed, one use, 24 h, max 3 emails/h); `users.email_verified_at`. Nothing is blocked while unconfirmed; a banner offers a new link.
 - **Errors:** unexpected exceptions are logged with the request path and answered with a calm 500 (no internals); a React error boundary shows "Something went wrong · Reload" instead of a blank page and reports the message (no personal data) to `POST /api/client-error`, which is logged.

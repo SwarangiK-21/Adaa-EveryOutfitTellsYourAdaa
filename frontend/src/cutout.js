@@ -1,6 +1,6 @@
 // Cuts a garment out of its photo (removes the background), in a background thread.
 // The work happens in cutout.worker.js so the page stays responsive, even in a hidden tab.
-// The model (~179 MB) is served by the Adaa backend and downloaded by the browser once.
+// The model (~179 MB) is served by the Peheraav backend and downloaded by the browser once.
 
 const workers = {};   // 'cutout' (background queue) and 'analyse' (reading a new photo right away)
 let nextId = 0;

@@ -1,5 +1,5 @@
 // Background thread that turns a garment photo into a clean "garment only" picture.
-// Running here (not on the page) keeps Adaa responsive, and isn't slowed down when the tab is hidden.
+// Running here (not on the page) keeps Peheraav responsive, and isn't slowed down when the tab is hidden.
 //
 // Two free models, both on the CPU via Microsoft's onnxruntime-web (MIT):
 //   1. IS-Net (Apache 2.0): separates the foreground (garment, hanger, model...) from the background.

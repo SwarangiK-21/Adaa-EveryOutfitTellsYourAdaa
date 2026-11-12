@@ -8,7 +8,7 @@ import { swatchFor } from './OutfitPreview.jsx';
 /*
   The optional style profile: height, body shape (chosen by you, never guessed), preferred fit,
   skin undertone, styles you usually skip, colours you love or avoid, and gender (only to hide shop
-  ideas you'd never wear). Every question can be skipped. Adaa uses the answers to rank outfits and
+  ideas you'd never wear). Every question can be skipped. Peheraav uses the answers to rank outfits and
   explain "why it suits you"; it never hides your clothes because of them.
 */
 
@@ -115,7 +115,7 @@ function AboutYou({ p, set }) {
             </button>
           ))}
           <button type="button" className={`shape-card${p.body_shape == null ? ' chosen' : ''}`} aria-pressed={p.body_shape == null}
-            onClick={() => set({ body_shape: null })}><b>Not sure</b><small>That's fine: Adaa still styles you</small></button>
+            onClick={() => set({ body_shape: null })}><b>Not sure</b><small>That's fine: Peheraav still styles you</small></button>
         </div>
       </fieldset>
       <Choice label="Fit you prefer" options={FITS} value={p.fit} onChange={(v) => set({ fit: v })} none="No preference" />
@@ -177,7 +177,7 @@ export function StyleProfileSetup({ initial, notify, onDone }) {
         <div className="modal-head">
           <div>
             <small>STEP {step} OF 2 · ALL OPTIONAL</small>
-            <h2 id="profile-title">{step === 1 ? <>Help Adaa style you, {first}</> : 'Colours and comfort'}</h2>
+            <h2 id="profile-title">{step === 1 ? <>Help Peheraav style you, {first}</> : 'Colours and comfort'}</h2>
           </div>
           <button type="button" className="icon-btn" onClick={() => finish(true)} aria-label="Skip for now"><X size={18} /></button>
         </div>

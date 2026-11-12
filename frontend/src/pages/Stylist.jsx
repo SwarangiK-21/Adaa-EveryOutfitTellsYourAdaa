@@ -53,7 +53,7 @@ export default function Stylist({ anchorId, preset, goToWardrobe, goToPreference
   const [useWeather, setUseWeather] = useState(true);
   const [swapping, setSwapping] = useState(null);       // { rank, piece } while the swap panel is open
   const [error, setError] = useState('');
-  const [chat, setChat] = useState(null); // the last typed request and what Adaa understood
+  const [chat, setChat] = useState(null); // the last typed request and what Peheraav understood
   const [asking, setAsking] = useState(false);
   const resultsRef = useRef(null);
 
@@ -195,7 +195,7 @@ export default function Stylist({ anchorId, preset, goToWardrobe, goToPreference
     <Heading
       eyebrow="YOUR PERSONAL STYLE COMPANION"
       title={<>Let's find your <em>kind of lovely, {first}.</em></>}
-      sub="Tell Adaa what you need, or pick the details yourself. Every look uses only pieces from your wardrobe."
+      sub="Tell Peheraav what you need, or pick the details yourself. Every look uses only pieces from your wardrobe."
     />
   );
 
@@ -206,7 +206,7 @@ export default function Stylist({ anchorId, preset, goToWardrobe, goToPreference
   if (!options) return <>{heading}<p className="muted">Loading your wardrobe…</p></>;
   if (items.length === 0) {
     return <>{heading}<div className="empty"><div><Sparkles size={34} /></div><h3>Your stylist needs a wardrobe first</h3>
-      <p>Add a few pieces (clothes, footwear, jewellery) and Adaa will style them for you.</p>
+      <p>Add a few pieces (clothes, footwear, jewellery) and Peheraav will style them for you.</p>
       <button className="primary" onClick={goToWardrobe}><Plus size={15} /> Add pieces</button></div></>;
   }
 
@@ -279,7 +279,7 @@ export default function Stylist({ anchorId, preset, goToWardrobe, goToPreference
             <div className="tip">
               <small>HOW IT WORKS</small>
               <h3>Looks from your own wardrobe.</h3>
-              <p>Choose an occasion and any preferences, then press <b>Style me</b>. Adaa suggests up to four different outfits, explains why each works, and tells you honestly if something is missing.</p>
+              <p>Choose an occasion and any preferences, then press <b>Style me</b>. Peheraav suggests up to four different outfits, explains why each works, and tells you honestly if something is missing.</p>
               <div className="tip-art">✧</div>
             </div>
           )}
@@ -300,7 +300,7 @@ export default function Stylist({ anchorId, preset, goToWardrobe, goToPreference
                 <div className="empty">
                   <div><Sparkles size={30} /></div>
                   <h3>No complete outfit yet</h3>
-                  <p>Adaa only uses pieces you own, and it couldn't build a full look for this request.</p>
+                  <p>Peheraav only uses pieces you own, and it couldn't build a full look for this request.</p>
                   <button className="primary" onClick={goToWardrobe}><Plus size={15} /> Add pieces</button>
                 </div>
               ) : (

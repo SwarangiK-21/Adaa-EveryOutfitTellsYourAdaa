@@ -31,10 +31,10 @@ export default class ErrorBoundary extends React.Component {
     if (!this.state.failed) return this.props.children;
     return (
       <div className="crash" role="alert">
-        <img src="/brand/adaa-mark.svg" alt="" />
+        <img src="/brand/peheraav-mark.svg" alt="" />
         <h1>Something went wrong</h1>
         <p>Sorry, this screen hit a problem. Your wardrobe and looks are safe. Reloading usually fixes it.</p>
-        <button type="button" className="primary" onClick={() => window.location.reload()}><RefreshCw size={15} /> Reload Adaa</button>
+        <button type="button" className="primary" onClick={() => window.location.reload()}><RefreshCw size={15} /> Reload Peheraav</button>
       </div>
     );
   }

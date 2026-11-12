@@ -102,7 +102,7 @@ export default function Wardrobe({ notify, onStyle }) {
         <div className="empty">
           <div><Shirt size={34} /></div>
           <h3>Your wardrobe is waiting</h3>
-          <p>Add your first piece: a kurta, a pair of jhumkas, your favourite juttis. Adaa only ever styles you with pieces you add here.</p>
+          <p>Add your first piece: a kurta, a pair of jhumkas, your favourite juttis. Peheraav only ever styles you with pieces you add here.</p>
           <button className="primary" onClick={() => setEditing('new')}><Plus size={15} /> Add your first piece</button>
         </div>
       )}

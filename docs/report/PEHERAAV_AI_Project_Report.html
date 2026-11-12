@@ -1,13 +1,13 @@
 <!doctype html>
 <!--
-  Source of docs/ADAA_Project_Report.pdf. To rebuild the PDF after editing (Windows, from the repo folder):
+  Source of docs/PEHERAAV_AI_Project_Report.pdf. To rebuild the PDF after editing (Windows, from the repo folder):
   "C:\Program Files\Google\Chrome\Application\chrome.exe" --headless=new --no-pdf-header-footer
-    --print-to-pdf=docs\ADAA_Project_Report.pdf docs\report\ADAA_Project_Report.html
+    --print-to-pdf=docs\PEHERAAV_AI_Project_Report.pdf docs\report\PEHERAAV_AI_Project_Report.html
 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Adaa: Project Report</title>
+<title>Peheraav: Project Report</title>
 <style>
   @page { size: A4; margin: 16mm 15mm 16mm 15mm; }
   :root { --plum:#5B1F3F; --soft:#7A3A5C; --gold:#A8843E; --blush:#F6E9EE; --line:#E4CFD8; --ink:#2A1D24; --muted:#6B5A62; }
@@ -52,13 +52,13 @@
 
 <!-- ============ COVER ============ -->
 <div class="cover">
-  <img class="logo" src="../../brand/png/adaa-logo.png" alt="Adaa logo">
-  <h1>Adaa: Project Report</h1>
-  <div class="tag">Every outfit tells your Adaa</div>
+  <img class="logo" src="../../brand/png/peheraav-logo.png" alt="Peheraav logo">
+  <h1>Peheraav: Project Report</h1>
+  <div class="tag">Your wardrobe, styled by AI</div>
   <div class="sub">A personal wardrobe stylist that builds complete outfits only from the clothes a person already owns, with Indian traditional, Western and Indo-Western styling.</div>
   <div class="meta">
     <b>Author:</b> Swarangi Kothawade<br>
-    <b>Live app:</b> adaa-every-outfit-tells-your-adaa.eastasia.cloudapp.azure.com<br>
+    <b>Live app:</b> peheraav-ai.eastasia.cloudapp.azure.com<br>
     <b>Google Play:</b> coming soon<br>
     <b>Report date:</b> November 2026
   </div>
@@ -88,23 +88,23 @@
 <!-- ============ 2. SOLUTION ============ -->
 <section>
   <h2><span class="n">2</span>Proposed Solution</h2>
-  <p>Adaa is a web app (it also installs on a phone's home screen) that works like a personal stylist for <b>your own</b> wardrobe.</p>
+  <p>Peheraav is a web app (it also installs on a phone's home screen) that works like a personal stylist for <b>your own</b> wardrobe.</p>
   <table>
-    <tr><th>Idea</th><th>How Adaa does it</th></tr>
+    <tr><th>Idea</th><th>How Peheraav does it</th></tr>
     <tr><td>Start from what you own</td><td>The user adds a photo and a few details of each piece once (clothes, jewellery, shoes, bags).</td></tr>
     <tr><td>Ask naturally</td><td>Type or speak a request in English or Hinglish, e.g. <i>"Aaj college ke liye kuch comfy"</i>, or tap options.</td></tr>
-    <tr><td>Complete, honest looks</td><td>Up to 4 different outfits, each with the reasons it works and honest cautions. If a piece is missing, Adaa says so instead of inventing it.</td></tr>
+    <tr><td>Complete, honest looks</td><td>Up to 4 different outfits, each with the reasons it works and honest cautions. If a piece is missing, Peheraav says so instead of inventing it.</td></tr>
     <tr><td>See the real pieces</td><td>Each look is shown as an "outfit board" made from the user's own photos with the backgrounds removed. No AI-generated images.</td></tr>
     <tr><td>Indian occasions built in</td><td>Wedding functions (haldi, mehendi, sangeet…), about 30 festivals with their colours, and Hinglish words.</td></tr>
     <tr><td>Wear more, buy less</td><td>Wear stats, cost per wear, and "Shop Smart" ideas for the few new pieces that would unlock the most outfits.</td></tr>
   </table>
-  <div class="note"><b>Core rule:</b> Adaa never invents a piece. Every outfit uses only items the user has added.</div>
+  <div class="note"><b>Core rule:</b> Peheraav never invents a piece. Every outfit uses only items the user has added.</div>
 </section>
 
 <!-- ============ 3. ARCHITECTURE ============ -->
 <section class="break">
   <h2><span class="n">3</span>Architecture</h2>
-  <p>Adaa has three main parts: the <b>app in the browser</b> (what the user sees), the <b>server</b> (stores data and chooses outfits), and a few <b>outside services</b> used only for specific jobs.</p>
+  <p>Peheraav has three main parts: the <b>app in the browser</b> (what the user sees), the <b>server</b> (stores data and chooses outfits), and a few <b>outside services</b> used only for specific jobs.</p>
   <figure>
     <svg viewBox="0 0 720 360" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Architecture diagram">
       <defs>
@@ -168,7 +168,7 @@
       <line x1="515" y1="160" x2="563" y2="172" stroke="#A8843E" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ar)"/>
       <line x1="515" y1="289" x2="563" y2="288" stroke="#A8843E" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ar)"/>
     </svg>
-    <figcaption>Figure 1. Adaa's architecture. Solid arrows: the app's own traffic. Dashed arrows: outside services.</figcaption>
+    <figcaption>Figure 1. Peheraav's architecture. Solid arrows: the app's own traffic. Dashed arrows: outside services.</figcaption>
   </figure>
   <table>
     <tr><th>Part</th><th>Job</th></tr>
@@ -184,7 +184,7 @@
 <!-- ============ 4. WORKFLOW ============ -->
 <section class="break">
   <h2><span class="n">4</span>Workflow</h2>
-  <p>How a person uses Adaa, from first visit to everyday use:</p>
+  <p>How a person uses Peheraav, from first visit to everyday use:</p>
   <figure>
     <svg viewBox="0 0 720 250" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Workflow diagram">
       <defs>
@@ -235,7 +235,7 @@
         <text x="360" y="242" text-anchor="middle" fill="#6B5A62" font-size="10">Planners (Wedding, Trip) and Festival styling follow the same path from step 5.</text>
       </g>
     </svg>
-    <figcaption>Figure 2. The user's journey in Adaa.</figcaption>
+    <figcaption>Figure 2. The user's journey in Peheraav.</figcaption>
   </figure>
   <h3>What happens behind one request</h3>
   <table>
@@ -251,7 +251,7 @@
       <img src="../screenshots/outfit-white-top.webp" alt="Look 1: white ruffled top with black baggy jeans" style="width:49%">
       <img src="../screenshots/outfit-checks-shirt.webp" alt="Look 4: checked shirt with straight jeans" style="width:49%">
     </div>
-    <figcaption>Figure 3. Real screenshots: two looks Adaa suggested for the same college request, made only from the user's own pieces.</figcaption>
+    <figcaption>Figure 3. Real screenshots: two looks Peheraav suggested for the same college request, made only from the user's own pieces.</figcaption>
   </figure>
 </section>
 
@@ -268,7 +268,7 @@
     <tr><td>Weather</td><td>Open-Meteo API</td><td>Free weather service, no account or key needed.</td></tr>
     <tr><td>Voice</td><td>Web Speech API</td><td>The browser's built-in speech-to-text.</td></tr>
     <tr><td>Email</td><td>SMTP (Gmail app password)</td><td>Sends email-confirmation and password-reset links.</td></tr>
-    <tr><td>Hosting</td><td>Azure for Students VM, Ubuntu 24.04, Caddy, systemd</td><td>A free student server; Caddy provides https; systemd keeps Adaa running and restarts it if needed.</td></tr>
+    <tr><td>Hosting</td><td>Azure for Students VM, Ubuntu 24.04, Caddy, systemd</td><td>A free student server; Caddy provides https; systemd keeps Peheraav running and restarts it if needed.</td></tr>
     <tr><td>Backups</td><td>Python <code>backup.py</code>, Backblaze B2</td><td>Nightly copies kept on the server and off-site.</td></tr>
     <tr><td>Monitoring</td><td>UptimeRobot</td><td>Checks the site every 5 minutes and emails if it goes down.</td></tr>
     <tr><td>Testing</td><td>pytest (258 tests)</td><td>Automatic checks that the backend and styling rules still work.</td></tr>
@@ -316,7 +316,7 @@
     <tr><td>Shop Smart</td><td><code>planner.py</code></td><td>Tries 17 versatile pieces against the wardrobe and counts how many new outfits each would make.</td></tr>
     <tr><td>Style profile</td><td><code>recommender/profile_fit.py</code></td><td>Reads each piece's cut from its type and name, adds small score bonuses and "Why it suits you" notes. Never hides clothes.</td></tr>
     <tr><td>Accounts and email</td><td><code>auth.py</code>, <code>mailer.py</code>, SMTP</td><td>Passwords hashed with scrypt; session cookie; one-use links emailed for confirmation and reset.</td></tr>
-    <tr><td>Hosting and backups</td><td>Caddy, systemd, <code>backup.py</code>, <code>offsite.py</code></td><td>One service runs Adaa; a nightly timer backs up the database and photos and uploads a copy to Backblaze B2.</td></tr>
+    <tr><td>Hosting and backups</td><td>Caddy, systemd, <code>backup.py</code>, <code>offsite.py</code></td><td>One service runs Peheraav; a nightly timer backs up the database and photos and uploads a copy to Backblaze B2.</td></tr>
   </table>
 </section>
 
@@ -337,7 +337,7 @@
     <tr><td>Data loss</td><td>Nightly backups (7 kept) + off-site copy; tested restore</td><td>Data survives a server failure.</td></tr>
     <tr><td>Your choices</td><td>Delete account any time (data and photos erased); privacy note and terms; 18+ only</td><td>Users stay in control of their data.</td></tr>
   </table>
-  <div class="note">No API keys or passwords are stored in the code. Server secrets live only in a settings file on the server, readable by the Adaa service alone.</div>
+  <div class="note">No API keys or passwords are stored in the code. Server secrets live only in a settings file on the server, readable by the Peheraav service alone.</div>
 </section>
 
 <!-- ============ 9. FUTURE SCOPE ============ -->
@@ -356,12 +356,12 @@
   <h3>Current limitations</h3>
   <table>
     <tr><th>Limitation</th><th>Detail</th></tr>
-    <tr><td>Keyword understanding</td><td>Clear sentences work best; Adaa always shows what it understood.</td></tr>
+    <tr><td>Keyword understanding</td><td>Clear sentences work best; Peheraav always shows what it understood.</td></tr>
     <tr><td>Auto-fill accuracy</td><td>On 28 real photos: category always right, type about 9 in 10, colour about 3 in 4.</td></tr>
     <tr><td>Phones</td><td>Automatic background removal is skipped on phones (the model is about 200 MB).</td></tr>
     <tr><td>Scale</td><td>One server and one SQLite file: suited to early users, not very large numbers.</td></tr>
   </table>
-  <p class="muted">All features, technologies and figures in this report come from the Adaa source code and its test records (docs/TESTING.md).</p>
+  <p class="muted">All features, technologies and figures in this report come from the Peheraav source code and its test records (docs/TESTING.md).</p>
 </section>
 
 </body>

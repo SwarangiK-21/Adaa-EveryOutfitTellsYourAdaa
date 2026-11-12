@@ -4,14 +4,14 @@ import { api } from '../api.js';
 import PrivacyNote from './PrivacyNote.jsx';
 import TermsNote from './TermsNote.jsx';
 
-const HAS_ACCOUNT = 'adaa.hasAccount';   // this browser has signed in before: start on "Log in"
+const HAS_ACCOUNT = 'peheraav.hasAccount';   // this browser has signed in before: start on "Log in"
 const hadAccount = () => { try { return localStorage.getItem(HAS_ACCOUNT) === '1'; } catch { return false; } };
 
 const TEXT = {
-  signup: { eyebrow: 'WELCOME TO ADAA', title: <>Let's get to <em>know you</em></>, sub: 'Tell us a little about you. Adaa will call you by your name.', button: 'Create my account' },
+  signup: { eyebrow: 'WELCOME TO PEHERAAV', title: <>Let's get to <em>know you</em></>, sub: 'Tell us a little about you. Peheraav will call you by your name.', button: 'Create my account' },
   login: { eyebrow: 'WELCOME BACK', title: <>Good to see you <em>again</em></>, sub: 'Log in to your wardrobe.', button: 'Log in' },
   forgot: { eyebrow: 'FORGOT YOUR PASSWORD?', title: <>Let's get you <em>back in</em></>, sub: "Enter your account's email and we'll send you a link to choose a new password.", button: 'Send me a link' },
-  reset: { eyebrow: 'ALMOST THERE', title: <>Choose a <em>new password</em></>, sub: 'Pick something you haven’t used for Adaa before, at least 8 characters.', button: 'Save my new password' },
+  reset: { eyebrow: 'ALMOST THERE', title: <>Choose a <em>new password</em></>, sub: 'Pick something you haven’t used for Peheraav before, at least 8 characters.', button: 'Save my new password' },
 };
 
 /*
@@ -70,7 +70,7 @@ export default function AuthScreen({ onSignedIn, resetToken, onResetDone, initia
   return (
     <div className="auth">
       <section className="auth-brand">
-        <img src="/brand/adaa-logo-dark.svg" alt="Adaa — every outfit tells your adaa" />
+        <img src="/brand/peheraav-logo-dark.svg" alt="Peheraav AI — your wardrobe, styled by AI" />
         <ul>
           <li><Sparkles size={15} /> A personal stylist for the clothes you already own</li>
           <li><Heart size={15} /> Saree, kurta or crop top: looks made for you, by name</li>
@@ -135,7 +135,7 @@ export default function AuthScreen({ onSignedIn, resetToken, onResetDone, initia
 
         <p className="auth-switch">
           {mode === 'signup' && <>Already have an account? <button type="button" className="text-btn" onClick={() => go('login')}>Log in</button></>}
-          {mode === 'login' && <>New to Adaa? <button type="button" className="text-btn" onClick={() => go('signup')}>Create an account</button></>}
+          {mode === 'login' && <>New to Peheraav? <button type="button" className="text-btn" onClick={() => go('signup')}>Create an account</button></>}
           {(mode === 'forgot' || mode === 'reset') && <button type="button" className="text-btn" onClick={() => { if (mode === 'reset') onResetDone(false); go('login'); }}>Back to log in</button>}
         </p>
         <p className="auth-switch legal-links">

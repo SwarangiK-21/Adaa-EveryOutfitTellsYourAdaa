@@ -8,7 +8,7 @@
 - After 5 wrong passwords for an email within 15 minutes, further tries wait (429).
 - "Forgot password" emails a one-use link that works for 30 minutes; "confirm your email" links
   work for 24 hours. At most 3 of each kind of email per address per hour. Only hashes are stored.
-- With ADAA_SECURE_COOKIES=1 (when served over https) the cookie is only ever sent encrypted.
+- With PEHERAAV_SECURE_COOKIES=1 (when served over https) the cookie is only ever sent encrypted.
 """
 import base64
 import hashlib
@@ -25,7 +25,7 @@ from fastapi import Depends, HTTPException, Request, Response
 import config
 import database
 
-COOKIE = "adaa_session"
+COOKIE = "peheraav_session"
 SESSION_DAYS = 30
 _SCRYPT = {"n": 2 ** 14, "r": 8, "p": 1}
 MAX_FAILURES, FAILURE_WINDOW = 5, 15 * 60
@@ -108,7 +108,7 @@ def start_session(conn: sqlite3.Connection, response: Response, uid: int) -> Non
         conn.execute("DELETE FROM sessions WHERE expires_at < ?", (now.isoformat(),))   # tidy up old ones
         conn.execute("INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
                      (_token_hash(token), uid, now.isoformat(), (now + timedelta(days=SESSION_DAYS)).isoformat()))
-    # Secure stays off for plain http (your laptop, home Wi-Fi); ADAA_SECURE_COOKIES=1 behind https.
+    # Secure stays off for plain http (your laptop, home Wi-Fi); PEHERAAV_SECURE_COOKIES=1 behind https.
     response.set_cookie(COOKIE, token, max_age=SESSION_DAYS * 24 * 3600, httponly=True, samesite="lax", path="/",
                         secure=config.SECURE_COOKIES)
 

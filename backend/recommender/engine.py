@@ -331,7 +331,7 @@ def recommend(items: list[dict], req, profile: dict | None = None) -> dict:
             raise RecommendationError("That piece is no longer in your wardrobe.")
         if anchor.role is None:
             raise RecommendationError(
-                f"Adaa doesn't know how to style a '{anchor.item['item_type']}' yet. "
+                f"Peheraav doesn't know how to style a '{anchor.item['item_type']}' yet. "
                 "Try editing its type (e.g. Kurta, Top, Jeans, Saree).")
         if not anchor.tagged:
             notes.append(f"Your {anchor.name} isn't tagged for {req.occasion}, "
@@ -340,7 +340,7 @@ def recommend(items: list[dict], req, profile: dict | None = None) -> dict:
     clothes = [p for p in wardrobe if p.item["category"] == "Clothing"]
     unknown = [p for p in clothes if p.role is None]
     if unknown:
-        notes.append("Adaa couldn't tell how to wear: "
+        notes.append("Peheraav couldn't tell how to wear: "
                      + _join([f"{p.name} (type '{p.item['item_type']}')" for p in unknown])
                      + ". Edit their type to include them.")
 
@@ -433,14 +433,14 @@ def _why_no_outfits(clothes: list[Piece], anchor: Piece | None) -> str:
     if not clothes:
         return "Add some clothes to your wardrobe first (a kurta, a top and jeans, a saree...)."
     if anchor and anchor.item["category"] == "Clothing":
-        return (f"Adaa couldn't find anything in your wardrobe to complete your {anchor.name}. "
+        return (f"Peheraav couldn't find anything in your wardrobe to complete your {anchor.name}. "
                 "Try adding a matching top or bottom.")
     roles = {p.role for p in clothes}
     if g.TOP in roles and g.BOTTOM not in roles:
         return "Your wardrobe has tops but no bottoms yet. Add jeans, a skirt, a salwar or palazzos."
     if g.BOTTOM in roles and g.TOP not in roles:
         return "Your wardrobe has bottoms but no tops yet. Add a top, shirt or kurta."
-    return "Adaa couldn't build a complete outfit from your clothes yet. Add a top and bottom, or a dress/saree."
+    return "Peheraav couldn't build a complete outfit from your clothes yet. Add a top and bottom, or a dress/saree."
 
 
 def _missing_slot_notes(wardrobe: list[Piece], chosen: list[Outfit], occasion: str) -> list[str]:
@@ -521,7 +521,7 @@ def alternatives(items: list[dict], item_ids: list[int], replace_id: int, req, l
     current = [_prepare(by_id[i], req.occasion) for i in item_ids if i in by_id]
     target = next(p for p in current if p.id == replace_id)
     if target.role is None:
-        raise RecommendationError(f"Adaa doesn't know what kind of piece '{target.name}' is, "
+        raise RecommendationError(f"Peheraav doesn't know what kind of piece '{target.name}' is, "
                                   "so it can't suggest swaps. Try editing its type.")
     rest = [p for p in current if p.id != replace_id]
     bottom = next((p for p in rest if p.role == g.BOTTOM), None)

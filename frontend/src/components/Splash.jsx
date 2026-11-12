@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import logo from '../assets/adaa-splash.svg?raw';
+import logo from '../assets/peheraav-splash.svg?raw';
 
 const SHOW_MS = 6200;   // the logo animation (see .splash in styles.css)
 const LEAVE_MS = 900;   // the curtain lifting away
 const SPECKS = [[14, 22], [82, 16], [24, 74], [88, 66], [50, 10], [8, 50], [70, 86], [93, 40]];
 
 /*
-  The opening animation, once per visit: the ribbon A comes into focus, a glint runs over it,
-  "Adaa" writes itself, the gold thread draws, the tagline appears, then it lifts away like a
+  The opening animation, once per visit: the ribbon P comes into focus, a glint runs over it,
+  "Peheraav" writes itself, the gold thread draws, the tagline appears, then it lifts away like a
   curtain. A tap or key press skips it; with "reduce motion" switched on it's a short, still fade.
 */
 export default function Splash({ name, onDone }) {
@@ -29,7 +29,7 @@ export default function Splash({ name, onDone }) {
 
   return (
     <div className={`splash${leaving ? ' leaving' : ''}${calm ? ' calm' : ''}`} onClick={() => setLeaving(true)}
-      role="img" aria-label="Adaa — every outfit tells your adaa">
+      role="img" aria-label="Peheraav AI — your wardrobe, styled by AI">
       {SPECKS.map(([x, y], i) => (
         <span key={i} className="splash-speck" style={{ left: `${x}%`, top: `${y}%`, animationDelay: `${0.4 + i * 0.4}s` }} />
       ))}

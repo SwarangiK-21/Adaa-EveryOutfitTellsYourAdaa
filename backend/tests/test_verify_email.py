@@ -22,7 +22,7 @@ def token_from(email):
 def test_sign_up_sends_a_confirmation_link(anon, outbox):
     res = anon.post("/api/auth/signup", json=TEST_USER)
     assert res.status_code == 201 and res.json()["email_verified"] is False
-    assert len(outbox) == 1 and outbox[0]["subject"] == "Confirm your email for Adaa"
+    assert len(outbox) == 1 and outbox[0]["subject"] == "Confirm your email for Peheraav"
     assert "Hi Test," in outbox[0]["body"] and "#verify=" in outbox[0]["body"]
 
 

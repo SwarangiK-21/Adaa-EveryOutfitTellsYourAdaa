@@ -60,7 +60,7 @@ export function subscribeCutouts(fn) {
 }
 
 // Phones skip the automatic cut-outs: the 200 MB model can freeze them. Pieces show their own
-// photo on the board instead, and get a clean cut-out the next time Adaa is opened on a computer.
+// photo on the board instead, and get a clean cut-out the next time Peheraav is opened on a computer.
 const ON_PHONE = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches
   && Math.min(window.screen.width, window.screen.height) < 768;
 

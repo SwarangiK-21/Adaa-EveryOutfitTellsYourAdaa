@@ -21,7 +21,7 @@ def add_item(client, name="Green saree"):
 
 @pytest.fixture()
 def outbox(monkeypatch):
-    """Emails Adaa would send, instead of sending them."""
+    """Emails Peheraav would send, instead of sending them."""
     sent = []
     monkeypatch.setattr(mailer, "send_email", lambda to, subject, body: sent.append({"to": to, "subject": subject, "body": body}))
     return sent
@@ -46,10 +46,10 @@ def test_signup_records_when_privacy_was_accepted(client):
 
 
 def test_about_is_public(anon, monkeypatch):
-    monkeypatch.setattr(config, "CONTACT_EMAIL", "hello@adaa.example")
+    monkeypatch.setattr(config, "CONTACT_EMAIL", "hello@peheraav.example")
     res = anon.get("/api/auth/about")
     assert res.status_code == 200
-    assert res.json() == {"contact_email": "hello@adaa.example", "max_items": config.MAX_ITEMS_PER_USER,
+    assert res.json() == {"contact_email": "hello@peheraav.example", "max_items": config.MAX_ITEMS_PER_USER,
                           "max_looks": config.MAX_LOOKS_PER_USER}
 
 
@@ -77,12 +77,12 @@ def test_change_password_needs_the_current_one(client):
 # ---------- forgot password ----------
 
 def test_forgot_and_reset_password(client, outbox, monkeypatch):
-    monkeypatch.setattr(config, "PUBLIC_URL", "https://adaa.example")
+    monkeypatch.setattr(config, "PUBLIC_URL", "https://peheraav.example")
     client.post("/api/auth/logout")
     res = client.post("/api/auth/forgot", json={"email": " TEST@example.com "})
     assert res.status_code == 202
     assert len(outbox) == 1 and outbox[0]["to"] == TEST_USER["email"]
-    assert "Hi Test," in outbox[0]["body"] and "https://adaa.example/#reset=" in outbox[0]["body"]
+    assert "Hi Test," in outbox[0]["body"] and "https://peheraav.example/#reset=" in outbox[0]["body"]
 
     token = reset_token(outbox[0])
     assert client.post("/api/auth/reset", json={"token": token, "password": "brand-new-password"}).status_code == 204

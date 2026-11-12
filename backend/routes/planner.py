@@ -46,7 +46,7 @@ def trip_plan(request: TripRequest, db: Db, user: auth.User):
 
 @router.get("/events/functions", response_model=list[EventFunction])
 def event_functions(user: auth.User):
-    """Wedding functions Adaa can plan, with their usual dress codes."""
+    """Wedding functions Peheraav can plan, with their usual dress codes."""
     return function_list()
 
 

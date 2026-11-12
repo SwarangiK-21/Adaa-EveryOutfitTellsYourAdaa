@@ -521,8 +521,8 @@ class DeleteAccountIn(BaseModel):
 
 
 class AboutOut(BaseModel):
-    """What the sign-up screen and privacy note need to know about this Adaa."""
-    contact_email: str      # whom to ask about your data ("" = the person who runs this Adaa)
+    """What the sign-up screen and privacy note need to know about this Peheraav."""
+    contact_email: str      # whom to ask about your data ("" = the person who runs this Peheraav)
     max_items: int
     max_looks: int
 
@@ -530,7 +530,7 @@ class AboutOut(BaseModel):
 class UserOut(BaseModel):
     id: int
     name: str
-    first_name: str           # what Adaa calls you, e.g. "Ananya"
+    first_name: str           # what Peheraav calls you, e.g. "Ananya"
     email: str
     phone: str
     created_at: str
@@ -554,7 +554,7 @@ AvoidStyle = Literal["sleeveless", "short_hemlines", "bodycon", "crop_tops"]
 
 
 class StyleProfile(BaseModel):
-    """Everything is optional: skip any question and Adaa still works."""
+    """Everything is optional: skip any question and Peheraav still works."""
     height_cm: int | None = Field(default=None, ge=120, le=220)
     body_shape: BodyShape | None = None     # chosen by the person, never guessed
     fit: Fit | None = None
@@ -581,7 +581,7 @@ class StyleProfile(BaseModel):
         for text in value:
             colour = colours.parse(str(text)[:40], fuzzy=False)
             if colour is None:
-                raise ValueError(f"Adaa doesn't know the colour '{str(text)[:40]}'.")
+                raise ValueError(f"Peheraav doesn't know the colour '{str(text)[:40]}'.")
             names.append(colour.name)
         return list(dict.fromkeys(names))
 

@@ -10,13 +10,13 @@ def test_changes_from_another_website_are_blocked(client):
     assert res.status_code == 403
 
 
-def test_changes_from_adaa_itself_are_allowed(client):
+def test_changes_from_peheraav_itself_are_allowed(client):
     assert client.patch("/api/profile/style", json={}, headers={"Origin": "http://testserver"}).status_code == 200
 
 
-def test_public_address_counts_as_adaa(client, monkeypatch):
-    monkeypatch.setattr(config, "PUBLIC_URL", "https://adaa.example")
-    assert client.patch("/api/profile/style", json={}, headers={"Origin": "https://adaa.example"}).status_code == 200
+def test_public_address_counts_as_peheraav(client, monkeypatch):
+    monkeypatch.setattr(config, "PUBLIC_URL", "https://peheraav.example")
+    assert client.patch("/api/profile/style", json={}, headers={"Origin": "https://peheraav.example"}).status_code == 200
 
 
 def test_reading_is_never_blocked(client):
@@ -30,7 +30,7 @@ def test_app_page_has_a_security_policy(anon, tmp_path, monkeypatch):
     monkeypatch.setattr(config, "FRONTEND_DIR", dist)
     csp = anon.get("/").headers["content-security-policy"]
     assert "default-src 'self'" in csp and "frame-ancestors 'none'" in csp and "object-src 'none'" in csp
-    assert "fonts.googleapis" not in csp        # fonts are served by Adaa itself
+    assert "fonts.googleapis" not in csp        # fonts are served by Peheraav itself
 
 
 def test_model_download_needs_login(anon):

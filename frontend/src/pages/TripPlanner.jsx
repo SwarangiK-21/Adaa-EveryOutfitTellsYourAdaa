@@ -9,7 +9,7 @@ const MAX_DAYS = 14;
 const STYLES = ['', 'Traditional', 'Western', 'Indo-Western'];
 
 /*
-  Trip planner: pick the occasion for each day; Adaa picks an outfit per day from your wardrobe
+  Trip planner: pick the occasion for each day; Peheraav picks an outfit per day from your wardrobe
   without wearing any garment twice (shoes, bags and jewellery are reused), plus a packing checklist.
 */
 export default function TripPlanner({ goToWardrobe }) {
@@ -48,7 +48,7 @@ export default function TripPlanner({ goToWardrobe }) {
       <Heading
         eyebrow="PACK LIGHT, LOOK GOOD"
         title={<>Plan a <em>trip, {first}</em></>}
-        sub="Tell Adaa what each day looks like. It picks a different outfit for every day from your wardrobe (no garment worn twice), and reuses shoes, bags and jewellery to keep the suitcase light."
+        sub="Tell Peheraav what each day looks like. It picks a different outfit for every day from your wardrobe (no garment worn twice), and reuses shoes, bags and jewellery to keep the suitcase light."
       />
       <div className="trip-layout">
         <form className="style-form trip-form" onSubmit={submit}>

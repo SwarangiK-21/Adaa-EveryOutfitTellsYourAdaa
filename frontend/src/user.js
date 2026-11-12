@@ -12,14 +12,14 @@ export function useUser() {
 export const initials = (name) =>
   (name || '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('') || '?';
 
-// Browser settings are stored per account: "adaa.preferences" becomes "adaa.preferences.u3".
+// Browser settings are stored per account: "peheraav.preferences" becomes "peheraav.preferences.u3".
 let userId = null;
 export function setStorageUser(id) {
   userId = id;
   // The first account inherits settings saved before accounts existed.
   if (id === 1) {
     try {
-      for (const base of ['adaa.preferences', 'adaa.place']) {
+      for (const base of ['peheraav.preferences', 'peheraav.place']) {
         const old = localStorage.getItem(base);
         if (old !== null && localStorage.getItem(storageKey(base)) === null) localStorage.setItem(storageKey(base), old);
       }

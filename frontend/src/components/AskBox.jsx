@@ -3,11 +3,11 @@ import { Send, Mic, MicOff } from 'lucide-react';
 import { useUser } from '../user.js';
 
 // The browser's own speech-to-text (Chrome and Edge). Chrome sends the audio to Google's speech
-// service to turn it into text; nothing is recorded or kept by Adaa.
+// service to turn it into text; nothing is recorded or kept by Peheraav.
 // Browsers only allow the microphone on https or this computer (localhost), so it's hidden on a Wi-Fi address.
 const SpeechRecognition = typeof window !== 'undefined' && window.isSecureContext && (window.SpeechRecognition || window.webkitSpeechRecognition);
 
-// Type (or say) a request in your own words, in English or Hinglish; Adaa shows what it understood.
+// Type (or say) a request in your own words, in English or Hinglish; Peheraav shows what it understood.
 export default function AskBox({ items, chat, asking, onAsk, onPick }) {
   const [text, setText] = useState('');
   const [listening, setListening] = useState(false);
@@ -35,7 +35,7 @@ export default function AskBox({ items, chat, asking, onAsk, onPick }) {
     };
     r.onerror = (e) => {
       setVoiceNote(e.error === 'not-allowed' || e.error === 'service-not-allowed'
-        ? 'Microphone access was blocked. Allow it in the browser to speak to Adaa.'
+        ? 'Microphone access was blocked. Allow it in the browser to speak to Peheraav.'
         : e.error === 'no-speech' ? "I didn't hear anything. Try again?" : "Voice input didn't work this time. You can type instead.");
     };
     r.onend = () => {
@@ -63,8 +63,8 @@ export default function AskBox({ items, chat, asking, onAsk, onPick }) {
           value={text}
           maxLength={300}
           onChange={(e) => setText(e.target.value)}
-          placeholder={listening ? 'Listening… say it in English or Hinglish' : 'Tell Adaa what you need, e.g. Style my black crop top for a party'}
-          aria-label="Tell Adaa what you need"
+          placeholder={listening ? 'Listening… say it in English or Hinglish' : 'Tell Peheraav what you need, e.g. Style my black crop top for a party'}
+          aria-label="Tell Peheraav what you need"
         />
         {SpeechRecognition && (
           <button type="button" className={`mic ${listening ? 'on' : ''}`} onClick={listen} disabled={asking}
@@ -88,7 +88,7 @@ export default function AskBox({ items, chat, asking, onAsk, onPick }) {
         <div className="ask-thread">
           <div className="user-bubble">{chat.text}</div>
           <div className="bubble">
-            <small>ADAA</small>
+            <small>PEHERAAV</small>
             {chat.error ? <p>{chat.error}</p> : <Understanding chat={chat} onPick={onPick} />}
           </div>
         </div>

@@ -1,4 +1,4 @@
-# Adaa: testing
+# Peheraav: testing
 
 ## Automated tests (backend)
 
@@ -26,7 +26,7 @@ Expected result: **258 passed**. Each test runs against a fresh temporary databa
 | `test_style_profile.py` | 36 | Profile empty until saved; save/read back (repeats removed, colour names tidied); only sent fields change; skipping is fine; validation (height, shape, fit, undertone, gender, avoid, unknown/too many colours); needs login; private per account; deleted with the account; database CHECKs; reading a piece's cut (palazzo, skin fit, bodycon, crop, anarkali, high waist, cami; a sling *bag* isn't sleeveless); no profile = no change; pear prefers flowing bottoms; preferred fit; avoided styles rank lower with a caution but are never hidden; undertone only adds notes; loved/avoided colours; petite and tall notes; jewellery metal; swaps explain too; the API uses the saved profile; Shop Smart and gender |
 | `test_ratelimit.py` | 14 | Sign-ups, log-ins (across emails) and reset requests limited per address; limits are per address; normal use isn't limited; can be switched off; which rule applies to which address |
 | `test_verify_email.py` | 7 | Sign-up emails a link; it confirms once (without login); expires; resend limited to 3/h; nothing sent once confirmed; resend needs login; bad tokens |
-| `test_security.py` | 6 | Changes from another website blocked (403); from Adaa itself or its public address allowed; reading never blocked; app page has a CSP without Google Fonts; model download needs login |
+| `test_security.py` | 6 | Changes from another website blocked (403); from Peheraav itself or its public address allowed; reading never blocked; app page has a CSP without Google Fonts; model download needs login |
 | `test_offsite.py` | 6 | Request signing matches Amazon's published example; upload is a signed PUT; refused upload raises; backup command copies off-site, fails loudly (keeping the local copy) when it can't, says so when not set up |
 | `test_image_meta.py` | 5 | JPEG loses EXIF/GPS, XMP and comments but keeps the picture and colour profile; PNG loses text/EXIF chunks; WebP loses EXIF/XMP and stays valid; unreadable files left alone; uploaded photos are saved and served without location |
 | `test_errors.py` | 3 | Unexpected errors: calm message, no internals, logged; browser crash reports logged; size-limited |
@@ -53,7 +53,7 @@ Done on 15 Oct 2026, starting from an **empty** data folder, using the real form
 | Swap | Footwear swap shows real alternatives labelled "Not tagged for Traditional function" | ✅ |
 | Saved looks | Save, Wore it today, history entry with photos, Overview count | ✅ |
 | Preferences | Saved choices survive a reload and pre-fill the Stylist form | ✅ *(made functional during this pass)* |
-| Server down | Every page shows "Can't reach the Adaa server. Is the backend running?" with Try again; Overview shows "–" | ✅ *(Overview count fixed during this pass)* |
+| Server down | Every page shows "Can't reach the Peheraav server. Is the backend running?" with Try again; Overview shows "–" | ✅ *(Overview count fixed during this pass)* |
 | Layout | No page is wider than the screen at 375, 768 or 1280px | ✅ |
 | Console | No errors except the expected ones while the server was deliberately stopped | ✅ |
 
@@ -97,7 +97,7 @@ Fresh test wardrobe of 20 pieces; desktop (1280px) and phone (375px).
 
 *Try-on was removed on 20 Oct 2026 (slow and inaccurate); this pass is kept as a record.*
 
-Run with a **stand-in try-on server**: same API, link and token as the Colab notebook, but it returns a coloured test image after 2 s instead of running the AI model. It used a copy of the real wardrobe. **The real CatVTON model has not been run in this environment** (no NVIDIA GPU); run `tryon/Adaa_TryOn_Colab.ipynb` on Colab to try it.
+Run with a **stand-in try-on server**: same API, link and token as the Colab notebook, but it returns a coloured test image after 2 s instead of running the AI model. It used a copy of the real wardrobe. **The real CatVTON model has not been run in this environment** (no NVIDIA GPU); run `tryon/Peheraav_TryOn_Colab.ipynb` on Colab to try it.
 
 | Check | Result |
 |---|---|
@@ -166,7 +166,7 @@ Run on a **copy of the real wardrobe** (28 items).
 |---|---|
 | Shoes under short skirts: full size, just below the hem (they were shrunk by a height limit meant for long outfits) | ✅ |
 | *Add a piece* shows photo tips under the photo box (desktop and phone width, no sideways scroll) | ✅ |
-| **Download image** under the board saves `adaa-<look>.png`, 900×1500, cream background, shadows, capitalised look name | ✅ (checked by capturing the image in the test browser) |
+| **Download image** under the board saves `peheraav-<look>.png`, 900×1500, cream background, shadows, capitalised look name | ✅ (checked by capturing the image in the test browser) |
 | Backend tests | ✅ 93 passed |
 
 ## Planning and auto-fill pass (19 Oct 2026)
@@ -255,7 +255,7 @@ Reported: "Rakhi pe kuch gulabi", "15th aug" and "26th jan" gave black and grey 
 | Check | Result |
 |---|---|
 | Logo files: 8 SVGs (lettering outlined, so no fonts needed) and high-res PNGs in `brand/`; centred; fold is a real cut-out (works on any background) | ✅ |
-| Browser tab: app icon and title "Adaa — Every outfit tells your Adaa"; phone theme colour plum | ✅ |
+| Browser tab: app icon and title "Peheraav AI — Your wardrobe, styled by AI"; phone theme colour plum | ✅ |
 | Sidebar: horizontal logo (desktop and phone menu) | ✅ |
 | Re-theme: 105 browns/beiges shifted to plum/blush with the same lightness; accent exactly logo plum; small labels and italic headline words in gold; caution/error/success colours and garment swatches unchanged | ✅ checked Overview, AI Stylist, Wedding Planner, phone menu |
 | Downloaded outfit image uses plum lettering and the gold credit line | ✅ |
@@ -266,7 +266,7 @@ On a copy of the real wardrobe (32 pieces), backend on 8011 and frontend on 5181
 
 | Check | Result |
 |---|---|
-| Sign up with name, email, phone, password | ✅ "Welcome to Adaa, Swarangi! Your 32 pieces are now safely in your account." |
+| Sign up with name, email, phone, password | ✅ "Welcome to Peheraav, Swarangi! Your 32 pieces are now safely in your account." |
 | Name across the app: greeting, hero, sidebar (initials, name, email), header avatar, page titles ("Swarangi's wardrobe") | ✅ |
 | AI Stylist: "Here's what I understood, Swarangi", a personal line on each look ("Swarangi, this one would look lovely on you."), save toast | ✅ |
 | Log out → log-in screen; log back in → "Welcome back, Swarangi!", saved look still there | ✅ |
@@ -288,11 +288,11 @@ On a copy of the real wardrobe (32 pieces), backend on 8011 and frontend on 5181
 
 | Check | Result |
 |---|---|
-| Frames stepped at 0.3 / 0.8 / 1.15 / 1.7 / 2.2 s: A focuses in → *Adaa* writing → thread and dot → tagline → "Hi, Swarangi" | ✅ |
+| Frames stepped at 0.3 / 0.8 / 1.15 / 1.7 / 2.2 s: A focuses in → *Peheraav* writing → thread and dot → tagline → "Hi, Swarangi" | ✅ |
 | Ends and shows the app underneath (Overview greeting) with no console errors | ✅ |
 | Refresh in the same tab: no replay | ✅ |
 | Key press skips it: gone within 0.8 s | ✅ |
-| Slowed to about 6 s after trying it (A 0–1.6 s, glint 1.3–2.5 s, *Adaa* 1.8–3.6 s, thread 3.4–4.7 s, tagline 3.9–5.3 s, "Hi" 4.9–5.8 s, lift at 6.2 s) | ✅ frames checked |
+| Slowed to about 6 s after trying it (A 0–1.6 s, glint 1.3–2.5 s, *Peheraav* 1.8–3.6 s, thread 3.4–4.7 s, tagline 3.9–5.3 s, "Hi" 4.9–5.8 s, lift at 6.2 s) | ✅ frames checked |
 
 ## Wi-Fi sharing and home-screen app (20 Oct 2026)
 
@@ -302,7 +302,7 @@ On a copy of the real wardrobe (32 pieces), backend on 8011 and frontend on 5181
 |---|---|
 | `npm run share` builds and prints Local + Network addresses | ✅ |
 | Over the network address (not secure, plain http): sign up a second person, stay logged in (cookie works), greeting uses her name | ✅ "Good evening, Riya." |
-| Manifest loads (Adaa, standalone) and all 3 icons return 200; Apple full-screen tags present | ✅ |
+| Manifest loads (Peheraav, standalone) and all 3 icons return 200; Apple full-screen tags present | ✅ |
 | Phone size (375 px, touch): add a piece → no model download, no cut-out started | ✅ |
 | Phone over Wi-Fi: microphone button hidden, ask box works | ✅ |
 | Not tested here: a real phone on the Wi-Fi, the Windows firewall prompt, Add to Home Screen | ⏳ to try with friends |
@@ -314,7 +314,7 @@ On a fresh test database (ports 8011/5181), no email service set up.
 | Check | Result |
 |---|---|
 | Sign-up without ticking "I'm 18 or older and agree to the privacy note" → friendly error; after ticking → signed in | ✅ |
-| Privacy note opens from sign-up (6 short sections, contact falls back to "the person who runs this Adaa") | ✅ |
+| Privacy note opens from sign-up (6 short sections, contact falls back to "the person who runs this Peheraav") | ✅ |
 | Forgot password → same "if an account uses that email…" reply; the email with the link is printed in the backend terminal | ✅ |
 | Opening the link → "Choose a new password" → saved, link removed from the address bar, back on log-in with a note; new password logs in | ✅ |
 | Preferences → Change password: wrong current password refused; right one → "Password changed, Swarangi. Other devices are signed out." | ✅ |
@@ -327,7 +327,7 @@ On a fresh test database (ports 8011/5181), no email service set up.
 |---|---|
 | `npm run build`, then only the backend (port 8011, no Vite): app opens, sign up, add a piece, photo loads, greeting by name | ✅ |
 | Hashed JS cached for a year; `.wasm` served as `application/wasm`; manifest as `application/manifest+json`; a deep link like `/some/screen` opens the app | ✅ |
-| `python backup.py` while the server runs → one `.tar.gz` with `adaa.db` and the photo | ✅ |
+| `python backup.py` while the server runs → one `.tar.gz` with `peheraav.db` and the photo | ✅ |
 | Restore that backup into an empty folder ("new server"), start there, log in with the same password: piece and photo there | ✅ |
 | `install.sh` / `update.sh` syntax check (`bash -n`) | ✅ (not yet run on a real server) |
 | Backend tests | ✅ 180 passed |
@@ -356,14 +356,14 @@ On a copy of the real wardrobe (backend 8011, Vite 5181), then the built app ser
 
 | Check | Result |
 |---|---|
-| Screenshots in `docs/screenshots/` are the author's own captures of the real app; the email under the name in the sidebar was covered and an old header label cropped out; the name is kept, nothing else edited | ✅ |
+| Screenshots in `docs/screenshots/` are real captures of the app, nothing edited: the two outfit cards are the author's own captures; the opening screen, overview, wardrobe, trip planner and Shop Smart were retaken after the rename to Peheraav AI (12 Nov 2026), from the same build with a demo copy of the author's wardrobe (demo email, so nothing needed covering) | ✅ |
 | "Prototype mode" label removed; sign-up and log-in fields start empty with neutral hints ("Type your name"…); no personal details in placeholders or test data | ✅ |
 | MIT `LICENSE` added; README explains that downloaded AI models keep their own licences | ✅ |
 | Every page loads after the review changes (Overview, My Wardrobe, AI Stylist, Saved Looks, Wedding Planner, Trip Planner, Wear Stats, Shop Smart, Preferences) | ✅ |
 | Phone menu button now has an accessible name ("Open menu") | ✅ (fixed during this pass) |
 | Privacy note named Cloudflare R2 for backups; production uses Backblaze B2 | ✅ (fixed during this pass) |
 | README links, image paths and section links resolve; report images resolve | ✅ |
-| `docs/ADAA_Project_Report.pdf` generated from `docs/report/ADAA_Project_Report.html` with headless Chrome | ✅ |
+| `docs/PEHERAAV_AI_Project_Report.pdf` generated from `docs/report/PEHERAAV_AI_Project_Report.html` with headless Chrome | ✅ |
 | No secrets, keys or personal contact details in tracked files or git history (pattern scan) | ✅ |
 | `npm run build`, `npm audit --omit=dev` | ✅ built, 0 vulnerabilities |
 | Backend tests | ✅ 258 passed |

@@ -1,0 +1,24 @@
+# Runs Peheraav (the backend, which also serves the app) and restarts it if it stops.
+[Unit]
+Description=Peheraav wardrobe stylist
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=peheraav
+Group=peheraav
+WorkingDirectory=/opt/peheraav/backend
+EnvironmentFile=/etc/peheraav.env
+# One worker: the database is SQLite and login throttling is kept in memory.
+ExecStart=/opt/peheraav/backend/.venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000 --proxy-headers --forwarded-allow-ips 127.0.0.1
+Restart=on-failure
+RestartSec=3
+# Peheraav may only write to its data and backup folders.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/peheraav /var/backups/peheraav
+
+[Install]
+WantedBy=multi-user.target

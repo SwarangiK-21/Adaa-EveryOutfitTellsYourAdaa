@@ -1,0 +1,16 @@
+# One backup of Peheraav's database and photos (started each night by peheraav-backup.timer).
+[Unit]
+Description=Back up Peheraav's database and photos
+
+[Service]
+Type=oneshot
+User=peheraav
+Group=peheraav
+WorkingDirectory=/opt/peheraav/backend
+EnvironmentFile=/etc/peheraav.env
+ExecStart=/opt/peheraav/backend/.venv/bin/python backup.py
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/peheraav /var/backups/peheraav

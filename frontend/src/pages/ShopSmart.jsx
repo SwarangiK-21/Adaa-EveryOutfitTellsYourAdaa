@@ -7,7 +7,7 @@ import { PieceImage, swatchFor } from '../components/OutfitPreview.jsx';
 
 /*
   "Shop smart": which one new piece would unlock the most new outfits with what you already own.
-  These are ideas, not products: Adaa never links to a shop or buys anything.
+  These are ideas, not products: Peheraav never links to a shop or buys anything.
 */
 export default function ShopSmart({ goToWardrobe }) {
   const { first } = useUser();
@@ -26,7 +26,7 @@ export default function ShopSmart({ goToWardrobe }) {
       <Heading
         eyebrow="BUY LESS, WEAR MORE"
         title={<>What would unlock <em>the most?</em></>}
-        sub={`${first}, here are ideas for one new piece that would create the most new outfits with clothes you already own. Adaa never shops or buys for you.`}
+        sub={`${first}, here are ideas for one new piece that would create the most new outfits with clothes you already own. Peheraav never shops or buys for you.`}
       />
       {error && <p className="form-error">{error} <button type="button" className="text-btn" onClick={load}>Try again</button></p>}
       {!report && !error && <p className="muted"><RefreshCw size={13} className="spin" /> Looking through your wardrobe…</p>}
@@ -40,7 +40,7 @@ export default function ShopSmart({ goToWardrobe }) {
             <div className="empty">
               <div><ShoppingBag /></div>
               <h3>Nothing obvious is missing</h3>
-              <p>None of Adaa's go-to pieces would add new outfits right now. Add more of your clothes and their occasions to get ideas.</p>
+              <p>None of Peheraav's go-to pieces would add new outfits right now. Add more of your clothes and their occasions to get ideas.</p>
               <button type="button" className="primary" onClick={goToWardrobe}>Go to My Wardrobe</button>
             </div>
           ) : (

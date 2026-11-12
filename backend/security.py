@@ -1,12 +1,12 @@
 """Browser-side protections added by the backend.
 
 1. Cross-site request check: a page on another website can't make your browser change things in
-   Adaa (save, delete, upload...) using your sign-in cookie. Browsers always say where a request
-   came from (the Origin header); changes are only accepted from Adaa's own address. Requests
+   Peheraav (save, delete, upload...) using your sign-in cookie. Browsers always say where a request
+   came from (the Origin header); changes are only accepted from Peheraav's own address. Requests
    without an Origin (scripts, tests) are allowed: they don't carry your browser's cookie anyway
    unless sent on purpose. The SameSite=Lax cookie already blocks most of this; this closes the rest.
 2. Content Security Policy on the app page: the page may only load code, styles, fonts and images
-   from Adaa itself, and only talk to Adaa and the weather service. It limits the damage if a bug
+   from Peheraav itself, and only talk to Peheraav and the weather service. It limits the damage if a bug
    ever let someone inject content.
 """
 from urllib.parse import urlsplit
@@ -45,5 +45,5 @@ async def origin_check(request: Request, call_next):
     if request.method in UNSAFE and request.url.path.startswith("/api/"):
         origin = request.headers.get("origin")
         if origin and urlsplit(origin).netloc.lower() not in _allowed_origins(request):
-            return JSONResponse({"detail": "This request came from another website, so Adaa blocked it."}, status_code=403)
+            return JSONResponse({"detail": "This request came from another website, so Peheraav blocked it."}, status_code=403)
     return await call_next(request)

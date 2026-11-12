@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# Creates Adaa's server on Azure for Students (no credit card), using only free-eligible pieces:
+# Creates Peheraav's server on Azure for Students (no credit card), using only free-eligible pieces:
 #   a B2ats_v2 (or B1s) Ubuntu 24.04 server, a 64 GB Premium SSD (P6), a public IP, and firewall
 #   rules for SSH (22), HTTP (80) and HTTPS (443). No auto-shutdown.
 # Student subscriptions may only use some regions; this asks Azure which, and tries the closest first.
 #
 # Run it in Azure Cloud Shell (Bash), with your laptop's PUBLIC ssh key:
-#   bash azure-create-vm.sh "ssh-ed25519 AAAA... adaa-azure-server"
+#   bash azure-create-vm.sh "ssh-ed25519 AAAA... peheraav-azure-server"
 set -uo pipefail
 
 PUBKEY="${1:-}"
 [ -n "$PUBKEY" ] || { echo "Give your public SSH key in quotes as the first argument."; exit 1; }
-RG=adaa-rg
-NAME=adaa
+RG=peheraav-rg
+NAME=peheraav
 
 ALLOWED=$(az policy assignment list --disable-scope-strict-match \
   --query "[].parameters.listOfAllowedLocations.value[]" -o tsv 2>/dev/null | tr '[:upper:]' '[:lower:]' | sort -u)
@@ -34,10 +34,10 @@ for LOC in $TRY; do
         --image Canonical:ubuntu-24_04-lts:server:latest --size "$SIZE" \
         --admin-username azureuser --ssh-key-values "$PUBKEY" \
         --os-disk-size-gb 64 --storage-sku Premium_LRS \
-        --vnet-name "adaa-vnet-$LOC" --subnet default --nsg "adaa-nsg-$LOC" \
-        --public-ip-address "adaa-ip-$LOC" --public-ip-sku Standard --nsg-rule SSH \
+        --vnet-name "peheraav-vnet-$LOC" --subnet default --nsg "peheraav-nsg-$LOC" \
+        --public-ip-address "peheraav-ip-$LOC" --public-ip-sku Standard --nsg-rule SSH \
         --os-disk-delete-option Delete --nic-delete-option Delete \
-        --output none 2>/tmp/adaa-vm-err.txt; then
+        --output none 2>/tmp/peheraav-vm-err.txt; then
       az vm open-port --resource-group "$RG" --name "$NAME" --port 80,443 --priority 1010 --output none
       IP=$(az vm show -d --resource-group "$RG" --name "$NAME" --query publicIps -o tsv)
       echo
@@ -45,11 +45,11 @@ for LOC in $TRY; do
       echo " Done! Size: $SIZE   Region: $LOC"
       echo " Public IP: $IP"
       echo " Free web address (pick a name, letters/digits/hyphens):"
-      echo "   az network public-ip update -g $RG -n adaa-ip-$LOC --dns-name YOUR-NAME --query dnsSettings.fqdn -o tsv"
+      echo "   az network public-ip update -g $RG -n peheraav-ip-$LOC --dns-name YOUR-NAME --query dnsSettings.fqdn -o tsv"
       echo "=================================================="
       exit 0
     fi
-    grep -oE "(RequestDisallowedByAzure|SkuNotAvailable|QuotaExceeded|OperationNotAllowed)[^.]*" /tmp/adaa-vm-err.txt | head -1
+    grep -oE "(RequestDisallowedByAzure|SkuNotAvailable|QuotaExceeded|OperationNotAllowed)[^.]*" /tmp/peheraav-vm-err.txt | head -1
     az vm delete --resource-group "$RG" --name "$NAME" --yes --output none 2>/dev/null || true
   done
 done

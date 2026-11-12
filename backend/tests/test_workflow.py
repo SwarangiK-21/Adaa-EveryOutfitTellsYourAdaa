@@ -1,4 +1,4 @@
-"""The whole Adaa workflow, start to finish, through the API (README section 2, steps A-I)."""
+"""The whole Peheraav workflow, start to finish, through the API (README section 2, steps A-I)."""
 import config
 
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
@@ -16,7 +16,7 @@ def add(client, name, category, item_type, colour, style, occasions):
 
 
 def test_full_workflow(client):
-    # A. Opening Adaa with an empty wardrobe: nothing to style yet, and it says so.
+    # A. Opening Peheraav with an empty wardrobe: nothing to style yet, and it says so.
     assert client.get("/api/items").json() == []
     empty = client.post("/api/recommendations", json={"occasion": "Traditional function"}).json()
     assert empty["outfits"] == [] and "Add some clothes" in empty["notes"][0]

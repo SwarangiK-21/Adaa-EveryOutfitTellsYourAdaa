@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { storageKey } from './user.js';
 
-const PLACE_KEY = 'adaa.place';
-const CACHE_KEY = 'adaa.weather';
+const PLACE_KEY = 'peheraav.place';
+const CACHE_KEY = 'peheraav.weather';
 const CACHE_MS = 60 * 60 * 1000;   // refresh at most once an hour
 
 export function loadPlace() {
@@ -16,7 +16,7 @@ export function savePlace(place) {
     if (place) localStorage.setItem(storageKey(PLACE_KEY), JSON.stringify(place));
     else localStorage.removeItem(storageKey(PLACE_KEY));
     sessionStorage.removeItem(CACHE_KEY);
-    window.dispatchEvent(new Event('adaa-place'));
+    window.dispatchEvent(new Event('peheraav-place'));
     return true;
   } catch {
     return false;
@@ -78,7 +78,7 @@ export async function getWeather(place) {
   return weather;
 }
 
-// How Adaa will dress you for it, in a few words.
+// How Peheraav will dress you for it, in a few words.
 export function styleHint(weather) {
   if (!weather) return '';
   const parts = [];
@@ -95,8 +95,8 @@ export function useTodayWeather() {
   const [error, setError] = useState('');
   useEffect(() => {
     const onChange = () => setPlace(loadPlace());
-    window.addEventListener('adaa-place', onChange);
-    return () => window.removeEventListener('adaa-place', onChange);
+    window.addEventListener('peheraav-place', onChange);
+    return () => window.removeEventListener('peheraav-place', onChange);
   }, []);
   useEffect(() => {
     let alive = true;

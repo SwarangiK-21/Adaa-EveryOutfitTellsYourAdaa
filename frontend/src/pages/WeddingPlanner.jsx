@@ -10,7 +10,7 @@ const STYLES = ['', 'Traditional', 'Western', 'Indo-Western'];
 
 /*
   Wedding planner: pick the functions you're attending (haldi, mehendi, sangeet...), in order.
-  Adaa plans a different look for each from your wardrobe, following the usual dress code, with no
+  Peheraav plans a different look for each from your wardrobe, following the usual dress code, with no
   garment repeated; jewellery, shoes and bags are reused.
 */
 export default function WeddingPlanner({ goToWardrobe }) {
@@ -47,7 +47,7 @@ export default function WeddingPlanner({ goToWardrobe }) {
       <Heading
         eyebrow="SHAADI SEASON, SORTED"
         title={<>Plan your <em>wedding looks, {first}</em></>}
-        sub="Pick the functions you're attending. Adaa styles a different look for each from your wardrobe, following the usual dress code (yellow for haldi, green for mehendi...), without repeating a single garment."
+        sub="Pick the functions you're attending. Peheraav styles a different look for each from your wardrobe, following the usual dress code (yellow for haldi, green for mehendi...), without repeating a single garment."
       />
       <div className="trip-layout">
         <form className="style-form trip-form" onSubmit={submit}>

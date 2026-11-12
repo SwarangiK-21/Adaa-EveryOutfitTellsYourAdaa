@@ -109,7 +109,7 @@ def list_looks(db: Db, user: auth.User):
 def save_look(body: LookCreate, db: Db, user: auth.User):
     items = _check_items(db, user["id"], body.item_ids)
     if database.count_owned(db, "looks", user["id"]) >= config.MAX_LOOKS_PER_USER:
-        raise HTTPException(status_code=403, detail=f"You've saved {config.MAX_LOOKS_PER_USER} looks, the most Adaa keeps. "
+        raise HTTPException(status_code=403, detail=f"You've saved {config.MAX_LOOKS_PER_USER} looks, the most Peheraav keeps. "
                             "Delete a few old ones to save new ones.")
     prefs = body.prefs.model_dump()
     if looks_db.find_same_look(db, user["id"], body.item_ids, prefs["occasion"]):

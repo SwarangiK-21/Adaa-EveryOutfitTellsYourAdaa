@@ -1,6 +1,6 @@
-"""Sends Adaa's few emails (only "reset your password" for now) through any SMTP service.
+"""Sends Peheraav's few emails (only "reset your password" for now) through any SMTP service.
 
-Set ADAA_SMTP_HOST, ADAA_SMTP_PORT, ADAA_SMTP_USER, ADAA_SMTP_PASSWORD and ADAA_MAIL_FROM.
+Set PEHERAAV_SMTP_HOST, PEHERAAV_SMTP_PORT, PEHERAAV_SMTP_USER, PEHERAAV_SMTP_PASSWORD and PEHERAAV_MAIL_FROM.
 Without them (e.g. on your own laptop) the email is printed in the backend terminal instead.
 """
 import logging
@@ -10,15 +10,15 @@ from email.message import EmailMessage
 
 import config
 
-log = logging.getLogger("adaa.mail")
+log = logging.getLogger("peheraav.mail")
 
 
 def send_email(to: str, subject: str, body: str) -> None:
     if not config.SMTP_HOST:
-        print(f"\n--- Email not sent (no ADAA_SMTP_HOST set). It would go to {to} ---\n{subject}\n\n{body}\n---\n", flush=True)
+        print(f"\n--- Email not sent (no PEHERAAV_SMTP_HOST set). It would go to {to} ---\n{subject}\n\n{body}\n---\n", flush=True)
         return
     msg = EmailMessage()
-    msg["From"] = f"Adaa <{config.MAIL_FROM}>"
+    msg["From"] = f"Peheraav <{config.MAIL_FROM}>"
     msg["To"] = to
     msg["Subject"] = subject
     msg.set_content(body)
