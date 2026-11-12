@@ -25,7 +25,7 @@ A personal wardrobe stylist that builds complete outfits from the clothes you al
 
 ## Contents
 
-[Problem and solution](#the-problem) · [Features](#features) · [Screenshots](#screenshots) · [Tech stack](#tech-stack) · [How it works](#how-it-works) · [Run it locally](#run-it-locally) · [Project structure](#project-structure) · [Security and privacy](#security-and-privacy) · [Links](#links) · [Roadmap](#roadmap) · [Credits](#credits-and-contributing) · [License](#license)
+[Problem and solution](#the-problem) · [Features](#features) · [Screenshots](#screenshots) · [Tech stack](#tech-stack) · [How it works](#how-it-works) · [Project structure](#project-structure) · [Security and privacy](#security-and-privacy) · [Links](#links) · [Roadmap](#roadmap) · [Credits](#credits-and-contributing) · [License](#license)
 
 ## The problem
 
@@ -134,16 +134,6 @@ flowchart LR
 - **Why rules instead of a chatbot:** it can only pick from your items, so it can't "hallucinate" a piece. Every suggestion comes with the real reasons, it's free to run, and it gives the same answer every time, so it can be tested.
 
 More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Project report (PDF): [docs/PEHERAAV_AI_Project_Report.pdf](docs/PEHERAAV_AI_Project_Report.pdf)
-
-
-
-
-
-
-
-
-
-
 
 ## Project structure
 
