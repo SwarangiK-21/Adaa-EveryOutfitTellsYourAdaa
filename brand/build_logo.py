@@ -44,17 +44,17 @@ def measure(font, text, size, spacing=0.0):
     return outline(font, text, size, 0, 0, spacing, anchor="start")[1]
 
 
-# The ribbon P: a slanted ribbon stem with a curled foot, and a bowl that drapes across the stem
-# like the end of a dupatta. 200 x 200 box.
-MARK = ('<path d="M92 30 C90 16 110 8 118 20 L94 140 C108 148 106 174 90 176 C80 177 72 170 72 162 L76 142 Z"/>'
-        '<path d="M114 18 C162 6 190 40 174 78 C160 106 116 116 50 114 C104 100 148 88 151 64 C153 42 134 30 114 34 Z"/>')
-FOLDS = ('<path d="M84 142 L94 162" stroke="#000" stroke-width="3.2" stroke-linecap="round"/>'
-         '<path d="M98 98 L104 112" stroke="#000" stroke-width="3" stroke-linecap="round"/>')
-MARK_CX, MARK_CY = 118, 94   # visual centre of the ribbon P
+# The ribbon A: fabric folding like a dupatta or saree pleat, one continuous ribbon with a fine
+# line for the left side (the original Adaa mark, kept for Peheraav AI). 200 x 200 box.
+MARK = ('<path d="M95 31 C92 17 112 9 122 21 L161 117 C181 124 185 156 165 163 C153 167 144 162 141 156 L135 127 Z"/>'
+        '<path d="M38 121 L138 126 L157 164 C118 160 72 145 38 121 Z"/>'
+        '<path d="M103 32 L76 123" stroke-width="4.5" stroke-linecap="round" fill="none"/>')
+FOLDS = '<path d="M147 126 L159 154" stroke="#000" stroke-width="3.2" stroke-linecap="round"/>'
+MARK_CX, MARK_CY = 111.5, 88   # visual centre of the ribbon A (the curl makes it lopsided)
 
 
 def mark(colour, transform="", mid=""):
-    """The ribbon P; the folds are real cut-outs, so any background shows through."""
+    """The ribbon A; the fold is a real cut-out, so any background shows through."""
     return (f'<mask id="fold{mid}" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">'
             f'<rect width="200" height="200" fill="#fff"/>{FOLDS}</mask>'
             f'<g transform="{transform}" fill="{colour}" stroke="{colour}" stroke-width="0" mask="url(#fold{mid})">{MARK}</g>')
@@ -101,9 +101,9 @@ def horizontal(fg, sub, line, bg=None):
 
 
 def icon(fg, bg, size=512, maskable=False):
-    # The P is about 168 units tall: fill two thirds of the icon (half for "maskable" phone icons,
+    # The A is about 160 units tall: fill two thirds of the icon (half for "maskable" phone icons,
     # which phones crop to a circle or squircle, so the mark must sit inside the safe zone).
-    s = size * (0.5 if maskable else 0.66) / 168
+    s = size * (0.5 if maskable else 0.66) / 160
     ox, oy = size / 2 - MARK_CX * s, size / 2 - MARK_CY * s
     return svg((size, size), mark(fg, f"translate({ox:.1f} {oy:.1f}) scale({s:.4f})"),
                title="Peheraav AI", bg=bg, radius=0 if maskable else round(size * 0.22))
@@ -115,7 +115,7 @@ def splash():
     name, ai, _ = wordmark(200, 272, 74)
     tag, _ = outline(serif, TAGLINE, 21, 200, 330, spacing=0.5)
     shine = "".join(f'<path transform="{t}" d="{d}"/>' for d in
-                    [p.split('d="')[1].split('"')[0] for p in MARK.split("<path ")[1:]])
+                    [p.split('d="')[1].split('"')[0] for p in MARK.split("<path ")[1:] if 'fill="none"' not in p])
     return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 380" class="splash-logo" aria-hidden="true" focusable="false">'
             '<defs><mask id="splash-fold" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">'
             f'<rect width="200" height="200" fill="#fff"/>{FOLDS}</mask>'

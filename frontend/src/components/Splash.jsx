@@ -6,7 +6,7 @@ const LEAVE_MS = 900;   // the curtain lifting away
 const SPECKS = [[14, 22], [82, 16], [24, 74], [88, 66], [50, 10], [8, 50], [70, 86], [93, 40]];
 
 /*
-  The opening animation, once per visit: the ribbon P comes into focus, a glint runs over it,
+  The opening animation, once per visit: the ribbon A comes into focus, a glint runs over it,
   "Peheraav" writes itself, the gold thread draws, the tagline appears, then it lifts away like a
   curtain. A tap or key press skips it; with "reduce motion" switched on it's a short, still fade.
 */

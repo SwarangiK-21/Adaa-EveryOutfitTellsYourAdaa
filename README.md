@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="brand/peheraav-logo-cream.svg" alt="Peheraav AI logo: a plum ribbon P" width="240">
+  <img src="brand/peheraav-logo-cream.svg" alt="Peheraav AI logo: a plum ribbon A" width="240">
 </p>
 
 <h1 align="center">Peheraav AI</h1>
@@ -18,7 +18,7 @@ A personal wardrobe stylist that builds complete outfits from the clothes you al
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/opening-screen.webp" alt="Peheraav's opening screen: the plum ribbon P logo with the tagline and a personal greeting" width="820">
+  <img src="docs/screenshots/opening-screen.webp" alt="Peheraav's opening screen: the plum ribbon A logo with the tagline and a personal greeting" width="820">
 </p>
 
 ---
