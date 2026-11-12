@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Sets up Peheraav on a fresh Ubuntu 24.04 server (Azure for Students, Oracle Cloud, or any VPS), with https.
 #
-#   sudo git clone https://github.com/SwarangiK-21/Peheraav-AI.git /opt/peheraav
+#   sudo git clone https://github.com/SwarangiK-21/Peheraav-YourWardrobeStyledByAI.git /opt/peheraav
 #   sudo bash /opt/peheraav/deploy/install.sh your-address.example.com   (e.g. an Azure DNS name)
 #
 # Safe to run again: it skips what's already done and never touches existing data or settings.
